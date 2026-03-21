@@ -738,10 +738,6 @@ function RouletteWheel({
             <SectionLabel>Wheel</SectionLabel>
 
             <div className="relative mt-3 flex h-[320px] w-[320px] items-center justify-center">
-                <div className="absolute top-1 z-40 flex flex-col items-center">
-                    <div className="h-0 w-0 border-l-[12px] border-r-[12px] border-t-[22px] border-l-transparent border-r-transparent border-t-amber-300 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
-                    <div className="mt-1 h-2 w-2 rounded-full bg-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
-                </div>
 
                 <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,_rgba(255,231,170,0.2),_rgba(111,53,9,0.35)_30%,_rgba(42,21,6,0.75)_60%,_rgba(10,5,2,0.95)_100%)] shadow-[inset_0_6px_16px_rgba(255,240,200,0.08),_0_20px_45px_rgba(0,0,0,0.5)]" />
 
