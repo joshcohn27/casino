@@ -10,7 +10,10 @@ type RouletteNumber = number | "0" | "00";
 type BetType =
     | "straight"
     | "split"
+    | "street"
     | "corner"
+    | "line"
+    | "basket"
     | "red"
     | "black"
     | "even"
@@ -111,6 +114,38 @@ const NUMBER_ROWS: number[][] = [
     [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
 ];
 
+const STREETS: number[][] = Array.from({ length: 12 }, (_, i) => [
+    i * 3 + 1,
+    i * 3 + 2,
+    i * 3 + 3,
+]);
+
+const LINES: number[][] = Array.from({ length: 11 }, (_, i) => [
+    i * 3 + 1,
+    i * 3 + 2,
+    i * 3 + 3,
+    i * 3 + 4,
+    i * 3 + 5,
+    i * 3 + 6,
+]);
+
+const SPECIAL_ZERO_BETS: Array<{
+    id: string;
+    label: string;
+    type: BetType;
+    numbers: RouletteNumber[];
+    payout: number;
+}> = [
+        { id: "split-0-00", label: "0/00", type: "split", numbers: ["0", "00"], payout: 17 },
+        { id: "split-0-1", label: "0/1", type: "split", numbers: ["0", 1], payout: 17 },
+        { id: "split-0-2", label: "0/2", type: "split", numbers: ["0", 2], payout: 17 },
+        { id: "split-00-2", label: "00/2", type: "split", numbers: ["00", 2], payout: 17 },
+        { id: "split-00-3", label: "00/3", type: "split", numbers: ["00", 3], payout: 17 },
+        { id: "street-0-1-2", label: "0/1/2", type: "street", numbers: ["0", 1, 2], payout: 11 },
+        { id: "street-00-2-3", label: "00/2/3", type: "street", numbers: ["00", 2, 3], payout: 11 },
+        { id: "basket-top-line", label: "0/00/1/2/3", type: "basket", numbers: ["0", "00", 1, 2, 3], payout: 6 },
+    ];
+
 const CELL_W = 64;
 const CELL_H = 56;
 const GRID_W = CELL_W * 12;
@@ -192,6 +227,16 @@ function getAllBoardSpots(): BetSpot[] {
         });
     }
 
+    SPECIAL_ZERO_BETS.forEach((bet) => {
+        spots.push({
+            id: bet.id,
+            label: bet.label,
+            type: bet.type,
+            numbers: bet.numbers,
+            payout: bet.payout,
+        });
+    });
+
     const seenSplits = new Set<string>();
     const seenCorners = new Set<string>();
 
@@ -249,6 +294,26 @@ function getAllBoardSpots(): BetSpot[] {
             }
         }
     }
+
+    STREETS.forEach((street, index) => {
+        spots.push({
+            id: `street-${index + 1}`,
+            label: makeComboLabel(street),
+            type: "street",
+            numbers: street,
+            payout: 11,
+        });
+    });
+
+    LINES.forEach((line, index) => {
+        spots.push({
+            id: `line-${index + 1}`,
+            label: makeComboLabel(line),
+            type: "line",
+            numbers: line,
+            payout: 5,
+        });
+    });
 
     spots.push({
         id: "dozen1",
@@ -512,7 +577,7 @@ function RulesModal({
                                 </div>
                                 <div className="space-y-2">
                                     <div>• Pick a chip value.</div>
-                                    <div>• Click any number, outside box, split marker, or corner marker to add that chip amount.</div>
+                                    <div>• Click any number, outside box, split marker, street, line, or corner marker to add that chip amount.</div>
                                     <div>• Right click a betting spot to remove one chip of the selected value from that spot.</div>
                                     <div>• Press Spin to resolve all bets at once.</div>
                                 </div>
@@ -525,7 +590,10 @@ function RulesModal({
                                 <div className="space-y-2">
                                     <div>• Straight up numbers pay 35 to 1.</div>
                                     <div>• Splits pay 17 to 1.</div>
+                                    <div>• Streets pay 11 to 1.</div>
                                     <div>• Corners pay 8 to 1.</div>
+                                    <div>• Six lines pay 5 to 1.</div>
+                                    <div>• Top line basket 0/00/1/2/3 pays 6 to 1.</div>
                                     <div>• Red, Black, Even, Odd, 1-18, and 19-36 pay 1 to 1.</div>
                                     <div>• Dozens and columns pay 2 to 1.</div>
                                 </div>
@@ -537,7 +605,7 @@ function RulesModal({
                                 </div>
                                 <div className="space-y-2">
                                     <div>• 0 and 00 are green and are not red/black, odd/even, or high/low.</div>
-                                    <div>• Straight bets on both 0 and 00 are supported.</div>
+                                    <div>• Special American zero combinations are included.</div>
                                     <div>• Payouts shown include profit plus return of the original winning wager.</div>
                                     <div>• Multiple winning bets can hit on the same spin.</div>
                                 </div>
@@ -738,7 +806,6 @@ function RouletteWheel({
             <SectionLabel>Wheel</SectionLabel>
 
             <div className="relative mt-3 flex h-[320px] w-[320px] items-center justify-center">
-
                 <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,_rgba(255,231,170,0.2),_rgba(111,53,9,0.35)_30%,_rgba(42,21,6,0.75)_60%,_rgba(10,5,2,0.95)_100%)] shadow-[inset_0_6px_16px_rgba(255,240,200,0.08),_0_20px_45px_rgba(0,0,0,0.5)]" />
 
                 <motion.div
@@ -843,7 +910,7 @@ function RouletteWheel({
                     <div className="absolute left-1/2 top-1/2 h-[266px] w-[266px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100/10" />
                 </div>
 
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-40">
+                <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
                     <div className="rounded-full border border-white/15 bg-black/35 px-4 py-2 text-center shadow-xl backdrop-blur">
                         <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/90">
                             Result
@@ -904,7 +971,10 @@ function PayoutTable() {
     const rows = [
         ["Straight Up", "35 to 1"],
         ["Split", "17 to 1"],
+        ["Street", "11 to 1"],
         ["Corner", "8 to 1"],
+        ["Six Line", "5 to 1"],
+        ["Top Line Basket", "6 to 1"],
         ["Dozen", "2 to 1"],
         ["Column", "2 to 1"],
         ["Red / Black", "1 to 1"],
@@ -1152,7 +1222,7 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                             <div className="mt-2 text-base font-bold text-amber-50 sm:text-lg md:text-xl">{message}</div>
                         </div>
 
-                        <div className="mt-3 grid gap-3 xl:grid-cols-[310px_minmax(0,1fr)_330px]">
+                        <div className="mt-3 grid gap-3 xl:grid-cols-[310px_minmax(0,1fr)_300px]">
                             <div className="order-2 space-y-3 xl:order-1">
                                 <RouletteWheel
                                     result={lastResult}
@@ -1162,17 +1232,35 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                                 />
 
                                 <RecentResults results={recentResults} />
+
+                                <PayoutTable />
                             </div>
 
                             <div className="order-1 min-w-0 rounded-[1.25rem] border border-white/10 bg-[radial-gradient(circle_at_center,_rgba(74,222,128,0.16),_rgba(10,90,60,0.10)_40%,_rgba(0,0,0,0.22)_82%)] p-2.5 sm:rounded-[1.6rem] sm:p-4 xl:order-2">
-                                <div className="flex h-full flex-col gap-3 sm:gap-4">
+                                <div className="flex h-full flex-col gap-2 sm:gap-3">
                                     <div className="overflow-hidden rounded-[1rem] border border-white/10 bg-black/10 p-2 sm:rounded-[1.25rem] sm:p-3">
-                                        <div className="mb-3 flex items-center justify-center">
+                                        <div className="mb-2 flex items-center justify-center">
                                             <SectionLabel>Betting Layout</SectionLabel>
                                         </div>
 
                                         <div className="overflow-x-auto">
                                             <div className="min-w-[980px]">
+                                                <div className="mb-2 grid grid-cols-4 gap-1">
+                                                    {SPECIAL_ZERO_BETS.map((bet) => (
+                                                        <BoardSpotButton
+                                                            key={bet.id}
+                                                            label={bet.label}
+                                                            amount={getSpotAmount(bet.id)}
+                                                            colorClass="border-emerald-300/25 bg-emerald-900/45 text-emerald-50"
+                                                            onClick={() => placeBet(bet.id)}
+                                                            onContextMenu={(e) => {
+                                                                e.preventDefault();
+                                                                removeBet(bet.id);
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+
                                                 <div className="grid grid-cols-[88px_auto_76px] gap-1">
                                                     <div className="grid grid-rows-2 gap-1">
                                                         <BoardSpotButton
@@ -1322,6 +1410,47 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                                                     </div>
                                                 </div>
 
+                                                <div className="mt-1 grid grid-cols-12 gap-1">
+                                                    {STREETS.map((street, index) => {
+                                                        const id = `street-${index + 1}`;
+                                                        return (
+                                                            <BoardSpotButton
+                                                                key={id}
+                                                                label={makeComboLabel(street)}
+                                                                amount={getSpotAmount(id)}
+                                                                colorClass="border-blue-300/20 bg-blue-950/45 text-blue-100"
+                                                                onClick={() => placeBet(id)}
+                                                                onContextMenu={(e) => {
+                                                                    e.preventDefault();
+                                                                    removeBet(id);
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                <div className="mt-1 grid grid-cols-11 gap-1">
+                                                    {LINES.map((line, index) => {
+                                                        const id = `line-${index + 1}`;
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                onClick={() => placeBet(id)}
+                                                                onContextMenu={(e) => {
+                                                                    e.preventDefault();
+                                                                    removeBet(id);
+                                                                }}
+                                                                className="relative flex min-h-[56px] items-center justify-center rounded-xl border border-violet-300/20 bg-violet-950/45 px-1.5 py-1 text-[9px] font-extrabold text-violet-100 shadow-lg transition hover:brightness-110 active:translate-y-[1px]"
+                                                            >
+                                                                <span className="max-w-full break-words text-center leading-tight">
+                                                                    {makeComboLabel(line)}
+                                                                </span>
+                                                                <BetBadge amount={getSpotAmount(id)} />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
                                                 <div className="mt-1 grid grid-cols-3 gap-1">
                                                     {["dozen1", "dozen2", "dozen3"].map((id) => (
                                                         <BoardSpotButton
@@ -1404,91 +1533,90 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                                         </div>
                                     </div>
 
-                                    <div className="sticky bottom-2 z-10 -mx-1 mt-1 rounded-[1.1rem] border border-white/10 bg-black/45 px-2 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
-                                        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                                            <ActionButton
-                                                onClick={spinWheel}
-                                                variant="bet"
-                                                disabled={isSpinning || totalBet <= 0}
-                                            >
-                                                Spin
-                                            </ActionButton>
+                                    <div className="grid gap-2 lg:grid-cols-[1fr_auto] lg:items-end">
+                                        <InfoCard title="Chip Selector">
+                                            <ChipSelector
+                                                selectedChip={selectedChip}
+                                                onSelect={setSelectedChip}
+                                                disabled={isSpinning}
+                                            />
 
-                                            <ActionButton
-                                                onClick={clearBets}
-                                                variant="danger"
-                                                disabled={isSpinning || totalBet <= 0}
-                                            >
-                                                Clear Bets
-                                            </ActionButton>
+                                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                                                    <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px]">
+                                                        Selected
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-extrabold text-white sm:text-base">
+                                                        {fmt(selectedChip)}
+                                                    </div>
+                                                </div>
 
-                                            <ActionButton
-                                                onClick={repeatLastBets}
-                                                disabled={isSpinning || !spinSummary}
-                                            >
-                                                Repeat Last
-                                            </ActionButton>
+                                                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                                                    <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px]">
+                                                        Minimum
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-extrabold text-white sm:text-base">
+                                                        {fmt(MIN_CHIP)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </InfoCard>
+
+                                        <div className="rounded-[1.1rem] border border-white/10 bg-black/45 px-2 py-2 backdrop-blur sm:rounded-[1.15rem] sm:bg-black/30 sm:p-3">
+                                            <div className="mb-2 grid grid-cols-2 gap-2">
+                                                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                                                    <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px]">
+                                                        On Table
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-extrabold text-amber-50 sm:text-base">
+                                                        {fmt(totalBet)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                                                    <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px]">
+                                                        Active Spots
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-extrabold text-white sm:text-base">
+                                                        {activeBetCount}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-emerald-50/90 sm:text-xs">
+                                                Left click adds the selected chip. Right click removes that chip amount.
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center justify-center gap-2">
+                                                <ActionButton
+                                                    onClick={spinWheel}
+                                                    variant="bet"
+                                                    disabled={isSpinning || totalBet <= 0}
+                                                >
+                                                    Spin
+                                                </ActionButton>
+
+                                                <ActionButton
+                                                    onClick={clearBets}
+                                                    variant="danger"
+                                                    disabled={isSpinning || totalBet <= 0}
+                                                >
+                                                    Clear Bets
+                                                </ActionButton>
+
+                                                <ActionButton
+                                                    onClick={repeatLastBets}
+                                                    disabled={isSpinning || !spinSummary}
+                                                >
+                                                    Repeat Last
+                                                </ActionButton>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="order-3 space-y-3 xl:order-3">
-                                <InfoCard title="Chip Selector">
-                                    <ChipSelector
-                                        selectedChip={selectedChip}
-                                        onSelect={setSelectedChip}
-                                        disabled={isSpinning}
-                                    />
-
-                                    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-amber-100/90 sm:text-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span>Selected chip</span>
-                                            <span className="font-extrabold text-white">{fmt(selectedChip)}</span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Minimum chip</span>
-                                            <span className="font-semibold text-white">{fmt(MIN_CHIP)}</span>
-                                        </div>
-                                    </div>
-                                </InfoCard>
-
-                                <InfoCard title="Bet Summary">
-                                    <div className="space-y-2">
-                                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                            <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px] sm:tracking-[0.18em]">
-                                                Total on table
-                                            </div>
-                                            <div className="mt-1 text-lg font-extrabold text-amber-50">
-                                                {fmt(totalBet)}
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                            <div className="text-[9px] uppercase tracking-[0.16em] text-white/65 sm:text-[10px] sm:tracking-[0.18em]">
-                                                Active spots
-                                            </div>
-                                            <div className="mt-1 text-sm font-bold text-white">
-                                                {activeBetCount}
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-emerald-50/90 sm:text-xs">
-                                            Left click adds the selected chip.
-                                            <br />
-                                            Right click removes that chip amount.
-                                            <br />
-                                            Split bars bet 2 numbers.
-                                            <br />
-                                            Corner dots bet 4 numbers.
-                                            <br />
-                                            0 and 00 can both be bet directly.
-                                        </div>
-                                    </div>
-                                </InfoCard>
-
-                                <PayoutTable />
-
                                 <InfoCard title="Settlement">
                                     {!spinSummary ? (
                                         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-center text-sm text-white/70">
