@@ -3,9 +3,10 @@ import UltimateTexasHoldem from "./UltimateTexasHoldem"
 import Blackjack from "./Blackjack"
 import FreeBetBlackjack from "./FreeBetBlackjack"
 import Roulette from "./Roulette"
+import BaccaratTable from "./Baccarat"
 import heroImage from "./assets/hero.png"
 
-type Game = "home" | "uth" | "blackjack" | "freebetblackjack" | "roulette"
+type Game = "home" | "uth" | "blackjack" | "freebetblackjack" | "roulette" | "baccarat"
 
 const DEFAULT_BANKROLL = 1000
 const STORAGE_BANKROLL_KEY = "casino-bankroll"
@@ -21,7 +22,14 @@ function readStoredNumber(key: string, fallback: number) {
 function readStoredGame(): Game {
     if (typeof window === "undefined") return "home"
     const raw = window.localStorage.getItem(STORAGE_GAME_KEY)
-    return raw === "uth" || raw === "blackjack" || raw === "freebetblackjack" || raw === "roulette" || raw === "home" ? raw : "home"
+    return raw === "uth" ||
+        raw === "blackjack" ||
+        raw === "freebetblackjack" ||
+        raw === "roulette" ||
+        raw === "baccarat" ||
+        raw === "home"
+        ? raw
+        : "home"
 }
 
 function formatMoney(value: number) {
@@ -145,6 +153,10 @@ export default function Casino() {
             return <Roulette bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "baccarat") {
+            return <BaccaratTable bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         return (
             <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#151d33,_#0a1020_42%,_#05070d_78%)] text-white">
                 <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col px-4 pb-8 pt-6">
@@ -203,8 +215,19 @@ export default function Casino() {
                                             bankroll={bankrollDisplay}
                                         />
                                     </div>
+
+                                    <div className="min-w-[280px] flex-1">
+                                        <GameCard
+                                            title="Baccarat"
+                                            subtitle="No commission baccarat with Player, Banker, Tie, plus Panda 8 and Dragon 7 side bets on a red felt table."
+                                            accent="bg-gradient-to-r from-red-400 via-rose-300 to-pink-200"
+                                            onClick={() => setGame("baccarat")}
+                                            bankroll={bankrollDisplay}
+                                        />
+                                    </div>
                                 </div>
                             </div>
+
                             <div className="relative flex items-center justify-center overflow-hidden border-t border-white/10 bg-[radial-gradient(circle_at_center,_rgba(168,85,247,0.22),_rgba(15,23,42,0.2)_45%,_rgba(0,0,0,0.1)_78%)] p-8 lg:border-l lg:border-t-0">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(251,191,36,0.08),_transparent_28%),radial-gradient(circle_at_80%_70%,_rgba(16,185,129,0.08),_transparent_24%)]" />
                                 <img
@@ -213,9 +236,7 @@ export default function Casino() {
                                     className="relative max-h-[440px] w-full max-w-[400px] object-contain opacity-90 drop-shadow-[0_20px_60px_rgba(168,85,247,0.3)]"
                                 />
                             </div>
-
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -232,6 +253,7 @@ export default function Casino() {
                         <NavButton active={game === "blackjack"} onClick={() => setGame("blackjack")}>Blackjack</NavButton>
                         <NavButton active={game === "freebetblackjack"} onClick={() => setGame("freebetblackjack")}>Free Bet Blackjack</NavButton>
                         <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
+                        <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
