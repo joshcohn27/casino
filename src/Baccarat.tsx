@@ -48,7 +48,7 @@ const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.82;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 const SHUFFLE_DELAY_MS = 1800;
-const CARD_REVEAL_DELAY_MS = 1400;
+const CARD_REVEAL_DELAY_MS = 1100;
 
 const PLAYER_BET_STORAGE_KEY = "casino-baccarat-player-bet";
 const BANKER_BET_STORAGE_KEY = "casino-baccarat-banker-bet";

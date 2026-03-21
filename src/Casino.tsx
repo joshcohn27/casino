@@ -4,9 +4,17 @@ import Blackjack from "./Blackjack"
 import FreeBetBlackjack from "./FreeBetBlackjack"
 import Roulette from "./Roulette"
 import BaccaratTable from "./Baccarat"
+import VideoPoker from "./VideoPoker"
 import heroImage from "./assets/hero.png"
 
-type Game = "home" | "uth" | "blackjack" | "freebetblackjack" | "roulette" | "baccarat"
+type Game =
+    | "home"
+    | "uth"
+    | "blackjack"
+    | "freebetblackjack"
+    | "roulette"
+    | "baccarat"
+    | "videopoker"
 
 const DEFAULT_BANKROLL = 1000
 const STORAGE_BANKROLL_KEY = "casino-bankroll"
@@ -27,6 +35,7 @@ function readStoredGame(): Game {
         raw === "freebetblackjack" ||
         raw === "roulette" ||
         raw === "baccarat" ||
+        raw === "videopoker" ||
         raw === "home"
         ? raw
         : "home"
@@ -157,6 +166,10 @@ export default function Casino() {
             return <BaccaratTable bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "videopoker") {
+            return <VideoPoker bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         return (
             <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#151d33,_#0a1020_42%,_#05070d_78%)] text-white">
                 <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col px-4 pb-8 pt-6">
@@ -225,6 +238,16 @@ export default function Casino() {
                                             bankroll={bankrollDisplay}
                                         />
                                     </div>
+
+                                    <div className="min-w-[280px] flex-1">
+                                        <GameCard
+                                            title="Jacks or Better"
+                                            subtitle="Classic video poker with hold-and-draw gameplay, retro machine styling, and a full payout table."
+                                            accent="bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300"
+                                            onClick={() => setGame("videopoker")}
+                                            bankroll={bankrollDisplay}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -254,6 +277,7 @@ export default function Casino() {
                         <NavButton active={game === "freebetblackjack"} onClick={() => setGame("freebetblackjack")}>Free Bet Blackjack</NavButton>
                         <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
                         <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
+                        <NavButton active={game === "videopoker"} onClick={() => setGame("videopoker")}>Jacks or Better</NavButton>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
