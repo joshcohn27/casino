@@ -1045,7 +1045,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
 
     const [ante, setAnte] = useState(25);
-    const [blind, setBlind] = useState(25);
+    const blind = ante;
     const [trips, setTrips] = useState(10);
     const [sixCardBonus, setSixCardBonus] = useState(5);
     const [play, setPlay] = useState(0);
@@ -1269,7 +1269,6 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         [hiddenSix, nextDeck] = draw(nextDeck, 4);
 
         setAnte(normalizedAnte);
-        setBlind(normalizedBlind);
         setTrips(normalizedTrips);
         setSixCardBonus(normalizedSix);
         setPlay(0);
