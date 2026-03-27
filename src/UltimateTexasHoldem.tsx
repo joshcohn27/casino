@@ -1110,7 +1110,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         if (resolvedHand.compare === 0) return "Push";
         return "Lose";
     }, [resolvedHand, payout]);
-
+ 
     const playResultText = useMemo(() => {
         if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet";
         if (resolvedHand.folded) return "Lose";
