@@ -5,6 +5,7 @@ import FreeBetBlackjack from "./FreeBetBlackjack"
 import Roulette from "./Roulette"
 import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
+import Feedback from "./Feedback"
 import heroImage from "./assets/hero.png"
 
 type Game =
@@ -15,6 +16,7 @@ type Game =
     | "roulette"
     | "baccarat"
     | "videopoker"
+    | "feedback"
 
 const DEFAULT_BANKROLL = 1000
 const STORAGE_BANKROLL_KEY = "casino-bankroll"
@@ -36,6 +38,7 @@ function readStoredGame(): Game {
         raw === "roulette" ||
         raw === "baccarat" ||
         raw === "videopoker" ||
+        raw === "feedback" ||
         raw === "home"
         ? raw
         : "home"
@@ -77,12 +80,14 @@ function GameCard({
     accent,
     onClick,
     bankroll,
+    label = "Table Game",
 }: {
     title: string
     subtitle: string
     accent: string
     onClick: () => void
     bankroll: string
+    label?: string
 }) {
     return (
         <button
@@ -94,7 +99,7 @@ function GameCard({
             <div className="relative flex h-full flex-col justify-between gap-8">
                 <div>
                     <div className="mb-3 inline-flex rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-100/90">
-                        Table Game
+                        {label}
                     </div>
 
                     <div className="text-3xl font-extrabold tracking-[0.02em] text-white">{title}</div>
@@ -108,7 +113,7 @@ function GameCard({
                     </div>
 
                     <div className="rounded-full border border-amber-200/20 bg-amber-300/12 px-4 py-2 text-sm font-bold text-amber-100 transition group-hover:bg-amber-300/20">
-                        Enter Table
+                        Enter
                     </div>
                 </div>
             </div>
@@ -168,6 +173,10 @@ export default function Casino() {
 
         if (game === "videopoker") {
             return <VideoPoker bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
+        if (game === "feedback") {
+            return <Feedback onBack={() => setGame("home")} />
         }
 
         return (
@@ -248,8 +257,36 @@ export default function Casino() {
                                             bankroll={bankrollDisplay}
                                         />
                                     </div>
+
+                                </div>
+                                <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-5 md:p-6">
+                                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200">
+                                                Support
+                                            </div>
+
+                                            <div className="mt-1 text-xl font-extrabold text-white">
+                                                Help improve the casino
+                                            </div>
+
+                                            <div className="mt-2 max-w-[48ch] text-sm leading-6 text-white/70">
+                                                Found a bug, want a new game, or think something feels off?
+                                                Send feedback directly.
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setGame("feedback")}
+                                            className="rounded-full border border-amber-200 bg-amber-400 px-5 py-2.5 text-sm font-bold text-black shadow-lg transition hover:scale-[1.02]"
+                                        >
+                                            Give Feedback
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+
+
 
                             <div className="relative flex items-center justify-center overflow-hidden border-t border-white/10 bg-[radial-gradient(circle_at_center,_rgba(168,85,247,0.22),_rgba(15,23,42,0.2)_45%,_rgba(0,0,0,0.1)_78%)] p-8 lg:border-l lg:border-t-0">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(251,191,36,0.08),_transparent_28%),radial-gradient(circle_at_80%_70%,_rgba(16,185,129,0.08),_transparent_24%)]" />
@@ -278,6 +315,7 @@ export default function Casino() {
                         <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
                         <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
                         <NavButton active={game === "videopoker"} onClick={() => setGame("videopoker")}>Jacks or Better</NavButton>
+                        <NavButton active={game === "feedback"} onClick={() => setGame("feedback")}>Feedback</NavButton>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
