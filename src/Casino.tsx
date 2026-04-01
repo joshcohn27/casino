@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import UltimateTexasHoldem from "./UltimateTexasHoldem"
 import Blackjack from "./Blackjack"
 import FreeBetBlackjack from "./FreeBetBlackjack"
+import DoubleDownMadness from "./DoubleDownMadness"
 import Roulette from "./Roulette"
 import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
@@ -14,6 +15,7 @@ type Game =
     | "uth"
     | "blackjack"
     | "freebetblackjack"
+    | "doubledownmadness"
     | "roulette"
     | "baccarat"
     | "videopoker"
@@ -37,6 +39,7 @@ function readStoredGame(): Game {
     return raw === "uth" ||
         raw === "blackjack" ||
         raw === "freebetblackjack" ||
+        raw === "doubledownmadness" ||
         raw === "roulette" ||
         raw === "baccarat" ||
         raw === "videopoker" ||
@@ -70,6 +73,60 @@ function NavButton({
             className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
                 ? "border-amber-200 bg-amber-400 text-black shadow-lg"
                 : "border-white/15 bg-white/8 text-white hover:bg-white/14"
+                }`}
+        >
+            {children}
+        </button>
+    )
+}
+
+function NavDropdown({
+    label,
+    active,
+    children,
+}: {
+    label: string
+    active?: boolean
+    children: React.ReactNode
+}) {
+    return (
+        <div className="group relative">
+            <button
+                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
+                    ? "border-amber-200 bg-amber-400 text-black shadow-lg"
+                    : "border-white/15 bg-white/8 text-white hover:bg-white/14"
+                    }`}
+            >
+                <span className="flex items-center gap-2">
+                    {label}
+                    <span className="text-[10px]">▼</span>
+                </span>
+            </button>
+
+            <div className="invisible absolute left-0 top-full z-50 mt-2 min-w-[240px] translate-y-1 rounded-2xl border border-white/10 bg-zinc-950/95 p-2 opacity-0 shadow-2xl backdrop-blur transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                <div className="flex flex-col gap-1">
+                    {children}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function DropdownItem({
+    active,
+    onClick,
+    children,
+}: {
+    active: boolean
+    onClick: () => void
+    children: React.ReactNode
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={`rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${active
+                ? "bg-amber-400 text-black"
+                : "text-white hover:bg-white/10"
                 }`}
         >
             {children}
@@ -166,6 +223,10 @@ export default function Casino() {
             return <FreeBetBlackjack bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "doubledownmadness") {
+            return <DoubleDownMadness bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         if (game === "roulette") {
             return <Roulette bankroll={bankroll} setBankroll={setBankroll} />
         }
@@ -231,6 +292,16 @@ export default function Casino() {
                                             subtitle="Free doubles on hard 9, 10, and 11, free splits through 9s, Push 22, and Pot of Gold side bets."
                                             accent="bg-gradient-to-r from-yellow-300 via-amber-300 to-lime-300"
                                             onClick={() => setGame("freebetblackjack")}
+                                            bankroll={bankrollDisplay}
+                                        />
+                                    </div>
+
+                                    <div className="min-w-[280px] flex-1">
+                                        <GameCard
+                                            title="Double Down Madness"
+                                            subtitle="One-card blackjack with aggressive re-doubling, insurance, Push 22, configurable blackjack pay, and a black-felt layout."
+                                            accent="bg-gradient-to-r from-zinc-200 via-stone-300 to-amber-200"
+                                            onClick={() => setGame("doubledownmadness")}
                                             bankroll={bankrollDisplay}
                                         />
                                     </div>
@@ -318,20 +389,59 @@ export default function Casino() {
         )
     }
 
+    const blackjackActive =
+        game === "blackjack" ||
+        game === "freebetblackjack" ||
+        game === "doubledownmadness"
+
+    const pokerActive =
+        game === "uth" ||
+        game === "videopoker" ||
+        game === "paigow"
+
     return (
         <div className="min-h-screen bg-black text-white">
             <div className="sticky top-0 z-50 border-b border-amber-300/15 bg-black/70 px-4 py-3 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                         <NavButton active={game === "home"} onClick={() => setGame("home")}>Home</NavButton>
-                        <NavButton active={game === "uth"} onClick={() => setGame("uth")}>Ultimate Texas Hold'em</NavButton>
-                        <NavButton active={game === "blackjack"} onClick={() => setGame("blackjack")}>Blackjack</NavButton>
-                        <NavButton active={game === "freebetblackjack"} onClick={() => setGame("freebetblackjack")}>Free Bet Blackjack</NavButton>
+
+                        <NavDropdown label="Blackjack" active={blackjackActive}>
+                            <DropdownItem active={game === "blackjack"} onClick={() => setGame("blackjack")}>
+                                Classic Blackjack
+                            </DropdownItem>
+                            <DropdownItem active={game === "freebetblackjack"} onClick={() => setGame("freebetblackjack")}>
+                                Free Bet Blackjack
+                            </DropdownItem>
+                            <DropdownItem active={game === "doubledownmadness"} onClick={() => setGame("doubledownmadness")}>
+                                Double Down Madness
+                            </DropdownItem>
+                        </NavDropdown>
+
+                        <NavDropdown label="Poker Games" active={pokerActive}>
+                            <DropdownItem active={game === "uth"} onClick={() => setGame("uth")}>
+                                Ultimate Texas Hold'em
+                            </DropdownItem>
+                            <DropdownItem active={game === "videopoker"} onClick={() => setGame("videopoker")}>
+                                Jacks or Better
+                            </DropdownItem>
+                            <DropdownItem active={game === "paigow"} onClick={() => setGame("paigow")}>
+                                Pai Gow Poker
+                            </DropdownItem>
+                        </NavDropdown>
+
                         <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
                         <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
-                        <NavButton active={game === "videopoker"} onClick={() => setGame("videopoker")}>Jacks or Better</NavButton>
-                        <NavButton active={game === "paigow"} onClick={() => setGame("paigow")}>Pai Gow Poker</NavButton>
-                        <NavButton active={game === "feedback"} onClick={() => setGame("feedback")}>Feedback</NavButton>
+
+                        <button
+                            onClick={() => setGame("feedback")}
+                            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${game === "feedback"
+                                ? "border-amber-200 bg-amber-400 text-black shadow-lg"
+                                : "border-amber-200/40 bg-amber-300/12 text-amber-100 hover:bg-amber-300/20"
+                                }`}
+                        >
+                            Give Feedback
+                        </button>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
