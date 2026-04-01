@@ -5,6 +5,7 @@ import FreeBetBlackjack from "./FreeBetBlackjack"
 import Roulette from "./Roulette"
 import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
+import PaiGowPoker from "./PaiGow"
 import Feedback from "./Feedback"
 import heroImage from "./assets/hero.png"
 
@@ -16,6 +17,7 @@ type Game =
     | "roulette"
     | "baccarat"
     | "videopoker"
+    | "paigow"
     | "feedback"
 
 const DEFAULT_BANKROLL = 1000
@@ -38,6 +40,7 @@ function readStoredGame(): Game {
         raw === "roulette" ||
         raw === "baccarat" ||
         raw === "videopoker" ||
+        raw === "paigow" ||
         raw === "feedback" ||
         raw === "home"
         ? raw
@@ -175,6 +178,10 @@ export default function Casino() {
             return <VideoPoker bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "paigow") {
+            return <PaiGowPoker bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         if (game === "feedback") {
             return <Feedback onBack={() => setGame("home")} />
         }
@@ -258,7 +265,17 @@ export default function Casino() {
                                         />
                                     </div>
 
+                                    <div className="min-w-[280px] flex-1">
+                                        <GameCard
+                                            title="Pai Gow Poker"
+                                            subtitle="Split seven cards into a back hand and front hand, with Fortune and Ace High side bets on a UTH-style table."
+                                            accent="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200"
+                                            onClick={() => setGame("paigow")}
+                                            bankroll={bankrollDisplay}
+                                        />
+                                    </div>
                                 </div>
+
                                 <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-5 md:p-6">
                                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                         <div>
@@ -285,8 +302,6 @@ export default function Casino() {
                                     </div>
                                 </div>
                             </div>
-
-
 
                             <div className="relative flex items-center justify-center overflow-hidden border-t border-white/10 bg-[radial-gradient(circle_at_center,_rgba(168,85,247,0.22),_rgba(15,23,42,0.2)_45%,_rgba(0,0,0,0.1)_78%)] p-8 lg:border-l lg:border-t-0">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(251,191,36,0.08),_transparent_28%),radial-gradient(circle_at_80%_70%,_rgba(16,185,129,0.08),_transparent_24%)]" />
@@ -315,6 +330,7 @@ export default function Casino() {
                         <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
                         <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
                         <NavButton active={game === "videopoker"} onClick={() => setGame("videopoker")}>Jacks or Better</NavButton>
+                        <NavButton active={game === "paigow"} onClick={() => setGame("paigow")}>Pai Gow Poker</NavButton>
                         <NavButton active={game === "feedback"} onClick={() => setGame("feedback")}>Feedback</NavButton>
                     </div>
 
