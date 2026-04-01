@@ -89,12 +89,15 @@ function NavDropdown({
     active?: boolean
     children: React.ReactNode
 }) {
+    const [open, setOpen] = useState(false)
+
     return (
         <div className="group relative">
             <button
+                onClick={() => setOpen((prev) => !prev)}
                 className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                    ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                    : "border-white/15 bg-white/8 text-white hover:bg-white/14"
+                        ? "border-amber-200 bg-amber-400 text-black shadow-lg"
+                        : "border-white/15 bg-white/8 text-white hover:bg-white/14"
                     }`}
             >
                 <span className="flex items-center gap-2">
@@ -103,7 +106,14 @@ function NavDropdown({
                 </span>
             </button>
 
-            <div className="invisible absolute left-0 top-full z-50 mt-2 min-w-[240px] translate-y-1 rounded-2xl border border-white/10 bg-zinc-950/95 p-2 opacity-0 shadow-2xl backdrop-blur transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+            <div
+                className={`absolute left-0 top-full z-50 mt-2 min-w-[240px] rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur transition-all
+                ${open
+                        ? "visible translate-y-0 opacity-100"
+                        : "invisible translate-y-1 opacity-0"
+                    }
+                group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}
+            >
                 <div className="flex flex-col gap-1">
                     {children}
                 </div>
