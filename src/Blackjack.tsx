@@ -428,6 +428,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your bet and press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
+    const [roundReturned, setRoundReturned] = useState(0);
+    const [roundNet, setRoundNet] = useState(0);
 
     useEffect(() => {
         window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 5) * 5)));
@@ -442,6 +444,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     }, [dealer, stage]);
 
     const activeHand = hands[active] ?? [];
+    const totalWagered = bets.reduce((sum, wager) => sum + wager, 0);
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) {
@@ -460,8 +463,14 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         return freshShoe;
     };
 
-    const finishRoundWithoutDealer = async (finalHands: Card[][]) => {
+    const finishRoundWithoutDealer = async (finalHands: Card[][], wagersInPlay: number[] = bets) => {
         const allBusted = finalHands.length > 0 && finalHands.every((hand) => total(hand) > 21);
+        const wagered = wagersInPlay.reduce((sum, wager) => sum + wager, 0);
+        const returned = 0;
+        const net = returned - wagered;
+
+        setRoundReturned(returned);
+        setRoundNet(net);
 
         if (allBusted) {
             setMessage("All hands bust. Dealer reveals hole card.");
@@ -485,7 +494,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     ) => {
         const liveHands = handsInPlay.filter((hand) => total(hand) <= 21);
         if (liveHands.length === 0) {
-            await finishRoundWithoutDealer(handsInPlay);
+            await finishRoundWithoutDealer(handsInPlay, wagersInPlay);
             return;
         }
 
@@ -524,23 +533,28 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         const dealerTotal = total(nextDealer);
         const dealerBusted = dealerTotal > 21;
 
-        let winnings = 0;
+        let returned = 0;
 
         handsInPlay.forEach((hand, index) => {
             const playerTotal = total(hand);
             const wager = wagersInPlay[index];
 
             if (playerTotal > 21) return;
-            if (dealerBusted || playerTotal > dealerTotal) winnings += wager * 2;
-            else if (playerTotal === dealerTotal) winnings += wager;
+            if (dealerBusted || playerTotal > dealerTotal) returned += wager * 2;
+            else if (playerTotal === dealerTotal) returned += wager;
         });
 
-        setBankroll((b) => b + winnings);
+        const wagered = wagersInPlay.reduce((sum, wager) => sum + wager, 0);
+        const net = returned - wagered;
+
+        setRoundReturned(returned);
+        setRoundNet(net);
+        setBankroll((b) => b + returned);
         setStage("done");
         setMessage(dealerBusted ? "Dealer busts." : "Round complete.");
     };
 
-        const ensureHandHasSecondCard = async (
+    const ensureHandHasSecondCard = async (
         handsInPlay: Card[][],
         handIndex: number,
         shoeInPlay: Card[]
@@ -602,7 +616,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             return;
         }
 
-        await finishRoundWithoutDealer(nextHands);
+        await finishRoundWithoutDealer(nextHands, nextBets);
     };
 
     const split = async () => {
@@ -664,6 +678,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             nextDeck = await performShuffleIfNeeded([]);
         }
 
+        setRoundReturned(0);
+        setRoundNet(0);
         setBankroll((b) => b - wager);
 
         const playerHand = [nextDeck[0], nextDeck[1]];
@@ -684,9 +700,14 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             setDealerRevealedCount(2);
 
             if (playerBJ) {
-                setBankroll((b) => b + wager);
+                const returned = wager;
+                setRoundReturned(returned);
+                setRoundNet(0);
+                setBankroll((b) => b + returned);
                 setMessage("Both player and dealer have blackjack. Push.");
             } else {
+                setRoundReturned(0);
+                setRoundNet(-wager);
                 setMessage("Dealer blackjack. Hand over.");
             }
 
@@ -695,8 +716,13 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         }
 
         if (playerBJ) {
+            const returned = wager * 2.5;
+            const net = returned - wager;
+
             setDealerRevealedCount(2);
-            setBankroll((b) => b + wager * 2.5);
+            setRoundReturned(returned);
+            setRoundNet(net);
+            setBankroll((b) => b + returned);
             setStage("done");
             setMessage("Blackjack pays 3 to 2.");
             return;
@@ -768,6 +794,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         setBets([]);
         setActive(0);
         setDealerRevealedCount(1);
+        setRoundReturned(0);
+        setRoundNet(0);
         setStage("betting");
         setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle the shoe." : "Set your bet and press Deal.");
     };
@@ -912,8 +940,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                                                     <div
                                                         key={index}
                                                         className={`rounded-[1.3rem] border p-3 shadow-xl backdrop-blur sm:p-4 ${index === active && stage === "player"
-                                                                ? "border-amber-200/40 bg-amber-300/10 ring-2 ring-amber-200/20"
-                                                                : "border-white/10 bg-black/18"
+                                                            ? "border-amber-200/40 bg-amber-300/10 ring-2 ring-amber-200/20"
+                                                            : "border-white/10 bg-black/18"
                                                             }`}
                                                     >
                                                         <CardLane
@@ -922,8 +950,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                                                             large
                                                             result={
                                                                 handTotal !== null
-                                                                    ? `${handTotal}${isSoft(hand) ? " soft" : ""}${finalResult ? ` • ${finalResult}` : ""
-                                                                    }`
+                                                                    ? `${handTotal}${isSoft(hand) ? " soft" : ""}${finalResult ? ` • ${finalResult}` : ""}`
                                                                     : "Waiting"
                                                             }
                                                         />
@@ -1010,12 +1037,49 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                                         </div>
                                     </div>
 
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span>Total wagered</span>
+                                                <span className="font-extrabold text-white">
+                                                    {totalWagered > 0 ? formatMoney(totalWagered) : "—"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span>Returned</span>
+                                                <span className="font-extrabold text-white">
+                                                    {stage === "done" ? formatMoney(roundReturned) : "—"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs sm:text-sm">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-emerald-50/90">Net winnings</span>
+                                            <span
+                                                className={`font-extrabold ${stage !== "done"
+                                                        ? "text-white"
+                                                        : roundNet > 0
+                                                            ? "text-emerald-300"
+                                                            : roundNet < 0
+                                                                ? "text-red-300"
+                                                                : "text-white"
+                                                    }`}
+                                            >
+                                                {stage === "done" ? formatMoney(roundNet) : "—"}
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-amber-100/90 sm:text-sm">
                                         {stage === "betting"
                                             ? "Place your bet to begin."
                                             : stage === "player"
-                                                ? `Playing hand ${hands.length > 0 ? active + 1 : 0}${hands.length > 0 ? ` of ${hands.length}` : ""
-                                                }.`
+                                                ? `Playing hand ${hands.length > 0 ? active + 1 : 0}${hands.length > 0 ? ` of ${hands.length}` : ""}.`
                                                 : stage === "dealer"
                                                     ? "Dealer is resolving the round."
                                                     : "Round finished."}
@@ -1051,8 +1115,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                                             <div
                                                 key={index}
                                                 className={`rounded-xl border px-3 py-3 ${index === active && stage === "player"
-                                                        ? "border-amber-200/30 bg-amber-300/10"
-                                                        : "border-white/10 bg-black/25"
+                                                    ? "border-amber-200/30 bg-amber-300/10"
+                                                    : "border-white/10 bg-black/25"
                                                     }`}
                                             >
                                                 <div className="font-semibold">Hand {index + 1}</div>
