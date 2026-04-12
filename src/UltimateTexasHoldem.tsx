@@ -1110,7 +1110,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         if (resolvedHand.compare === 0) return "Push";
         return "Lose";
     }, [resolvedHand, payout]);
- 
+
     const playResultText = useMemo(() => {
         if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet";
         if (resolvedHand.folded) return "Lose";
@@ -1361,15 +1361,37 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         setLastDecision("bet");
 
         if (stage === "preflop") {
+            setIsRevealing(true);
+
             let nextDeck = [...round.deck];
             const [board, afterBoard] = draw(nextDeck, 5);
             nextDeck = afterBoard;
 
-            const nextRound = { ...round, deck: nextDeck, board };
-            setRound(nextRound);
+            setRound((r) => ({ ...r, deck: nextDeck, board: [] }));
+            setMessage(`Play bet placed for ${multiplier}x. Revealing board...`);
+
+            for (let i = 0; i < 3; i++) {
+                await wait(250);
+                setRound((r) => ({ ...r, board: [...r.board, board[i]] }));
+            }
+
+            await wait(1000);
+
+            for (let i = 3; i < 5; i++) {
+                await wait(250);
+                setRound((r) => ({ ...r, board: [...r.board, board[i]] }));
+            }
+
+            const nextRound = {
+                ...round,
+                deck: nextDeck,
+                board,
+            };
+
             setStage("showdown");
-            setMessage(`Play bet placed for ${multiplier}x. Running out all five board cards.`);
+            setMessage(`Play bet placed for ${multiplier}x. Settling hand.`);
             settleRound(stake, false, nextRound);
+            setIsRevealing(false);
             return;
         }
 
