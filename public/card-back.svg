@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140">
+  <defs>
+    <!-- Repeating diamond lattice -->
+    <pattern id="dp" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M5 0 L10 5 L5 10 L0 5 Z" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="0.55"/>
+    </pattern>
+
+    <!-- Diagonal shine -->
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.09"/>
+      <stop offset="55%"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.06"/>
+    </linearGradient>
+
+    <!-- Clip card shape -->
+    <clipPath id="card">
+      <rect width="100" height="140" rx="7"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base navy -->
+  <rect width="100" height="140" rx="7" fill="#1b2f6e"/>
+
+  <!-- Diamond hatch fills the whole card -->
+  <rect width="100" height="140" fill="url(#dp)" clip-path="url(#card)"/>
+
+  <!-- Diagonal sheen -->
+  <rect width="100" height="140" rx="7" fill="url(#shine)"/>
+
+  <!-- Outer gold border -->
+  <rect x="3.5" y="3.5" width="93" height="133" rx="5" fill="none" stroke="#c9a23a" stroke-width="1.6"/>
+
+  <!-- Inner gold border -->
+  <rect x="7.5" y="7.5" width="85" height="125" rx="2.5" fill="none" stroke="#c9a23a" stroke-width="0.65"/>
+</svg>
