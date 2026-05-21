@@ -51,7 +51,7 @@ const SPECIAL_ZERO_BETS = [
 ];
 
 const WHEEL_SLICE = 360 / AMERICAN_WHEEL_ORDER.length;
-const BALL_TRACK_RADIUS = 128;
+const BALL_TRACK_RADIUS = 99;
 const BALL_VISUAL_OFFSET_DEG = 2.5;
 
 // ─── Helpers (game logic — untouched) ────────────────────────────────────────
