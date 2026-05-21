@@ -77,6 +77,10 @@ export interface ActionBarProps {
 
     /** Locks all controls */
     disabled?: boolean;
+
+    /** Optional label overrides */
+    dealLabel?: string;
+    doubleLabel?: string;
 }
 
 export default function ActionBar({
@@ -89,6 +93,8 @@ export default function ActionBar({
     canClear,
     canDoubleAndDeal,
     disabled = false,
+    dealLabel = 'Deal',
+    doubleLabel = 'Double & Deal',
 }: ActionBarProps) {
     return (
         <div
@@ -116,7 +122,7 @@ export default function ActionBar({
                     {canDeal && (
                         <SlideIn id="deal">
                             <ActionBtn variant="deal" onClick={onDeal} disabled={disabled}>
-                                Deal
+                                {dealLabel}
                             </ActionBtn>
                         </SlideIn>
                     )}
@@ -131,7 +137,7 @@ export default function ActionBar({
                                     transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                                 />
                                 <ActionBtn variant="double" onClick={onDoubleAndDeal} disabled={disabled}>
-                                    Double &amp; Deal
+                                    {doubleLabel}
                                 </ActionBtn>
                             </div>
                         </SlideIn>

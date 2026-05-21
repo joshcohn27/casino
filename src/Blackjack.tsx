@@ -1,38 +1,47 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import TableShell from "./shared/TableShell";
+import ActionBar from "./shared/ActionBar";
+import PlayingCard from "./shared/Card";
+import type { Card as SharedCard } from "./shared/cards";
+import { type ChipDenomination } from "./shared/money";
+
+// ─── Types (unchanged) ───────────────────────────────────────────────────────
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
-
-type Card = {
-    rank: Rank;
-    suit: Suit;
-    value: number;
-    id: string;
-};
-
-type Props = {
-    bankroll: number;
-    setBankroll: React.Dispatch<React.SetStateAction<number>>;
-};
-
+type Card = { rank: Rank; suit: Suit; value: number; id: string };
+type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateAction<number>> };
 type Stage = "betting" | "player" | "dealer" | "done";
+
+// ─── Constants (unchanged) ───────────────────────────────────────────────────
 
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
 const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-
 const MIN_BET = 5;
 const MAX_HANDS = 4;
 const BET_STORAGE_KEY = "casino-blackjack-bet";
-
 const SHOE_DECKS = 6;
 const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
-const CARD_BACK_URL =
-    "https://png.pngtree.com/png-clipart/20240206/original/pngtree-single-playing-cards-back-on-a-white-background-with-shadow-and-png-image_14247732.png";
+const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
+
+// Visual config for each chip denomination — mirrors ChipTray colours
+const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
+    1:    { bg: '#f1f5f9', border: '#94a3b8', text: '#1e293b', label: '$1'    },
+    2.5:  { bg: '#e2e8f0', border: '#64748b', text: '#334155', label: '$2.50' },
+    5:    { bg: '#dc2626', border: '#7f1d1d', text: '#fff',    label: '$5'    },
+    25:   { bg: '#16a34a', border: '#14532d', text: '#fff',    label: '$25'   },
+    100:  { bg: '#1e293b', border: '#0f172a', text: '#e2e8f0', label: '$100'  },
+    500:  { bg: '#7c3aed', border: '#4c1d95', text: '#fff',    label: '$500'  },
+    1000: { bg: '#b45309', border: '#78350f', text: '#fef3c7', label: '$1K'   },
+    5000: { bg: '#be185d', border: '#831843', text: '#fce7f3', label: '$5K'   },
+};
+
+// ─── Utilities (unchanged) ───────────────────────────────────────────────────
 
 function shuffle<T>(arr: T[]) {
     const a = [...arr];
@@ -45,65 +54,46 @@ function shuffle<T>(arr: T[]) {
 
 function createShoe(): Card[] {
     const shoe: Card[] = [];
-
-    for (let deckIndex = 0; deckIndex < SHOE_DECKS; deckIndex++) {
+    for (let d = 0; d < SHOE_DECKS; d++) {
         for (const suit of SUITS) {
             for (const rank of RANKS) {
                 let value = Number(rank);
                 if (["J", "Q", "K"].includes(rank)) value = 10;
                 if (rank === "A") value = 11;
-
-                shoe.push({
-                    rank,
-                    suit,
-                    value,
-                    id: `${deckIndex}-${rank}${suit}-${Math.random().toString(36).slice(2, 9)}`,
-                });
+                shoe.push({ rank, suit, value, id: `${d}-${rank}${suit}-${Math.random().toString(36).slice(2, 9)}` });
             }
         }
     }
-
     return shuffle(shoe);
 }
 
 function total(cards: Card[]) {
-    let sum = cards.reduce((acc, card) => acc + card.value, 0);
-    let aces = cards.filter((card) => card.rank === "A").length;
-
-    while (sum > 21 && aces > 0) {
-        sum -= 10;
-        aces--;
-    }
-
+    let sum = cards.reduce((acc, c) => acc + c.value, 0);
+    let aces = cards.filter((c) => c.rank === "A").length;
+    while (sum > 21 && aces > 0) { sum -= 10; aces--; }
     return sum;
 }
 
 function isSoft(cards: Card[]) {
-    let sum = cards.reduce((acc, card) => acc + card.value, 0);
-    let aces = cards.filter((card) => card.rank === "A").length;
-
-    while (sum > 21 && aces > 0) {
-        sum -= 10;
-        aces--;
-    }
-
+    let sum = cards.reduce((acc, c) => acc + c.value, 0);
+    let aces = cards.filter((c) => c.rank === "A").length;
+    while (sum > 21 && aces > 0) { sum -= 10; aces--; }
     if (sum === 21) return false;
     return aces > 0;
 }
 
-function formatMoney(value: number) {
+function fmt(n: number) {
     return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    }).format(value);
+        style: "currency", currency: "USD",
+        maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    }).format(n);
 }
 
-function resultLabel(playerTotal: number, dealerTotal: number, busted: boolean, dealerBusted: boolean) {
+function resultLabel(pt: number, dt: number, busted: boolean, dealerBusted: boolean) {
     if (busted) return "Bust";
-    if (dealerBusted) return "Winner";
-    if (playerTotal > dealerTotal) return "Winner";
-    if (playerTotal < dealerTotal) return "Lose";
+    if (dealerBusted) return "Win";
+    if (pt > dt) return "Win";
+    if (pt < dt) return "Lose";
     return "Push";
 }
 
@@ -112,377 +102,322 @@ function shouldShuffle(shoe: Card[]) {
 }
 
 function wait(ms: number) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
+    return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+// ─── Adapter: game Card → shared Card ────────────────────────────────────────
+// Converts the local '10' rank to the shared 'T'. faceUp is explicit because
+// the game's Card type does not carry it.
+
+function toShared(card: Card, faceUp: boolean): SharedCard {
+    return {
+        id:   card.id,
+        suit: card.suit as SharedCard["suit"],
+        rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
+        faceUp,
+    };
+}
+
+// ─── UI sub-components ────────────────────────────────────────────────────────
+
+function Chip({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex rounded-full border border-amber-300/30 bg-black/35 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.22em] text-amber-100 shadow sm:px-3 sm:text-[10px] sm:tracking-[0.24em]">
+        <div className="inline-flex rounded-full border border-amber-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-100">
             {children}
         </div>
     );
 }
 
-function StatPill({
-    label,
-    value,
-    accent = "default",
-}: {
-    label: string;
-    value: React.ReactNode;
-    accent?: "default" | "gold" | "green";
+const BADGE: Record<string, string> = {
+    Win:  "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
+    Push: "bg-amber-500/20  border-amber-400/40  text-amber-200",
+    Bust: "bg-red-500/20    border-red-400/40    text-red-300",
+    Lose: "bg-red-600/20    border-red-500/40    text-red-300",
+};
+
+function Badge({ result }: { result: string }) {
+    return (
+        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${BADGE[result] ?? ""}`}>
+            {result}
+        </span>
+    );
+}
+
+// Always-visible bet / payout strip
+
+function BetBar({ pendingBet, wagered, returned, net, stage }: {
+    pendingBet: number; wagered: number; returned: number; net: number; stage: Stage;
 }) {
-    const accentClasses =
-        accent === "gold"
-            ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
-            : accent === "green"
-                ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-50"
-                : "border-white/10 bg-white/5 text-white";
+    const showResult = stage === "done";
+    const displayBet = wagered > 0 ? wagered : pendingBet;
 
     return (
-        <div className={`rounded-2xl border px-3 py-2.5 shadow-lg sm:px-4 sm:py-3 ${accentClasses}`}>
-            <div className="text-[9px] font-bold uppercase tracking-[0.18em] opacity-80 sm:text-[10px] sm:tracking-[0.22em]">
-                {label}
-            </div>
-            <div className="mt-1 text-sm font-extrabold sm:text-lg">{value}</div>
+        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
+            {[
+                { label: "Bet",      val: displayBet > 0 ? fmt(displayBet) : "—",   color: "text-white"   },
+                { label: "Returned", val: showResult ? fmt(returned) : "—",          color: "text-white"   },
+                {
+                    label: "Net",
+                    val: showResult ? fmt(net) : "—",
+                    color: showResult
+                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
+                        : "text-white",
+                },
+            ].map(({ label, val, color }, i, arr) => (
+                <React.Fragment key={label}>
+                    <div className="text-center">
+                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
+                    </div>
+                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
+                </React.Fragment>
+            ))}
         </div>
     );
 }
 
-function CardFront({
-    card,
-    large = false,
-}: {
-    card?: Card;
-    large?: boolean;
-}) {
-    const isRed = card?.suit === "♥" || card?.suit === "♦";
-    const textColor = isRed ? "text-red-600" : "text-slate-900";
-    const sizeClasses = large
-        ? "h-[72px] w-[50px] rounded-[11px] sm:h-[82px] sm:w-[58px] sm:rounded-[12px] lg:h-[94px] lg:w-[66px] lg:rounded-[14px]"
-        : "h-[62px] w-[44px] rounded-[10px] sm:h-[72px] sm:w-[50px] sm:rounded-[11px] lg:h-[80px] lg:w-[56px] lg:rounded-[12px]";
-    const isAce = card?.rank === "A";
+// Bet circle — casino felt betting spot with stacked chip graphics
 
-    return (
-        <div
-            className={`relative flex items-center justify-center border font-bold shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses} border-slate-300/90 bg-[linear-gradient(180deg,_#ffffff,_#f4f4f5)]`}
-        >
-            {!card ? (
-                <div className="text-xl text-slate-400 sm:text-2xl">?</div>
-            ) : (
-                <>
-                    <div className={`absolute left-[5px] top-[5px] text-left leading-[0.9] sm:left-[6px] sm:top-[6px] lg:left-[7px] lg:top-[6px] ${textColor}`}>
-                        <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">{card.rank}</div>
-                        <div className="mt-[1px] text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                    </div>
+const STACK_GAP = 9; // px each chip rises above the previous one
 
-                    <div
-                        className={`absolute bottom-[5px] right-[5px] rotate-180 text-left leading-[0.9] sm:bottom-[6px] sm:right-[6px] lg:bottom-[6px] lg:right-[7px] ${textColor}`}
-                    >
-                        <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">{card.rank}</div>
-                        <div className="mt-[1px] text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                    </div>
+function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: number }) {
+    // Show at most 3 chips; use absolute index as key so only the new
+    // top chip animates in when the 4th+ chip pushes the oldest off.
+    const visible  = chips.slice(-3);
+    const startIdx = chips.length - visible.length;
 
-                    {isAce && (
-                        <>
-                            <div className={`absolute right-[5px] top-[5px] text-center leading-[0.9] sm:right-[6px] sm:top-[6px] lg:right-[7px] lg:top-[6px] ${textColor}`}>
-                                <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">A</div>
-                                <div className="text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                            </div>
-
-                            <div
-                                className={`absolute bottom-[5px] left-[5px] rotate-180 text-center leading-[0.9] sm:bottom-[6px] sm:left-[6px] lg:bottom-[6px] lg:left-[7px] ${textColor}`}
-                            >
-                                <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">A</div>
-                                <div className="text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                            </div>
-                        </>
-                    )}
-
-                    <div className={`${textColor} ${isAce ? "text-[24px] sm:text-[27px] lg:text-[30px]" : "text-[18px] sm:text-[21px] lg:text-[24px]"}`}>
-                        {card.suit}
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function CardBack({ large = false }: { large?: boolean }) {
-    const sizeClasses = large
-        ? "h-[72px] w-[50px] rounded-[11px] sm:h-[82px] sm:w-[58px] sm:rounded-[12px] lg:h-[94px] lg:w-[66px] lg:rounded-[14px]"
-        : "h-[62px] w-[44px] rounded-[10px] sm:h-[72px] sm:w-[50px] sm:rounded-[11px] lg:h-[80px] lg:w-[56px] lg:rounded-[12px]";
-
-    return (
-        <div
-            className={`relative overflow-hidden border border-white/15 bg-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses}`}
-        >
-            <img
-                src={CARD_BACK_URL}
-                alt="Card back"
-                className="absolute left-1/2 top-1/2 h-[150%] w-[150%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover"
-                draggable={false}
-            />
-        </div>
-    );
-}
-
-function CardFace({
-    card,
-    hidden = false,
-    large = false,
-}: {
-    card?: Card;
-    hidden?: boolean;
-    large?: boolean;
-}) {
     return (
         <motion.div
-            layout
-            initial={{ opacity: 0, y: -18, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            className="[perspective:1000px]"
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.88 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="flex flex-col items-center"
         >
-            <motion.div
-                animate={{ rotateY: hidden ? 0 : 180 }}
-                transition={{ duration: 0.55, ease: "easeInOut" }}
-                style={{ transformStyle: "preserve-3d" }}
-                className="relative"
+            {/* Stack sits above the circle; mb-negative overlaps it slightly */}
+            <div
+                className="relative z-10 flex justify-center"
+                style={{ width: 48, height: 48 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
             >
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        backfaceVisibility: "hidden",
-                        WebkitBackfaceVisibility: "hidden",
-                    }}
-                >
-                    <CardBack large={large} />
-                </div>
+                <AnimatePresence>
+                    {visible.map((denom, i) => {
+                        const cfg = CHIP_COLORS[denom];
+                        return (
+                            <motion.div
+                                key={startIdx + i}
+                                className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center
+                                           justify-center rounded-full text-[10px] font-extrabold"
+                                style={{
+                                    bottom:          i * STACK_GAP,
+                                    zIndex:          i + 1,
+                                    backgroundColor: cfg.bg,
+                                    border:          `3px solid ${cfg.border}`,
+                                    color:           cfg.text,
+                                    boxShadow:       'inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)',
+                                }}
+                                initial={{ opacity: 0, y: -22, scale: 0.72 }}
+                                animate={{ opacity: 1, y: 0,   scale: 1    }}
+                                exit={{    opacity: 0, y: 6,   scale: 0.8  }}
+                                transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+                            >
+                                {cfg.label}
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
 
-                <div
-                    style={{
-                        transform: "rotateY(180deg)",
-                        backfaceVisibility: "hidden",
-                        WebkitBackfaceVisibility: "hidden",
-                    }}
-                >
-                    <CardFront card={card} large={large} />
-                </div>
-            </motion.div>
+            {/* The felt circle — dashed ring, standard casino table style */}
+            <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full
+                            border-2 border-dashed border-white/30 bg-black/20 backdrop-blur-sm">
+                {visible.length === 0 && totalBet === 0 && (
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">Bet</span>
+                )}
+                {/* Show carry-over bet amount when chips were cleared but bet persists */}
+                {visible.length === 0 && totalBet > 0 && (
+                    <span className="text-sm font-extrabold text-amber-100/70">{fmt(totalBet)}</span>
+                )}
+                {/* Show running total when chips are stacked */}
+                {visible.length > 0 && (
+                    <span className="text-sm font-extrabold text-amber-100">{fmt(totalBet)}</span>
+                )}
+            </div>
         </motion.div>
     );
 }
 
-function CardLane({
-    label,
-    cards,
-    large,
-    result,
-    hiddenIndexes = [],
-}: {
-    label: string;
-    cards: Array<Card | undefined>;
-    large?: boolean;
-    result?: string;
-    hiddenIndexes?: number[];
-}) {
-    return (
-        <div className="flex min-w-0 flex-col items-center">
-            <SectionLabel>{label}</SectionLabel>
+// Dealer lane
 
-            <div className="mt-2 flex max-w-full flex-wrap justify-center gap-1.5 sm:mt-3 sm:gap-2.5">
+function DealerLane({ cards, revealedCount, stage }: {
+    cards: Card[]; revealedCount: number; stage: Stage;
+}) {
+    const revealed = stage === "dealer" || stage === "done";
+    const t = cards.length ? total(cards) : null;
+
+    return (
+        <div className="flex flex-col items-center gap-2">
+            <Chip>
+                Dealer{revealed && t !== null ? ` · ${t}${isSoft(cards) ? " soft" : ""}` : ""}
+            </Chip>
+            <div className="flex flex-wrap justify-center gap-2">
                 <AnimatePresence initial={false}>
-                    {cards.map((card, index) => (
+                    {cards.map((card, i) => (
                         <motion.div
-                            key={`${label}-${index}-${card?.id ?? "empty"}`}
-                            layout
-                            initial={{ opacity: 0, y: 16, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.92 }}
-                            transition={{ duration: 0.22, ease: "easeOut" }}
-                            className="shrink-0"
+                            key={card.id}
+                            initial={{ opacity: 0, x: 90, y: -50, rotate: -8, scale: 0.85 }}
+                            animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
+                            transition={{ duration: 0.44, ease: [0.22, 1, 0.36, 1], delay: i * 0.10 }}
                         >
-                            <CardFace card={card} hidden={hiddenIndexes.includes(index) || !card} large={large} />
+                            <PlayingCard card={toShared(card, i < revealedCount)} className={CARD_CLS} />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+// Single player hand box
+
+function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted }: {
+    hand: Card[]; bet: number; index: number; isActive: boolean;
+    stage: Stage; dealerTotal: number; dealerBusted: boolean;
+}) {
+    const t    = total(hand);
+    const bust = t > 21;
+    const result = stage === "done" ? resultLabel(t, dealerTotal, bust, dealerBusted) : null;
+
+    return (
+        <div className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition-all
+            ${isActive
+                ? "border-amber-300/50 bg-amber-300/8 ring-2 ring-amber-300/20"
+                : "border-white/10 bg-black/15"}`}
+        >
+            <div className="flex items-center gap-2">
+                <Chip>Hand {index + 1}</Chip>
+                {result && <Badge result={result} />}
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-1.5">
+                <AnimatePresence initial={false}>
+                    {hand.map((card, i) => (
+                        <motion.div
+                            key={card.id}
+                            initial={{ opacity: 0, x: 90, y: -50, rotate: -8, scale: 0.85 }}
+                            animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
+                            transition={{ duration: 0.40, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+                        >
+                            <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
                         </motion.div>
                     ))}
                 </AnimatePresence>
             </div>
 
-            <div className="mt-2 min-h-[18px] px-2 text-center text-xs font-semibold text-amber-100/95 sm:min-h-[20px] sm:text-sm">
-                {result ?? ""}
+            <div className="text-sm font-bold text-amber-100">
+                {t}{isSoft(hand) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
+            <div className="text-xs text-white/45">Bet {fmt(bet)}</div>
         </div>
     );
 }
 
-function ActionButton({
-    children,
-    onClick,
-    disabled,
-    variant = "default",
-}: {
-    children: React.ReactNode;
-    onClick: () => void | Promise<void>;
-    disabled?: boolean;
-    variant?: "default" | "bet" | "success";
-}) {
-    const base =
-        "min-w-[132px] rounded-2xl border px-4 py-3 text-sm font-extrabold shadow-xl transition active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-45 sm:min-w-[110px] sm:px-5";
-    const styles =
-        variant === "bet"
-            ? "border-amber-200/80 bg-[linear-gradient(180deg,_#fcd34d,_#f59e0b)] text-slate-950 hover:brightness-105"
-            : variant === "success"
-                ? "border-emerald-200/80 bg-[linear-gradient(180deg,_#4ade80,_#16a34a)] text-slate-950 hover:brightness-105"
-                : "border-slate-500/80 bg-[linear-gradient(180deg,_#475569,_#334155)] text-white hover:brightness-110";
+// In-hand action buttons — live between felt content and ActionBar
 
+const BTN_NEUTRAL  = "rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GOLD     = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-5 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GREEN    = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-5 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95";
+
+function InHandActions({ stage, canDouble, canSplit, onHit, onStay, onDouble, onSplit, onNextRound }: {
+    stage: Stage; canDouble: boolean; canSplit: boolean;
+    onHit: () => void; onStay: () => void; onDouble: () => void;
+    onSplit: () => void; onNextRound: () => void;
+}) {
     return (
-        <button onClick={() => void onClick()} disabled={disabled} className={`${base} ${styles}`}>
-            {children}
-        </button>
+        <AnimatePresence mode="wait" initial={false}>
+            {stage === "player" && (
+                <motion.div key="player"
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}
+                    className="flex flex-wrap justify-center gap-2"
+                >
+                    <button className={BTN_NEUTRAL} onClick={onHit}>Hit</button>
+                    <button className={BTN_NEUTRAL} onClick={onStay}>Stand</button>
+                    <button className={BTN_GOLD}    onClick={onDouble} disabled={!canDouble}>Double</button>
+                    <button className={BTN_GOLD}    onClick={onSplit}  disabled={!canSplit}>Split</button>
+                </motion.div>
+            )}
+
+            {stage === "done" && (
+                <motion.div key="done"
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}
+                >
+                    <button className={BTN_GREEN} onClick={onNextRound}>Next Hand</button>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
 
-function DealButton({
-    onClick,
-    disabled,
-}: {
-    onClick: () => void | Promise<void>;
-    disabled?: boolean;
-}) {
-    return (
-        <motion.button
-            onClick={() => void onClick()}
-            disabled={disabled}
-            whileHover={{ scale: disabled ? 1 : 1.03 }}
-            whileTap={{ scale: disabled ? 1 : 0.98 }}
-            className="w-full max-w-[280px] rounded-full border border-amber-200/80 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-8 py-4 text-base font-extrabold tracking-wide text-slate-950 shadow-[0_14px_34px_rgba(0,0,0,0.38)] transition disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:px-12 sm:text-lg"
-        >
-            Deal
-        </motion.button>
-    );
-}
-
-function BetInput({
-    label,
-    value,
-    onChange,
-    disabled,
-}: {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    disabled?: boolean;
-}) {
-    return (
-        <div className="rounded-2xl border border-amber-300/15 bg-black/20 p-3">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-100/85 sm:text-[11px] sm:tracking-[0.2em]">
-                {label}
-            </div>
-            <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-white/70">$</span>
-                <input
-                    type="number"
-                    min={MIN_BET}
-                    step={5}
-                    value={value}
-                    disabled={disabled}
-                    onChange={(e) => onChange(Number(e.target.value || 0))}
-                    className="w-full rounded-xl border border-white/10 bg-black/35 py-3 pl-8 pr-3 text-base font-bold text-white outline-none disabled:opacity-60 sm:text-lg"
-                />
-            </div>
-        </div>
-    );
-}
-
-function InfoCard({
-    title,
-    children,
-}: {
-    title: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.03))] p-3 shadow-2xl backdrop-blur sm:rounded-[1.35rem] sm:p-4">
-            <div className="mb-3 text-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-amber-200 sm:text-[12px] sm:tracking-[0.22em]">
-                {title}
-            </div>
-            {children}
-        </div>
-    );
-}
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function BlackjackTable({ bankroll, setBankroll }: Props) {
-    const [deck, setDeck] = useState<Card[]>(() => createShoe());
-    const [dealer, setDealer] = useState<Card[]>([]);
-    const [hands, setHands] = useState<Card[][]>([]);
-    const [bets, setBets] = useState<number[]>([]);
-    const [active, setActive] = useState(0);
+
+    // ── Game state (unchanged) ──────────────────────────────────────────────
+    const [deck,                setDeck]                = useState<Card[]>(() => createShoe());
+    const [dealer,              setDealer]              = useState<Card[]>([]);
+    const [hands,               setHands]               = useState<Card[][]>([]);
+    const [bets,                setBets]                = useState<number[]>([]);
+    const [active,              setActive]              = useState(0);
     const [dealerRevealedCount, setDealerRevealedCount] = useState(1);
-    const [bet, setBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 10;
+    const [bet,                 setBet]                 = useState<number>(() => {
+        if (typeof window === "undefined") return MIN_BET;
         const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        return Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
+        const n   = raw ? Number(raw) : MIN_BET;
+        return Number.isFinite(n) && n >= MIN_BET ? n : MIN_BET;
     });
-    const [stage, setStage] = useState<Stage>("betting");
-    const [message, setMessage] = useState("Set your bet and press Deal.");
-    const [isShuffling, setIsShuffling] = useState(false);
+    const [stage,        setStage]        = useState<Stage>("betting");
+    const [message,      setMessage]      = useState("Place chips and press Deal.");
+    const [isShuffling,  setIsShuffling]  = useState(false);
     const [roundReturned, setRoundReturned] = useState(0);
-    const [roundNet, setRoundNet] = useState(0);
+    const [roundNet,      setRoundNet]      = useState(0);
+
+    // ── UI-only state ───────────────────────────────────────────────────────
+    const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+    // Tracks each chip clicked so BetCircle can render the visual stack.
+    const [chipStack,    setChipStack]    = useState<ChipDenomination[]>([]);
+    // Allows doubleAndDeal to pass a bet to deal() synchronously (bypasses
+    // React's async setState batching without modifying game logic).
+    const dealBetRef = useRef<number | null>(null);
 
     useEffect(() => {
-        window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 5) * 5)));
+        if (bet >= MIN_BET)
+            window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 5) * 5)));
     }, [bet]);
 
-    const dealerDisplayTotal = useMemo(() => {
-        if (dealer.length === 0) return "";
-        if (stage === "done" || stage === "dealer") {
-            return String(total(dealer));
-        }
-        return dealer[0] ? String(dealer[0].value === 11 ? 11 : dealer[0].value) : "";
-    }, [dealer, stage]);
+    // ── Derived (unchanged) ─────────────────────────────────────────────────
+    const activeHand   = hands[active] ?? [];
+    const totalWagered = bets.reduce((s, w) => s + w, 0);
 
-    const activeHand = hands[active] ?? [];
-    const totalWagered = bets.reduce((sum, wager) => sum + wager, 0);
+    // ── Game handlers (unchanged except deal's 2-line override) ────────────
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
-        if (!shouldShuffle(shoe)) {
-            return shoe;
-        }
-
+        if (!shouldShuffle(shoe)) return shoe;
         setIsShuffling(true);
         setMessage("Shuffling 6-deck shoe...");
-
         await wait(SHUFFLE_DELAY_MS);
-
-        const freshShoe = createShoe();
-        setDeck(freshShoe);
+        const fresh = createShoe();
+        setDeck(fresh);
         setIsShuffling(false);
-
-        return freshShoe;
+        return fresh;
     };
 
     const finishRoundWithoutDealer = async (finalHands: Card[][], wagersInPlay: number[] = bets) => {
-        const allBusted = finalHands.length > 0 && finalHands.every((hand) => total(hand) > 21);
-        const wagered = wagersInPlay.reduce((sum, wager) => sum + wager, 0);
-        const returned = 0;
-        const net = returned - wagered;
-
-        setRoundReturned(returned);
-        setRoundNet(net);
-
-        if (allBusted) {
-            setMessage("All hands bust. Dealer reveals hole card.");
-        } else {
-            setMessage("Round complete.");
-        }
-
-        if (dealer.length > 0) {
-            setDealerRevealedCount(dealer.length);
-            await wait(1000);
-        }
-
+        const allBusted = finalHands.length > 0 && finalHands.every((h) => total(h) > 21);
+        const wagered   = wagersInPlay.reduce((s, w) => s + w, 0);
+        setRoundReturned(0);
+        setRoundNet(-wagered);
+        if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(1000); }
         setStage("done");
         setMessage(allBusted ? "All hands bust. Dealer does not draw." : "Round complete.");
     };
@@ -490,36 +425,29 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const dealerTurn = async (
         handsInPlay: Card[][] = hands,
         wagersInPlay: number[] = bets,
-        shoeInPlay: Card[] = deck
+        shoeInPlay:  Card[]   = deck,
     ) => {
-        const liveHands = handsInPlay.filter((hand) => total(hand) <= 21);
-        if (liveHands.length === 0) {
-            await finishRoundWithoutDealer(handsInPlay, wagersInPlay);
-            return;
-        }
+        const liveHands = handsInPlay.filter((h) => total(h) <= 21);
+        if (liveHands.length === 0) { await finishRoundWithoutDealer(handsInPlay, wagersInPlay); return; }
 
         let nextDealer = [...dealer];
-        let nextDeck = [...shoeInPlay];
+        let nextDeck   = [...shoeInPlay];
         let revealedCount = 1;
 
         setStage("dealer");
         setMessage("Dealer reveals hole card.");
         setDealerRevealedCount(2);
         revealedCount = 2;
-
         await wait(450);
 
         while (total(nextDealer) < 17) {
             const card = nextDeck.shift();
             if (!card) break;
-
             nextDealer.push(card);
             setDealer([...nextDealer]);
             setDeck([...nextDeck]);
-
             setDealerRevealedCount(revealedCount);
             await wait(140);
-
             revealedCount = nextDealer.length;
             setDealerRevealedCount(revealedCount);
             setMessage("Dealer draws.");
@@ -530,153 +458,85 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         setDeck(nextDeck);
         setDealerRevealedCount(nextDealer.length);
 
-        const dealerTotal = total(nextDealer);
-        const dealerBusted = dealerTotal > 21;
-
+        const dt          = total(nextDealer);
+        const dealerBusted = dt > 21;
         let returned = 0;
 
-        handsInPlay.forEach((hand, index) => {
-            const playerTotal = total(hand);
-            const wager = wagersInPlay[index];
-
-            if (playerTotal > 21) return;
-            if (dealerBusted || playerTotal > dealerTotal) returned += wager * 2;
-            else if (playerTotal === dealerTotal) returned += wager;
+        handsInPlay.forEach((hand, i) => {
+            const pt    = total(hand);
+            const wager = wagersInPlay[i];
+            if (pt > 21) return;
+            if (dealerBusted || pt > dt) returned += wager * 2;
+            else if (pt === dt)          returned += wager;
         });
 
-        const wagered = wagersInPlay.reduce((sum, wager) => sum + wager, 0);
-        const net = returned - wagered;
-
+        const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
         setRoundReturned(returned);
-        setRoundNet(net);
+        setRoundNet(returned - wagered);
         setBankroll((b) => b + returned);
         setStage("done");
         setMessage(dealerBusted ? "Dealer busts." : "Round complete.");
     };
 
-    const ensureHandHasSecondCard = async (
-        handsInPlay: Card[][],
-        handIndex: number,
-        shoeInPlay: Card[]
-    ) => {
-        const targetHand = handsInPlay[handIndex];
-        if (!targetHand || targetHand.length !== 1) {
-            return { hands: handsInPlay, deck: shoeInPlay };
-        }
-
+    const ensureHandHasSecondCard = async (handsInPlay: Card[][], idx: number, shoeInPlay: Card[]) => {
+        const target = handsInPlay[idx];
+        if (!target || target.length !== 1) return { hands: handsInPlay, deck: shoeInPlay };
         const nextDeck = [...shoeInPlay];
-        const drawnCard = nextDeck.shift();
-        if (!drawnCard) {
-            return { hands: handsInPlay, deck: shoeInPlay };
-        }
-
+        const drawn    = nextDeck.shift();
+        if (!drawn) return { hands: handsInPlay, deck: shoeInPlay };
         const nextHands = [...handsInPlay];
-        nextHands[handIndex] = [...nextHands[handIndex], drawnCard];
-
+        nextHands[idx]  = [...nextHands[idx], drawn];
         setHands(nextHands);
         setDeck(nextDeck);
         await wait(250);
-
         return { hands: nextHands, deck: nextDeck };
     };
 
     const moveToNextHand = async (
-        nextHands: Card[][],
-        nextDeck: Card[],
-        nextBets: number[],
-        currentActive = active
+        nextHands: Card[][], nextDeck: Card[], nextBets: number[], currentActive = active,
     ) => {
-        const nextIndex = currentActive + 1;
-
-        if (nextIndex < nextHands.length) {
-            setActive(nextIndex);
-            setMessage(`Playing hand ${nextIndex + 1} of ${nextHands.length}.`);
-
-            const dealt = await ensureHandHasSecondCard(nextHands, nextIndex, nextDeck);
-            const nextHand = dealt.hands[nextIndex];
+        const nextIdx = currentActive + 1;
+        if (nextIdx < nextHands.length) {
+            setActive(nextIdx);
+            setMessage(`Playing hand ${nextIdx + 1} of ${nextHands.length}.`);
+            const dealt     = await ensureHandHasSecondCard(nextHands, nextIdx, nextDeck);
+            const nextHand  = dealt.hands[nextIdx];
             const nextTotal = total(nextHand);
-
-            if (nextTotal === 21) {
-                setMessage(`Hand ${nextIndex + 1} makes 21.`);
-                await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIndex);
-                return;
-            }
-
-            if (nextTotal > 21) {
-                setMessage(`Hand ${nextIndex + 1} busts.`);
-                await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIndex);
-                return;
-            }
-
+            if (nextTotal === 21) { setMessage(`Hand ${nextIdx + 1} makes 21.`);   await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx); return; }
+            if (nextTotal >  21) { setMessage(`Hand ${nextIdx + 1} busts.`);       await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx); return; }
             return;
         }
-
-        if (nextHands.some((hand) => total(hand) <= 21)) {
-            await dealerTurn(nextHands, nextBets, nextDeck);
-            return;
-        }
-
+        if (nextHands.some((h) => total(h) <= 21)) { await dealerTurn(nextHands, nextBets, nextDeck); return; }
         await finishRoundWithoutDealer(nextHands, nextBets);
     };
 
     const split = async () => {
         if (hands.length >= MAX_HANDS) return;
-
         const hand = hands[active];
-        if (hand.length !== 2) return;
-        if (hand[0].value !== hand[1].value) return;
-        if (bankroll < bets[active]) return;
-
+        if (hand.length !== 2 || hand[0].value !== hand[1].value || bankroll < bets[active]) return;
         setBankroll((b) => b - bets[active]);
-
-        const nextHands = [
-            ...hands.slice(0, active),
-            [hand[0]],
-            [hand[1]],
-            ...hands.slice(active + 1),
-        ];
-
-        const nextBets = [
-            ...bets.slice(0, active),
-            bets[active],
-            bets[active],
-            ...bets.slice(active + 1),
-        ];
-
+        const nextHands = [...hands.slice(0, active), [hand[0]], [hand[1]], ...hands.slice(active + 1)];
+        const nextBets  = [...bets.slice(0, active),  bets[active], bets[active], ...bets.slice(active + 1)];
         setHands(nextHands);
         setBets(nextBets);
         setMessage(`Split hand ${active + 1}.`);
-
-        const dealt = await ensureHandHasSecondCard(nextHands, active, deck);
+        const dealt      = await ensureHandHasSecondCard(nextHands, active, deck);
         const activeTotal = total(dealt.hands[active]);
-
-        if (activeTotal === 21) {
-            setMessage(`Hand ${active + 1} makes 21.`);
-            await moveToNextHand(dealt.hands, dealt.deck, nextBets, active);
-            return;
-        }
-
-        if (activeTotal > 21) {
-            setMessage(`Hand ${active + 1} busts.`);
-            await moveToNextHand(dealt.hands, dealt.deck, nextBets, active);
-        }
+        if (activeTotal === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(dealt.hands, dealt.deck, nextBets, active); return; }
+        if (activeTotal >  21) { setMessage(`Hand ${active + 1} busts.`);    await moveToNextHand(dealt.hands, dealt.deck, nextBets, active); }
     };
 
     const deal = async () => {
         if (isShuffling) return;
-
-        const wager = Math.max(MIN_BET, Math.floor(bet / 5) * 5);
-        if (bankroll < wager) {
-            setMessage("Not enough bankroll for that bet.");
-            return;
-        }
+        // dealBetRef allows doubleAndDeal to override bet synchronously
+        const override = dealBetRef.current;
+        dealBetRef.current = null;
+        const wager = Math.max(MIN_BET, Math.floor((override ?? bet) / 5) * 5);
+        if (bankroll < wager) { setMessage("Not enough bankroll."); return; }
 
         let nextDeck = [...deck];
         nextDeck = await performShuffleIfNeeded(nextDeck);
-
-        if (nextDeck.length < 4) {
-            nextDeck = await performShuffleIfNeeded([]);
-        }
+        if (nextDeck.length < 4) nextDeck = await performShuffleIfNeeded([]);
 
         setRoundReturned(0);
         setRoundNet(0);
@@ -698,452 +558,192 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
         if (dealerBJ) {
             setDealerRevealedCount(2);
-
             if (playerBJ) {
-                const returned = wager;
-                setRoundReturned(returned);
-                setRoundNet(0);
-                setBankroll((b) => b + returned);
+                setRoundReturned(wager); setRoundNet(0);
+                setBankroll((b) => b + wager);
                 setMessage("Both player and dealer have blackjack. Push.");
             } else {
-                setRoundReturned(0);
-                setRoundNet(-wager);
+                setRoundReturned(0); setRoundNet(-wager);
                 setMessage("Dealer blackjack. Hand over.");
             }
-
-            setStage("done");
-            return;
+            setStage("done"); return;
         }
 
         if (playerBJ) {
             const returned = wager * 2.5;
-            const net = returned - wager;
-
             setDealerRevealedCount(2);
-            setRoundReturned(returned);
-            setRoundNet(net);
+            setRoundReturned(returned); setRoundNet(returned - wager);
             setBankroll((b) => b + returned);
-            setStage("done");
-            setMessage("Blackjack pays 3 to 2.");
-            return;
+            setStage("done"); setMessage("Blackjack pays 3 to 2."); return;
         }
 
         setStage("player");
-        setMessage("Hit, stay, double, or split.");
+        setMessage("Hit, stand, double, or split.");
     };
 
     const hit = async () => {
-        const nextDeck = [...deck];
-        const card = nextDeck.shift();
+        const nextDeck  = [...deck];
+        const card      = nextDeck.shift();
         if (!card) return;
-
         const nextHands = [...hands];
         nextHands[active] = [...nextHands[active], card];
-
         setDeck(nextDeck);
         setHands(nextHands);
-
-        const handTotal = total(nextHands[active]);
-
-        if (handTotal === 21) {
-            setMessage(`Hand ${active + 1} makes 21.`);
-            await moveToNextHand(nextHands, nextDeck, bets);
-            return;
-        }
-
-        if (handTotal > 21) {
-            setMessage(`Hand ${active + 1} busts.`);
-            await moveToNextHand(nextHands, nextDeck, bets);
-        }
+        const t = total(nextHands[active]);
+        if (t === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(nextHands, nextDeck, bets); return; }
+        if (t >  21) { setMessage(`Hand ${active + 1} busts.`);    await moveToNextHand(nextHands, nextDeck, bets); }
     };
 
-    const stay = async () => {
-        await moveToNextHand(hands, deck, bets);
-    };
+    const stay = async () => { await moveToNextHand(hands, deck, bets); };
 
     const doubleDown = async () => {
         const wager = bets[active];
         if (bankroll < wager) return;
-
         setBankroll((b) => b - wager);
-
-        const nextBets = [...bets];
-        nextBets[active] *= 2;
-        setBets(nextBets);
-
-        const nextDeck = [...deck];
-        const card = nextDeck.shift();
-        if (!card) return;
-
-        const nextHands = [...hands];
-        nextHands[active] = [...nextHands[active], card];
-
-        setDeck(nextDeck);
-        setHands(nextHands);
-
-        if (total(nextHands[active]) > 21) {
-            setMessage(`Hand ${active + 1} busts after doubling.`);
-        }
-
+        const nextBets  = [...bets]; nextBets[active] *= 2; setBets(nextBets);
+        const nextDeck  = [...deck]; const card = nextDeck.shift(); if (!card) return;
+        const nextHands = [...hands]; nextHands[active] = [...nextHands[active], card];
+        setDeck(nextDeck); setHands(nextHands);
+        if (total(nextHands[active]) > 21) setMessage(`Hand ${active + 1} busts after doubling.`);
         await moveToNextHand(nextHands, nextDeck, nextBets);
     };
 
     const nextRound = () => {
-        setDealer([]);
-        setHands([]);
-        setBets([]);
-        setActive(0);
-        setDealerRevealedCount(1);
-        setRoundReturned(0);
-        setRoundNet(0);
+        setDealer([]); setHands([]); setBets([]); setActive(0);
+        setDealerRevealedCount(1); setRoundReturned(0); setRoundNet(0);
         setStage("betting");
-        setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle the shoe." : "Set your bet and press Deal.");
+        setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle." : "Place chips and press Deal.");
     };
 
-    const canSplit =
-        stage === "player" &&
-        activeHand.length === 2 &&
-        hands.length < MAX_HANDS &&
-        activeHand[0]?.value === activeHand[1]?.value &&
-        bankroll >= (bets[active] ?? 0);
+    // ── UI-only handlers ────────────────────────────────────────────────────
 
+    const handleChipSelect = (chip: ChipDenomination) => {
+        setSelectedChip(chip);
+        if (stage === "betting") {
+            setBet((b) => b + chip);
+            setChipStack((s) => [...s, chip]);
+        }
+    };
+
+    const clearBet = () => {
+        if (stage === "betting") {
+            setBet(0);
+            setChipStack([]);
+        }
+    };
+
+    // Wraps nextRound() so chipStack clears without touching game logic.
+    const handleNextRound = () => {
+        setChipStack([]);
+        nextRound();
+    };
+
+    const doubleAndDeal = () => {
+        if (totalWagered === 0 || bankroll < totalWagered * 2) return;
+        dealBetRef.current = totalWagered * 2;
+        void deal();
+    };
+
+    // ── Derived for ActionBar / InHandActions ───────────────────────────────
+
+    const canSplit =
+        stage === "player" && activeHand.length === 2 && hands.length < MAX_HANDS &&
+        activeHand[0]?.value === activeHand[1]?.value && bankroll >= (bets[active] ?? 0);
     const canDouble = stage === "player" && activeHand.length === 2 && bankroll >= (bets[active] ?? 0);
 
-    const cardsUsed = SHOE_SIZE - deck.length;
-    const penetrationPct = Math.min(100, Math.round((cardsUsed / SHOE_SIZE) * 100));
+    const dealerT      = dealer.length ? total(dealer) : 0;
+    const dealerBusted = dealerT > 21;
+
+    // ── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,_#1f7a45,_#0e4d2d_30%,_#062417_65%,_#020d08_100%)] text-white">
+        <>
             {isShuffling && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-amber-300/25 bg-black/65 px-10 py-8 text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)] sm:px-12 sm:py-9">
-                        <div className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-amber-200 sm:text-[12px]">
-                            Blackjack
-                        </div>
-                        <div className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Shuffling Shoe</div>
-                        <div className="mt-3 text-sm text-amber-100/85">Please wait…</div>
+                    <div className="rounded-[1.6rem] border border-amber-300/25 bg-black/65 px-10 py-8 text-center shadow-2xl">
+                        <div className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-amber-200">Blackjack</div>
+                        <div className="mt-2 text-3xl font-extrabold text-white">Shuffling Shoe</div>
+                        <div className="mt-2 text-sm text-amber-100/80">Please wait…</div>
                     </div>
                 </div>
             )}
 
-            <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1700px] flex-col gap-3 px-2 py-2 sm:px-3 sm:py-3">
-                <div className="rounded-[1.35rem] border border-amber-300/15 bg-black/25 p-3 shadow-2xl backdrop-blur sm:rounded-[1.7rem] sm:p-4">
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                        <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/90 sm:text-[12px] sm:tracking-[0.3em]">
-                                Casino Table
-                            </div>
-                            <h2 className="mt-1 text-2xl font-extrabold tracking-[0.02em] text-amber-50 sm:text-4xl md:text-5xl">
-                                Blackjack
-                            </h2>
-                        </div>
+            <TableShell
+                feltColor="#1f7a45"
+                gameName="Blackjack"
+                bankroll={bankroll}
+                hideHeader
+                actionBar={
+                    <ActionBar
+                        selectedChip={selectedChip}
+                        onChipSelect={handleChipSelect}
+                        onDeal={() => void deal()}
+                        onClear={clearBet}
+                        onDoubleAndDeal={doubleAndDeal}
+                        canDeal={stage === "betting" && !isShuffling && bet >= MIN_BET && bankroll >= bet}
+                        canClear={stage === "betting" && bet > 0}
+                        canDoubleAndDeal={stage === "done" && totalWagered > 0 && bankroll >= totalWagered * 2}
+                        disabled={isShuffling || stage === "dealer"}
+                    />
+                }
+            >
+                <div className="flex flex-1 flex-col items-center gap-5 py-2">
 
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <StatPill label="Bankroll" value={formatMoney(bankroll)} accent="gold" />
-                            <StatPill label="Stage" value={<span className="capitalize">{stage}</span>} />
-                            <StatPill
-                                label="Active Hand"
-                                value={hands.length > 0 ? `${active + 1} / ${hands.length}` : "—"}
-                            />
-                            <StatPill
-                                label="Dealer Showing"
-                                value={dealer[0] ? `${dealer[0].rank}${dealer[0].suit}` : "—"}
-                                accent="green"
-                            />
+                    {/* Dealer */}
+                    <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
+
+                    {/* Always-visible bet / result strip */}
+                    <BetBar
+                        pendingBet={bet}
+                        wagered={totalWagered}
+                        returned={roundReturned}
+                        net={roundNet}
+                        stage={stage}
+                    />
+
+                    {/* Table message */}
+                    <p className="text-sm font-semibold text-amber-100/70">{message}</p>
+
+                    {/* Bet circle — visible only during betting, centered in the felt */}
+                    <AnimatePresence>
+                        {stage === "betting" && (
+                            <BetCircle chips={chipStack} totalBet={bet} />
+                        )}
+                    </AnimatePresence>
+
+                    {/* Player hands */}
+                    {hands.length > 0 && (
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {hands.map((hand, i) => (
+                                <HandBox
+                                    key={i}
+                                    hand={hand}
+                                    bet={bets[i] ?? 0}
+                                    index={i}
+                                    isActive={i === active && stage === "player"}
+                                    stage={stage}
+                                    dealerTotal={dealerT}
+                                    dealerBusted={dealerBusted}
+                                />
+                            ))}
                         </div>
+                    )}
+
+                    {/* In-hand actions — mt-auto pins them above ActionBar clearance */}
+                    <div className="mt-auto pt-2">
+                        <InHandActions
+                            stage={stage}
+                            canDouble={canDouble}
+                            canSplit={canSplit}
+                            onHit={() => void hit()}
+                            onStay={() => void stay()}
+                            onDouble={() => void doubleDown()}
+                            onSplit={() => void split()}
+                            onNextRound={handleNextRound}
+                        />
                     </div>
                 </div>
-
-                <div className="rounded-[1.45rem] border border-white/10 bg-black/20 p-2.5 shadow-2xl backdrop-blur sm:rounded-[1.8rem] sm:p-3">
-                    <div className="rounded-[1.2rem] border border-amber-300/20 bg-[linear-gradient(180deg,_rgba(0,0,0,0.22),_rgba(0,0,0,0.12))] px-4 py-3 text-center shadow-lg sm:rounded-[1.45rem] sm:px-5 sm:py-4">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200 sm:text-[11px] sm:tracking-[0.24em]">
-                            Table Message
-                        </div>
-                        <div className="mt-2 text-base font-bold text-amber-50 sm:text-lg md:text-xl">{message}</div>
-                    </div>
-
-                    <div className="mt-3 grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)_280px]">
-                        <div className="order-3 space-y-3 xl:order-1">
-                            <InfoCard title="Rules">
-                                <div className="space-y-2 text-sm text-emerald-50/90">
-                                    <div>• Blackjack pays 3 to 2.</div>
-                                    <div>• Dealer stands on all 17s.</div>
-                                    <div>• Split up to 4 hands.</div>
-                                    <div>• Double on any 2-card hand.</div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Table Info">
-                                <div className="space-y-2 text-sm text-emerald-50/90">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Dealer total</span>
-                                        <span className="font-semibold text-white">{dealerDisplayTotal || "—"}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Cards left</span>
-                                        <span className="font-semibold text-white">{deck.length}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Shoe used</span>
-                                        <span className="font-semibold text-white">{penetrationPct}%</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Hands in play</span>
-                                        <span className="font-semibold text-white">{hands.length || 0}</span>
-                                    </div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Payout Guide">
-                                <div className="space-y-2 text-sm text-emerald-50/90">
-                                    <div>• Win: 1 to 1</div>
-                                    <div>• Push: bet returned</div>
-                                    <div>• Blackjack: 3 to 2</div>
-                                    <div>• Dealer bust: all live hands win</div>
-                                </div>
-                            </InfoCard>
-                        </div>
-
-                        <div className="order-1 min-w-0 rounded-[1.25rem] border border-white/10 bg-[radial-gradient(circle_at_center,_rgba(74,222,128,0.16),_rgba(10,90,60,0.10)_40%,_rgba(0,0,0,0.22)_82%)] p-2.5 sm:rounded-[1.6rem] sm:p-4 xl:order-2">
-                            <div className="flex h-full flex-col gap-3 sm:gap-4">
-                                <div className="overflow-hidden rounded-[1rem] border border-white/10 bg-black/10 px-2 py-3 sm:rounded-[1.25rem] sm:px-3 sm:py-4">
-                                    <div className="flex flex-col gap-5 sm:gap-6">
-                                        <CardLane
-                                            label="Dealer"
-                                            cards={dealer}
-                                            hiddenIndexes={dealer
-                                                .map((_, index) => index)
-                                                .filter((index) => index >= dealerRevealedCount)}
-                                            large
-                                            result={
-                                                dealer.length > 0 && (stage === "done" || stage === "dealer")
-                                                    ? `${total(dealer)}${isSoft(dealer) ? " soft" : ""}`
-                                                    : ""
-                                            }
-                                        />
-
-                                        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                                            {Array.from({ length: Math.max(hands.length, 1) }).map((_, index) => {
-                                                const hand = hands[index] ?? [];
-                                                const handTotal = hand.length > 0 ? total(hand) : null;
-                                                const dealerTotal = dealer.length > 0 ? total(dealer) : 0;
-                                                const busted = handTotal !== null && handTotal > 21;
-                                                const dealerBusted = dealerTotal > 21;
-                                                const finalResult =
-                                                    stage === "done" && handTotal !== null
-                                                        ? resultLabel(handTotal, dealerTotal, busted, dealerBusted)
-                                                        : index === active && stage === "player"
-                                                            ? "Active"
-                                                            : "";
-
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className={`rounded-[1.3rem] border p-3 shadow-xl backdrop-blur sm:p-4 ${index === active && stage === "player"
-                                                            ? "border-amber-200/40 bg-amber-300/10 ring-2 ring-amber-200/20"
-                                                            : "border-white/10 bg-black/18"
-                                                            }`}
-                                                    >
-                                                        <CardLane
-                                                            label={`Hand ${index + 1}`}
-                                                            cards={hand}
-                                                            large
-                                                            result={
-                                                                handTotal !== null
-                                                                    ? `${handTotal}${isSoft(hand) ? " soft" : ""}${finalResult ? ` • ${finalResult}` : ""}`
-                                                                    : "Waiting"
-                                                            }
-                                                        />
-                                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-center text-sm font-semibold text-amber-100">
-                                                            Bet: {bets[index] ? formatMoney(bets[index]) : "—"}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="sticky bottom-2 z-10 -mx-1 mt-1 rounded-[1.1rem] border border-white/10 bg-black/45 px-2 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
-                                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                                        <AnimatePresence mode="wait" initial={false}>
-                                            {stage === "betting" && (
-                                                <motion.div
-                                                    key="deal"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                >
-                                                    <DealButton onClick={deal} disabled={isShuffling} />
-                                                </motion.div>
-                                            )}
-
-                                            {stage === "player" && (
-                                                <motion.div
-                                                    key="player-actions"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                    className="flex flex-wrap items-center justify-center gap-2 sm:gap-3"
-                                                >
-                                                    <ActionButton onClick={hit}>Hit</ActionButton>
-                                                    <ActionButton onClick={stay}>Stay</ActionButton>
-                                                    <ActionButton onClick={doubleDown} variant="bet" disabled={!canDouble}>
-                                                        Double
-                                                    </ActionButton>
-                                                    <ActionButton onClick={split} variant="bet" disabled={!canSplit}>
-                                                        Split
-                                                    </ActionButton>
-                                                </motion.div>
-                                            )}
-
-                                            {stage === "done" && (
-                                                <motion.div
-                                                    key="done-actions"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                >
-                                                    <ActionButton onClick={nextRound} variant="success">
-                                                        Next Hand
-                                                    </ActionButton>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="order-2 space-y-3 xl:order-3">
-                            <InfoCard title="Betting Area">
-                                <div className="space-y-3">
-                                    <BetInput
-                                        label="Base Bet"
-                                        value={bet}
-                                        onChange={setBet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                    />
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span>Current wager</span>
-                                            <span className="font-extrabold text-white">
-                                                {formatMoney(Math.max(MIN_BET, Math.floor(bet / 5) * 5))}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span>Total wagered</span>
-                                                <span className="font-extrabold text-white">
-                                                    {totalWagered > 0 ? formatMoney(totalWagered) : "—"}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span>Returned</span>
-                                                <span className="font-extrabold text-white">
-                                                    {stage === "done" ? formatMoney(roundReturned) : "—"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs sm:text-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-emerald-50/90">Net winnings</span>
-                                            <span
-                                                className={`font-extrabold ${stage !== "done"
-                                                        ? "text-white"
-                                                        : roundNet > 0
-                                                            ? "text-emerald-300"
-                                                            : roundNet < 0
-                                                                ? "text-red-300"
-                                                                : "text-white"
-                                                    }`}
-                                            >
-                                                {stage === "done" ? formatMoney(roundNet) : "—"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-amber-100/90 sm:text-sm">
-                                        {stage === "betting"
-                                            ? "Place your bet to begin."
-                                            : stage === "player"
-                                                ? `Playing hand ${hands.length > 0 ? active + 1 : 0}${hands.length > 0 ? ` of ${hands.length}` : ""}.`
-                                                : stage === "dealer"
-                                                    ? "Dealer is resolving the round."
-                                                    : "Round finished."}
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-emerald-50/90 sm:text-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span>Dealer showing</span>
-                                            <span className="font-semibold text-white">
-                                                {dealer[0] ? `${dealer[0].rank}${dealer[0].suit}` : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Active hand total</span>
-                                            <span className="font-semibold text-white">
-                                                {activeHand.length
-                                                    ? `${total(activeHand)}${isSoft(activeHand) ? " soft" : ""}`
-                                                    : "—"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-emerald-950/30 px-4 py-3 text-center text-xs font-medium text-emerald-50/95 sm:text-sm">
-                                        One shared bankroll is used across all casino games.
-                                    </div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Active Bets">
-                                <div className="grid grid-cols-2 gap-2 text-center text-sm text-emerald-50/90">
-                                    {bets.length > 0 ? (
-                                        bets.map((wager, index) => (
-                                            <div
-                                                key={index}
-                                                className={`rounded-xl border px-3 py-3 ${index === active && stage === "player"
-                                                    ? "border-amber-200/30 bg-amber-300/10"
-                                                    : "border-white/10 bg-black/25"
-                                                    }`}
-                                            >
-                                                <div className="font-semibold">Hand {index + 1}</div>
-                                                <div className="mt-1 text-base font-extrabold text-white">
-                                                    {formatMoney(wager)}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="col-span-2 rounded-xl border border-white/10 bg-black/25 px-3 py-4 text-center font-semibold text-amber-100">
-                                            No live hands yet.
-                                        </div>
-                                    )}
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Notes">
-                                <div className="space-y-2 text-sm text-emerald-50/90">
-                                    <div>• Uses a persistent 6-deck shoe.</div>
-                                    <div>• Shoe reshuffles at about 85% penetration.</div>
-                                    <div>• If all player hands bust, dealer does not draw.</div>
-                                </div>
-                            </InfoCard>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </TableShell>
+        </>
     );
 }

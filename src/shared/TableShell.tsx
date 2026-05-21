@@ -16,6 +16,12 @@ export interface TableShellProps {
     children: React.ReactNode;
     /** A fully-configured <ActionBar /> instance */
     actionBar: React.ReactNode;
+    /**
+     * When true the shell header (bankroll + game name) is not rendered.
+     * Use this when the parent (e.g. Casino.tsx) already provides a navbar.
+     * Defaults to false.
+     */
+    hideHeader?: boolean;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -44,6 +50,7 @@ export default function TableShell({
     headerRight,
     children,
     actionBar,
+    hideHeader = false,
 }: TableShellProps) {
     // Measure the live ActionBar height so we can pad the content area by
     // exactly that amount — game-specific buttons never hide behind the bar.
@@ -62,38 +69,40 @@ export default function TableShell({
 
     return (
         <div
-            className="relative flex min-h-dvh flex-col text-white"
-            style={{ background: feltGradient(feltColor) }}
+            className="relative flex flex-col text-white"
+            style={{ background: feltGradient(feltColor), minHeight: 'calc(100dvh - 84px)' }}
         >
-            {/* ── Header ─────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-black/45 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-[1700px] items-center gap-4 px-4 py-2.5">
+            {/* ── Header (opt-out with hideHeader when parent nav is present) ── */}
+            {!hideHeader && (
+                <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-black/45 backdrop-blur-xl">
+                    <div className="mx-auto flex max-w-[1700px] items-center gap-4 px-4 py-2.5">
 
-                    {/* Left: bankroll */}
-                    <div className="flex-1">
-                        <div className="inline-flex flex-col rounded-full border border-amber-300/20
-                                        bg-black/30 px-4 py-1.5 leading-tight">
-                            <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-amber-200">
-                                Bankroll
-                            </span>
-                            <span className="text-sm font-extrabold text-white sm:text-base">
-                                {formatMoney(bankroll)}
-                            </span>
+                        {/* Left: bankroll */}
+                        <div className="flex-1">
+                            <div className="inline-flex flex-col rounded-full border border-amber-300/20
+                                            bg-black/30 px-4 py-1.5 leading-tight">
+                                <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-amber-200">
+                                    Bankroll
+                                </span>
+                                <span className="text-sm font-extrabold text-white sm:text-base">
+                                    {formatMoney(bankroll)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Center: game name */}
+                        <h1 className="shrink-0 text-center text-base font-extrabold
+                                       tracking-[0.03em] text-amber-50 sm:text-xl">
+                            {gameName}
+                        </h1>
+
+                        {/* Right: caller-supplied stats / buttons */}
+                        <div className="flex flex-1 items-center justify-end gap-2">
+                            {headerRight}
                         </div>
                     </div>
-
-                    {/* Center: game name */}
-                    <h1 className="shrink-0 text-center text-base font-extrabold
-                                   tracking-[0.03em] text-amber-50 sm:text-xl">
-                        {gameName}
-                    </h1>
-
-                    {/* Right: caller-supplied stats / buttons */}
-                    <div className="flex flex-1 items-center justify-end gap-2">
-                        {headerRight}
-                    </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             {/* ── Felt content ───────────────────────────────────────── */}
             {/*
