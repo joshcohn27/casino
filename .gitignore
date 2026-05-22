@@ -21,3 +21,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+src/Blackjack.tsx
+.claude/settings.local.json

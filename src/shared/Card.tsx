@@ -1,101 +1,84 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import type { Card } from './cards';
+import heartsSvg from '/hearts.svg?url';
+import diamondsSvg from '/diamonds.svg?url';
+import spadesSvg from '/spades.svg?url';
+import clubsSvg from '/clubs.svg?url';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RANK_LABEL: Partial<Record<string, string>> = { T: '10' };
 function rankLabel(rank: string) { return RANK_LABEL[rank] ?? rank; }
 
-const CARD_RED   = '#cc0000';
+const CARD_RED = '#cc0000';
 const CARD_BLACK = '#1a1a1a';
-const CARD_CLUB  = '#1a2e1a';   // dark charcoal-green — distinct from spade black at small sizes
 
-function suitColor(suit: string) {
-    if (suit === '♥' || suit === '♦') return CARD_RED;
-    if (suit === '♣') return CARD_CLUB;
-    return CARD_BLACK;
+function suitColor(suit: string): string {
+    return suit === '♥' || suit === '♦' ? CARD_RED : CARD_BLACK;
 }
 
 const RANK_FONT: React.CSSProperties = {
-    fontFamily: 'Georgia, "Palatino Linotype", Palatino, serif',
+    fontFamily: 'Georgia, serif',
     fontWeight: 700,
 };
 
-// ─── Pip position map ─────────────────────────────────────────────────────────
-// [x%, y%, flip?]  —  x/y are percentages of the full card face.
-// flip=true → pip rotated 180° (bottom-half pips point "down" like real cards).
-//
-// Zone rule (three strict zones, no overlap):
-//   Corner pips: top ~29% and bottom ~29%.
-//   Center pips: middle zone — y clamped to [38, 62].
-// 8 px glyphs at 8 % column steps (≈6.5 px on an 82 px card) keeps column
-// pips visually clear; center extras (7, 9, T) are at different x so they
-// never visually collide with column pips.
+// ─── Suit SVG helpers ─────────────────────────────────────────────────────────
 
-type PipPos = [number, number, boolean?];
-
-const PIP_POSITIONS: Record<string, PipPos[]> = {
-    // 2 — top / bottom
-    '2': [
-        [50, 38],
-        [50, 62, true],
-    ],
-    // 3 — top / center / bottom (14 % steps)
-    '3': [
-        [50, 38],
-        [50, 50],
-        [50, 62, true],
-    ],
-    // 4 — two columns × two rows
-    '4': [
-        [31, 38],        [69, 38],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // 5 — four corners + center
-    '5': [
-        [31, 38],        [69, 38],
-                [50, 50],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // 6 — two columns × three rows (12 % steps)
-    '6': [
-        [31, 38],        [69, 38],
-        [31, 50],        [69, 50],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // 7 — three rows + one center extra between rows 1 and 2
-    '7': [
-        [31, 38],        [69, 38],
-                [50, 44],
-        [31, 50],        [69, 50],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // 8 — four rows × two columns (8 % steps, standard layout)
-    '8': [
-        [31, 38],        [69, 38],
-        [31, 46],        [69, 46],
-        [31, 54, true],  [69, 54, true],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // 9 — four columns rows + center pip (8 % column steps)
-    '9': [
-        [31, 38],        [69, 38],
-        [31, 46],        [69, 46],
-                [50, 50],
-        [31, 54, true],  [69, 54, true],
-        [31, 62, true],  [69, 62, true],
-    ],
-    // T (10) — four column rows + two center extras between rows 1-2 and 3-4
-    'T': [
-        [31, 38],        [69, 38],
-                [50, 42],
-        [31, 46],        [69, 46],
-        [31, 54, true],  [69, 54, true],
-                [50, 58, true],
-        [31, 62, true],  [69, 62, true],
-    ],
+const SUIT_SRCS: Record<string, string> = {
+    '♥': heartsSvg,
+    '♦': diamondsSvg,
+    '♠': spadesSvg,
+    '♣': clubsSvg,
 };
+function suitSrc(suit: string): string { return SUIT_SRCS[suit] ?? spadesSvg; }
+
+// Plain string paths for center suit — no dynamic import, always resolves.
+const SUIT_IMG = {
+    '♠': '/spades.svg',
+    '♥': '/hearts.svg',
+    '♦': '/diamonds.svg',
+    '♣': '/clubs.svg',
+} as const;
+
+// CSS filter to recolour black-fill SVGs (both hearts.svg and diamonds.svg confirmed fill="#000000").
+// Trace for red (#cc0000):
+//   brightness(0)       → (0,0,0) black
+//   saturate(100%)      → no change (achromatic)
+//   invert(16%)         → gray (41,41,41)
+//   sepia(99%)          → warm brown (55,49,38), H≈38.5°
+//   saturate(3000%)     → fully saturated at H≈38.5°, L≈18.3% → (93,60,0) orange
+//   hue-rotate(321deg)  → 38.5+321=359.5°≈0° (red) → (93,0,0)
+//   brightness(219%)    → (204,0,0) = #cc0000 ✓
+// Note: hue-rotate must be ≈321° (not 0°) to move the sepia base hue to red.
+function suitFilter(color: string): string {
+    if (color === CARD_RED)
+        return 'brightness(0) saturate(100%) invert(16%) sepia(99%) saturate(3000%) hue-rotate(321deg) brightness(219%)';
+    return 'brightness(0)'; // force any SVG to solid black
+}
+
+// Synchronous <img> — always renders immediately, no async fetch window.
+function SuitImg({ suit, color, style }: {
+    suit: string; color: string; style?: React.CSSProperties;
+}) {
+    const src = SUIT_IMG[suit as keyof typeof SUIT_IMG] ?? SUIT_IMG['♠'];
+
+    return (
+        <span
+            aria-hidden
+            style={{
+                display: 'block',
+                width: 11,
+                height: 11,
+                flexShrink: 0,
+                backgroundColor: color,
+                mask: `url("${src}") center / contain no-repeat`,
+                WebkitMask: `url("${src}") center / contain no-repeat`,
+                ...style,
+            }}
+        />
+    );
+}
 
 // ─── Card back ────────────────────────────────────────────────────────────────
 
@@ -107,16 +90,16 @@ function Back() {
 // Two distinct elements (rank then suit) with a visible gap between them.
 // flip=true rotates the whole pip 180° for the bottom two corners.
 
-function Pip({ rank, suit, color, flip = false }: {
-    rank: string; suit: string; color: string; flip?: boolean;
+function Pip({ rank, suit, color, flip = false, compact = false }: {
+    rank: string; suit: string; color: string; flip?: boolean; compact?: boolean;
 }) {
     return (
         <div
             className="flex flex-col items-center gap-[2px]"
-            style={{ color, transform: flip ? 'rotate(180deg)' : 'none' }}
+            style={{ transform: flip ? 'rotate(180deg)' : 'none' }}
         >
-            <span className="text-[15px] leading-none" style={RANK_FONT}>{rank}</span>
-            <span className="text-[11px] leading-none">{suit}</span>
+            <span className={`${compact ? 'text-[13px]' : 'text-[17px]'} leading-none`} style={{ ...RANK_FONT, color }}>{rank}</span>
+            {!compact && <SuitImg suit={suit} color={color} style={{ width: 11, height: 11 }} />}
         </div>
     );
 }
@@ -150,14 +133,12 @@ function JokerFace() {
 
 // ─── Standard card face ───────────────────────────────────────────────────────
 
-function Front({ card }: { card: Card }) {
+function Front({ card, compact = false }: { card: Card; compact?: boolean }) {
     if (card.rank === 'JOKER') return <JokerFace />;
 
     const color = suitColor(card.suit);
     const label = rankLabel(card.rank);
-    const pips  = PIP_POSITIONS[card.rank];
-    const isFace = card.rank === 'J' || card.rank === 'Q' || card.rank === 'K';
-    const isAce  = card.rank === 'A';
+    const isAce = card.rank === 'A';
 
     return (
         <div
@@ -168,58 +149,43 @@ function Front({ card }: { card: Card }) {
         >
             {/* ── Corner pips — top-left + bottom-right always; all four for Ace ── */}
             <div className="absolute left-[5px] top-[4px]">
-                <Pip rank={label} suit={card.suit} color={color} />
+                <Pip rank={label} suit={card.suit} color={color} compact={compact} />
             </div>
             {isAce && (
                 <div className="absolute right-[5px] top-[4px]">
-                    <Pip rank={label} suit={card.suit} color={color} />
+                    <Pip rank={label} suit={card.suit} color={color} compact={compact} />
                 </div>
             )}
             {isAce && (
                 <div className="absolute bottom-[4px] left-[5px]">
-                    <Pip rank={label} suit={card.suit} color={color} flip />
+                    <Pip rank={label} suit={card.suit} color={color} flip compact={compact} />
                 </div>
             )}
             <div className="absolute bottom-[4px] right-[5px]">
-                <Pip rank={label} suit={card.suit} color={color} flip />
+                <Pip rank={label} suit={card.suit} color={color} flip compact={compact} />
             </div>
 
-            {/* ── Center: Ace — single large suit ── */}
-            {isAce && (
-                <div
-                    className="absolute inset-0 flex items-center justify-center select-none"
-                    style={{ color, fontSize: '32px', lineHeight: 1 }}
-                >
-                    {card.suit}
-                </div>
-            )}
-
-            {/* ── Center: 2-10 — traditional pip pattern ── */}
-            {pips?.map(([x, y, flip], i) => (
-                <div
-                    key={i}
-                    className="pointer-events-none absolute select-none"
-                    style={{
-                        left:      `${x}%`,
-                        top:       `${y}%`,
-                        transform: `translate(-50%, -50%)${flip ? ' rotate(180deg)' : ''}`,
-                        color,
-                        fontSize:  '9px',
-                        lineHeight: 1,
-                    }}
-                >
-                    {card.suit}
-                </div>
-            ))}
-
-            {/* ── Center: J / Q / K — large rank letter + suit ── */}
-            {isFace && (
-                <div
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-1 select-none"
-                    style={{ color }}
-                >
-                    <span className="text-[22px] leading-none" style={RANK_FONT}>{label}</span>
-                    <span className="text-[14px] leading-none">{card.suit}</span>
+            {/* ── Center: large suit SVG — hidden in compact mode ── */}
+            {!compact && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
+                    <span
+                        aria-hidden
+                        style={{
+                            width: '40%',
+                            height: '40%',
+                            backgroundColor: color,
+                            maskImage: `url(${SUIT_IMG[card.suit as keyof typeof SUIT_IMG]})`,
+                            WebkitMaskImage: `url(${SUIT_IMG[card.suit as keyof typeof SUIT_IMG]})`,
+                            maskRepeat: 'no-repeat',
+                            WebkitMaskRepeat: 'no-repeat',
+                            maskPosition: 'center',
+                            WebkitMaskPosition: 'center',
+                            maskSize: 'contain',
+                            WebkitMaskSize: 'contain',
+                            backfaceVisibility: 'visible',
+                            WebkitBackfaceVisibility: 'visible',
+                        }}
+                    />
                 </div>
             )}
         </div>
@@ -235,9 +201,32 @@ interface Props {
     style?: React.CSSProperties;
 }
 
-export default function PlayingCard({ card, className = '', style }: Props) {
+// Compact threshold: hide suit SVGs only at very small sizes (below minimum card floor).
+// Previously 60 caused compact=true on any card narrower than 60px, including the
+// Blackjack minimum of 56px, which hid the center suit on most laptops.
+const COMPACT_THRESHOLD = 44;
+
+export default function PlayingCard({
+    card,
+    className = 'w-[clamp(52px,4vw,80px)] h-[clamp(72px,5.6vw,112px)] rounded-[clamp(6px,0.5vw,10px)]',
+    style,
+}: Props) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [compact, setCompact] = useState(false);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => {
+            setCompact(entry.contentRect.width < COMPACT_THRESHOLD);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
     return (
         <div
+            ref={containerRef}
             className={`relative shrink-0 [perspective:600px] ${className}`}
             style={style}
         >
@@ -245,7 +234,7 @@ export default function PlayingCard({ card, className = '', style }: Props) {
                 animate={{ rotateY: card.faceUp ? 180 : 0 }}
                 transition={{ duration: 0.42, ease: 'easeInOut' }}
                 style={{ transformStyle: 'preserve-3d' }}
-                className="relative h-full w-full"
+                className="relative h-full w-full rounded-[inherit]"
             >
                 {/* Back face */}
                 <div
@@ -269,7 +258,7 @@ export default function PlayingCard({ card, className = '', style }: Props) {
                         boxShadow: '0 2px 8px rgba(0,0,0,0.20), 0 1px 3px rgba(0,0,0,0.14)',
                     }}
                 >
-                    <Front card={card} />
+                    <Front card={card} compact={compact} />
                 </div>
             </motion.div>
         </div>
