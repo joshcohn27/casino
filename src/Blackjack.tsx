@@ -158,12 +158,12 @@ function TableLabel() {
                 style={{ fontFamily: 'Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
                 Blackjack
             </h1>
-            <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">
-                <span>Blackjack Pays 3 to 2</span>
+            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                <span>BLACKJACK PAYS 3 to 2</span>
                 <span className="text-white/20">·</span>
-                <span>Dealer Draws to 16</span>
+                <span>DEALER DRAWS TO 16</span>
                 <span className="text-white/20">·</span>
-                <span>Stands on All 17s</span>
+                <span>STANDS ON ALL 17s</span>
             </div>
         </div>
     );
