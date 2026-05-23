@@ -151,6 +151,24 @@ function Badge({ result }: { result: string }) {
     );
 }
 
+function TableLabel() {
+    return (
+        <div className="flex flex-col items-center gap-1 select-none">
+            <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                style={{ fontFamily: 'Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+                Blackjack
+            </h1>
+            <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">
+                <span>Blackjack Pays 3 to 2</span>
+                <span className="text-white/20">·</span>
+                <span>Dealer Draws to 16</span>
+                <span className="text-white/20">·</span>
+                <span>Stands on All 17s</span>
+            </div>
+        </div>
+    );
+}
+
 function BetBar({ pendingBet, wagered, returned, net, stage }: {
     pendingBet: number; wagered: number; returned: number; net: number; stage: Stage;
 }) {
@@ -781,6 +799,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                 }
             >
                 <div className="flex flex-1 flex-col items-center gap-5 py-2">
+
+                    <TableLabel />
 
                     <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
 
