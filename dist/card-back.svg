@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140">
+  <defs>
+    <!--
+      Diamond lattice: gold lozenges on white, 10×10 tile.
+      Clip inset = 10 px (= 1 tile) on every side so tile boundaries
+      land exactly on clip edges — every diamond is fully intact with
+      ~1 px of white between the outermost diamonds and the frame.
+    -->
+    <pattern id="lattice" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="white"/>
+      <polygon points="5,1 9,5 5,9 1,5" fill="#c9952a"/>
+    </pattern>
+
+    <!-- Inner pattern zone: hard stop 10 px from every edge -->
+    <clipPath id="pattern-clip">
+      <rect x="10" y="10" width="80" height="120"/>
+    </clipPath>
+  </defs>
+
+  <!-- White card base — shows through as the solid frame surrounding the lattice -->
+  <rect width="100" height="140" rx="7" fill="white"/>
+
+  <!-- Gold diamond lattice — clipped to inner zone, never clips at card edges -->
+  <rect width="100" height="140" fill="url(#lattice)" clip-path="url(#pattern-clip)"/>
+
+  <!--
+    Border rings (outermost → innermost):
+    gold outline / white gap / thin gold accent — sit on top of the frame.
+  -->
+  <rect x="3.5" y="3.5" width="93"  height="133" rx="5.5" fill="none" stroke="#c9952a" stroke-width="1.8"/>
+  <rect x="6"   y="6"   width="88"  height="128" rx="4"   fill="none" stroke="white"   stroke-width="3.2"/>
+  <rect x="9"   y="9"   width="82"  height="122" rx="2.5" fill="none" stroke="#c9952a" stroke-width="0.75"/>
+
+  <!-- Center cartouche -->
+  <ellipse cx="50" cy="70" rx="29" ry="20.5" fill="white" stroke="#c9952a" stroke-width="1.8"/>
+  <ellipse cx="50" cy="70" rx="25.5" ry="17"  fill="none"  stroke="#c9952a" stroke-width="0.55"/>
+
+  <text
+    x="50" y="70"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="Georgia, 'Palatino Linotype', Palatino, serif"
+    font-size="12"
+    font-style="italic"
+    font-weight="bold"
+    letter-spacing="1.2"
+    fill="#c9952a"
+  >Cohn</text>
+</svg>
