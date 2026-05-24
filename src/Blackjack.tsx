@@ -21,19 +21,20 @@ const SHOE_DECKS = 6;
 const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
+const PLAYER_TO_DEALER_DELAY_MS = 750;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
 
 const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
-    1:    { bg: '#f1f5f9', border: '#94a3b8', text: '#1e293b', label: '$1'    },
-    2.5:  { bg: '#f9a8d4', border: '#be185d', text: '#500724', label: '$2.50' },
-    5:    { bg: '#dc2626', border: '#7f1d1d', text: '#fff',    label: '$5'    },
-    25:   { bg: '#16a34a', border: '#14532d', text: '#fff',    label: '$25'   },
-    100:  { bg: '#1e293b', border: '#0f172a', text: '#e2e8f0', label: '$100'  },
-    500:  { bg: '#7c3aed', border: '#4c1d95', text: '#fff',    label: '$500'  },
-    1000: { bg: '#b45309', border: '#78350f', text: '#fef3c7', label: '$1K'   },
-    5000: { bg: '#babbbd', border: '#6b7280', text: '#111827', label: '$5K'   },
+    1: { bg: '#f1f5f9', border: '#94a3b8', text: '#1e293b', label: '$1' },
+    2.5: { bg: '#f9a8d4', border: '#be185d', text: '#500724', label: '$2.50' },
+    5: { bg: '#dc2626', border: '#7f1d1d', text: '#fff', label: '$5' },
+    25: { bg: '#16a34a', border: '#14532d', text: '#fff', label: '$25' },
+    100: { bg: '#1e293b', border: '#0f172a', text: '#e2e8f0', label: '$100' },
+    500: { bg: '#7c3aed', border: '#4c1d95', text: '#fff', label: '$500' },
+    1000: { bg: '#b45309', border: '#78350f', text: '#fef3c7', label: '$1K' },
+    5000: { bg: '#babbbd', border: '#6b7280', text: '#111827', label: '$5K' },
 };
 
 function shuffle<T>(arr: T[]) {
@@ -111,7 +112,7 @@ function buildChipStackFromAmount(amount: number): ChipDenomination[] {
 
 function toShared(card: Card, faceUp: boolean): SharedCard {
     return {
-        id:   card.id,
+        id: card.id,
         suit: card.suit as SharedCard["suit"],
         rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
         faceUp,
@@ -120,7 +121,7 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 
 const CARD_VARIANTS = {
     initial: { opacity: 0, y: -18, scale: 0.94 },
-    animate: { opacity: 1, y: 0,   scale: 1    },
+    animate: { opacity: 1, y: 0, scale: 1 },
 };
 const CARD_TRANSITION = (delay: number) => ({
     duration: 0.32,
@@ -137,7 +138,7 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 const BADGE: Record<string, string> = {
-    Win:  "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
+    Win: "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
     Push: "bg-amber-500/20  border-amber-400/40  text-amber-200",
     Bust: "bg-red-500/20    border-red-400/40    text-red-300",
     Lose: "bg-red-600/20    border-red-500/40    text-red-300",
@@ -177,8 +178,8 @@ function BetBar({ pendingBet, wagered, returned, net, stage }: {
     return (
         <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
             {[
-                { label: "Bet",      val: displayBet > 0 ? fmt(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? fmt(returned) : "—",        color: "text-white" },
+                { label: "Bet", val: displayBet > 0 ? fmt(displayBet) : "—", color: "text-white" },
+                { label: "Returned", val: showResult ? fmt(returned) : "—", color: "text-white" },
                 {
                     label: "Net",
                     val: showResult ? fmt(net) : "—",
@@ -202,7 +203,7 @@ function BetBar({ pendingBet, wagered, returned, net, stage }: {
 const STACK_GAP = 9;
 
 function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: number }) {
-    const visible  = chips.slice(-3);
+    const visible = chips.slice(-3);
     const startIdx = chips.length - visible.length;
     return (
         <motion.div
@@ -229,8 +230,8 @@ function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: n
                                     boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)',
                                 }}
                                 initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                                animate={{ opacity: 1, y: 0,   scale: 1    }}
-                                exit={{    opacity: 0, y: 6,   scale: 0.8  }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 6, scale: 0.8 }}
                                 transition={{ type: 'spring', stiffness: 420, damping: 22 }}
                             >
                                 {cfg.label}
@@ -285,7 +286,7 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
     hand: Card[]; bet: number; index: number; isActive: boolean;
     stage: Stage; dealerTotal: number; dealerBusted: boolean;
 }) {
-    const t    = total(hand);
+    const t = total(hand);
     const bust = t > 21;
     const result = stage === "done" ? resultLabel(t, dealerTotal, bust, dealerBusted) : null;
     return (
@@ -322,15 +323,15 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
 // ─── Button styles ────────────────────────────────────────────────────────────
 
 const BTN_NEUTRAL = "rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GOLD    = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GREEN   = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GOLD = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GREEN = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
 
 function SlideBtn({ children }: { children: React.ReactNode }) {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1    }}
-            exit={{    opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.88 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
         >
             {children}
@@ -359,13 +360,13 @@ function BlackjackBar({
     onHit: () => void; onStay: () => void; onDouble: () => void; onSplit: () => void;
 }) {
     const isBetting = stage === "betting";
-    const isDone    = stage === "done";
-    const isPlayer  = stage === "player";
-    const isDealer  = stage === "dealer";
+    const isDone = stage === "done";
+    const isPlayer = stage === "player";
+    const isDealer = stage === "dealer";
     const showChips = !isDealer; // hide chips only while dealer is playing
 
-    const canClear      = (isBetting || isDone) && bet > 0;
-    const canDeal       = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet;
+    const canClear = (isBetting || isDone) && bet > 0;
+    const canDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet;
     const canDoubleDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet * 2;
 
     return (
@@ -457,7 +458,7 @@ function BlackjackBar({
 
             {/* Right: spacer mirrors chip tray width for true centering */}
             <div className="invisible">
-                <ChipTray selectedChip={selectedChip} onSelect={() => {}} disabled />
+                <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
             </div>
 
         </div>
@@ -468,23 +469,23 @@ function BlackjackBar({
 
 export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
-    const [deck,                setDeck]                = useState<Card[]>(() => createShoe());
-    const [dealer,              setDealer]              = useState<Card[]>([]);
-    const [hands,               setHands]               = useState<Card[][]>([]);
-    const [bets,                setBets]                = useState<number[]>([]);
-    const [active,              setActive]              = useState(0);
+    const [deck, setDeck] = useState<Card[]>(() => createShoe());
+    const [dealer, setDealer] = useState<Card[]>([]);
+    const [hands, setHands] = useState<Card[][]>([]);
+    const [bets, setBets] = useState<number[]>([]);
+    const [active, setActive] = useState(0);
     const [dealerRevealedCount, setDealerRevealedCount] = useState(1);
-    const [bet,                 setBet]                 = useState(0);
-    const [stage,             setStage]             = useState<Stage>("betting");
-    const [message,           setMessage]           = useState("Place chips and press Deal.");
-    const [isShuffling,       setIsShuffling]       = useState(false);
+    const [bet, setBet] = useState(0);
+    const [stage, setStage] = useState<Stage>("betting");
+    const [message, setMessage] = useState("Place chips and press Deal.");
+    const [isShuffling, setIsShuffling] = useState(false);
     const [isResolvingAction, setIsResolvingAction] = useState(false);
-    const [roundReturned,     setRoundReturned]     = useState(0);
-    const [roundNet,          setRoundNet]          = useState(0);
+    const [roundReturned, setRoundReturned] = useState(0);
+    const [roundNet, setRoundNet] = useState(0);
 
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
-    const [chipStack,    setChipStack]    = useState<ChipDenomination[]>([]);
-    const [baseBet,      setBaseBet]      = useState(0); // persists as default for next hand
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>([]);
+    const [baseBet, setBaseBet] = useState(0); // persists as default for next hand
     const dealBetRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -492,7 +493,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 5) * 5)));
     }, [bet]);
 
-    const activeHand   = hands[active] ?? [];
+    const activeHand = hands[active] ?? [];
     const totalWagered = bets.reduce((s, w) => s + w, 0);
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
@@ -508,7 +509,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
     const finishRoundWithoutDealer = async (finalHands: Card[][], wagersInPlay: number[] = bets) => {
         const allBusted = finalHands.length > 0 && finalHands.every((h) => total(h) > 21);
-        const wagered   = wagersInPlay.reduce((s, w) => s + w, 0);
+        const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
         setRoundReturned(0);
         setRoundNet(-wagered);
         if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(1000); }
@@ -519,13 +520,13 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const dealerTurn = async (
         handsInPlay: Card[][] = hands,
         wagersInPlay: number[] = bets,
-        shoeInPlay: Card[]    = deck,
+        shoeInPlay: Card[] = deck,
     ) => {
         const liveHands = handsInPlay.filter((h) => total(h) <= 21);
         if (liveHands.length === 0) { await finishRoundWithoutDealer(handsInPlay, wagersInPlay); return; }
 
         let nextDealer = [...dealer];
-        let nextDeck   = [...shoeInPlay];
+        let nextDeck = [...shoeInPlay];
         let revealedCount = 1;
 
         setStage("dealer");
@@ -552,16 +553,16 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         setDeck(nextDeck);
         setDealerRevealedCount(nextDealer.length);
 
-        const dt           = total(nextDealer);
+        const dt = total(nextDealer);
         const dealerBusted = dt > 21;
         let returned = 0;
 
         handsInPlay.forEach((hand, i) => {
-            const pt    = total(hand);
+            const pt = total(hand);
             const wager = wagersInPlay[i];
             if (pt > 21) return;
             if (dealerBusted || pt > dt) returned += wager * 2;
-            else if (pt === dt)          returned += wager;
+            else if (pt === dt) returned += wager;
         });
 
         const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
@@ -575,11 +576,11 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const ensureHandHasSecondCard = async (handsInPlay: Card[][], idx: number, shoeInPlay: Card[]) => {
         const target = handsInPlay[idx];
         if (!target || target.length !== 1) return { hands: handsInPlay, deck: shoeInPlay };
-        const nextDeck  = [...shoeInPlay];
-        const drawn     = nextDeck.shift();
+        const nextDeck = [...shoeInPlay];
+        const drawn = nextDeck.shift();
         if (!drawn) return { hands: handsInPlay, deck: shoeInPlay };
         const nextHands = [...handsInPlay];
-        nextHands[idx]  = [...nextHands[idx], drawn];
+        nextHands[idx] = [...nextHands[idx], drawn];
         setHands(nextHands);
         setDeck(nextDeck);
         await wait(250);
@@ -587,20 +588,45 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     };
 
     const moveToNextHand = async (
-        nextHands: Card[][], nextDeck: Card[], nextBets: number[], currentActive = active,
+        nextHands: Card[][],
+        nextDeck: Card[],
+        nextBets: number[],
+        currentActive = active,
     ) => {
         const nextIdx = currentActive + 1;
+
         if (nextIdx < nextHands.length) {
             setActive(nextIdx);
             setMessage(`Playing hand ${nextIdx + 1} of ${nextHands.length}.`);
-            const dealt     = await ensureHandHasSecondCard(nextHands, nextIdx, nextDeck);
-            const nextHand  = dealt.hands[nextIdx];
+
+            const dealt = await ensureHandHasSecondCard(nextHands, nextIdx, nextDeck);
+            const nextHand = dealt.hands[nextIdx];
             const nextTotal = total(nextHand);
-            if (nextTotal === 21) { setMessage(`Hand ${nextIdx + 1} makes 21.`); await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx); return; }
-            if (nextTotal >  21)  { setMessage(`Hand ${nextIdx + 1} busts.`);   await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx); return; }
+
+            if (nextTotal === 21) {
+                setMessage(`Hand ${nextIdx + 1} makes 21.`);
+                await wait(PLAYER_TO_DEALER_DELAY_MS);
+                await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx);
+                return;
+            }
+
+            if (nextTotal > 21) {
+                setMessage(`Hand ${nextIdx + 1} busts.`);
+                await wait(PLAYER_TO_DEALER_DELAY_MS);
+                await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx);
+                return;
+            }
+
             return;
         }
-        if (nextHands.some((h) => total(h) <= 21)) { await dealerTurn(nextHands, nextBets, nextDeck); return; }
+
+        if (nextHands.some((h) => total(h) <= 21)) {
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
+            await dealerTurn(nextHands, nextBets, nextDeck);
+            return;
+        }
+
+        await wait(PLAYER_TO_DEALER_DELAY_MS);
         await finishRoundWithoutDealer(nextHands, nextBets);
     };
 
@@ -612,14 +638,14 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             if (hand.length !== 2 || hand[0].value !== hand[1].value || bankroll < bets[active]) return;
             setBankroll((b) => b - bets[active]);
             const nextHands = [...hands.slice(0, active), [hand[0]], [hand[1]], ...hands.slice(active + 1)];
-            const nextBets  = [...bets.slice(0, active),  bets[active], bets[active], ...bets.slice(active + 1)];
+            const nextBets = [...bets.slice(0, active), bets[active], bets[active], ...bets.slice(active + 1)];
             setHands(nextHands);
             setBets(nextBets);
             setMessage(`Split hand ${active + 1}.`);
-            const dealt       = await ensureHandHasSecondCard(nextHands, active, deck);
+            const dealt = await ensureHandHasSecondCard(nextHands, active, deck);
             const activeTotal = total(dealt.hands[active]);
             if (activeTotal === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(dealt.hands, dealt.deck, nextBets, active); return; }
-            if (activeTotal >  21)  { setMessage(`Hand ${active + 1} busts.`);   await moveToNextHand(dealt.hands, dealt.deck, nextBets, active); }
+            if (activeTotal > 21) { setMessage(`Hand ${active + 1} busts.`); await moveToNextHand(dealt.hands, dealt.deck, nextBets, active); }
         } finally { setIsResolvingAction(false); }
     };
 
@@ -676,15 +702,15 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         if (isResolvingAction) return;
         setIsResolvingAction(true);
         try {
-            const nextDeck  = [...deck];
-            const card      = nextDeck.shift();
+            const nextDeck = [...deck];
+            const card = nextDeck.shift();
             if (!card) return;
             const nextHands = [...hands];
             nextHands[active] = [...nextHands[active], card];
             setDeck(nextDeck); setHands(nextHands);
             const t = total(nextHands[active]);
             if (t === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(nextHands, nextDeck, bets); return; }
-            if (t >  21)  { setMessage(`Hand ${active + 1} busts.`);   await moveToNextHand(nextHands, nextDeck, bets); }
+            if (t > 21) { setMessage(`Hand ${active + 1} busts.`); await moveToNextHand(nextHands, nextDeck, bets); }
         } finally { setIsResolvingAction(false); }
     };
 
@@ -702,8 +728,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             const wager = bets[active];
             if (bankroll < wager) return;
             setBankroll((b) => b - wager);
-            const nextBets  = [...bets]; nextBets[active] *= 2; setBets(nextBets);
-            const nextDeck  = [...deck]; const card = nextDeck.shift(); if (!card) return;
+            const nextBets = [...bets]; nextBets[active] *= 2; setBets(nextBets);
+            const nextDeck = [...deck]; const card = nextDeck.shift(); if (!card) return;
             const nextHands = [...hands]; nextHands[active] = [...nextHands[active], card];
             setDeck(nextDeck); setHands(nextHands);
             if (total(nextHands[active]) > 21) setMessage(`Hand ${active + 1} busts after doubling.`);
@@ -756,7 +782,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         stage === "player" && activeHand.length === 2 && hands.length < MAX_HANDS &&
         activeHand[0]?.value === activeHand[1]?.value && bankroll >= (bets[active] ?? 0);
     const canDouble = stage === "player" && activeHand.length === 2 && bankroll >= (bets[active] ?? 0);
-    const dealerT      = dealer.length ? total(dealer) : 0;
+    const dealerT = dealer.length ? total(dealer) : 0;
     const dealerBusted = dealerT > 21;
 
     return (
