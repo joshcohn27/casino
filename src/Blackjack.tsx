@@ -21,7 +21,7 @@ const SHOE_DECKS = 6;
 const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
-const PLAYER_TO_DEALER_DELAY_MS = 900;
+const PLAYER_TO_DEALER_DELAY_MS = 700;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
