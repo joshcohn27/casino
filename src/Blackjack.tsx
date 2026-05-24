@@ -21,7 +21,7 @@ const SHOE_DECKS = 6;
 const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
-const PLAYER_TO_DEALER_DELAY_MS = 900;
+const PLAYER_TO_DEALER_DELAY_MS = 500;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
@@ -97,6 +97,14 @@ function shouldShuffle(shoe: Card[]) {
 
 function wait(ms: number) {
     return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
+function waitForPaint() {
+    return new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => resolve());
+        });
+    });
 }
 
 function buildChipStackFromAmount(amount: number): ChipDenomination[] {
@@ -605,6 +613,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
             if (nextTotal === 21) {
                 setMessage(`Hand ${nextIdx + 1} makes 21.`);
+                await waitForPaint();
                 await wait(PLAYER_TO_DEALER_DELAY_MS);
                 await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx);
                 return;
@@ -612,6 +621,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
             if (nextTotal > 21) {
                 setMessage(`Hand ${nextIdx + 1} busts.`);
+                await waitForPaint();
                 await wait(PLAYER_TO_DEALER_DELAY_MS);
                 await moveToNextHand(dealt.hands, dealt.deck, nextBets, nextIdx);
                 return;
@@ -621,11 +631,13 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         }
 
         if (nextHands.some((h) => total(h) <= 21)) {
+            await waitForPaint();
             await wait(PLAYER_TO_DEALER_DELAY_MS);
             await dealerTurn(nextHands, nextBets, nextDeck);
             return;
         }
 
+        await waitForPaint();
         await wait(PLAYER_TO_DEALER_DELAY_MS);
         await finishRoundWithoutDealer(nextHands, nextBets);
     };
