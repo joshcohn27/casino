@@ -1,6 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/casino/(.*\\.svg)", "destination": "/casino/$1" },
-    { "source": "/casino/(.*)", "destination": "/casino/index.html" }
-  ]
-}
