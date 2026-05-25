@@ -202,7 +202,7 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 
 const CARD_VARIANTS = { initial: { opacity: 0, y: -18, scale: 0.94 }, animate: { opacity: 1, y: 0, scale: 1 } };
 const CARD_TRANSITION = (delay: number) => ({ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay });
-const CARD_CLS = "h-[72px] w-[50px] rounded-[8px]";
+const CARD_CLS = "h-[94px] w-[66px] rounded-[10px]";
 
 function chipColor(chip: ChipDenomination): { bg: string; border: string } {
     if (chip === 1)    return { bg: "#f1f5f9", border: "#94a3b8" };
@@ -270,7 +270,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function BetBar({ pendingBet, returned, net, showResult }: { pendingBet: number; returned: number; net: number; showResult: boolean; }) {
     const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
     return (
-        <div className="flex items-center justify-center gap-6 rounded-2xl border border-white/10 bg-black/25 px-6 py-2">
+        <div className="flex items-center justify-center gap-6 py-1">
             <div className="text-center">
                 <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Bet</div>
                 <div className="text-sm font-extrabold text-white">{formatMoney(pendingBet)}</div>
@@ -293,10 +293,10 @@ function BetBar({ pendingBet, returned, net, showResult }: { pendingBet: number;
 
 // ─── BetCircle ────────────────────────────────────────────────────────────────
 
-function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip, isWinner, onAdd, onClear }: {
+function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip, isWinner, diamond, onAdd, onClear }: {
     label: string; sublabel?: string; amount: number; size: "large" | "small";
     locked?: boolean; canBet: boolean; selectedChip: ChipDenomination | null;
-    isWinner?: boolean; onAdd: () => void; onClear: () => void;
+    isWinner?: boolean; diamond?: boolean; onAdd: () => void; onClear: () => void;
 }) {
     const dim = size === "large" ? 90 : 70;
     const chips = buildChipStack(amount).slice(0, 5);
@@ -304,31 +304,35 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
     const clearable = !locked && canBet && amount > 0;
     const ringClass = isWinner
         ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]"
+        : diamond
+        ? amount > 0 ? "border-amber-400/60" : "border-amber-300/25"
         : amount > 0 ? "border-white/40" : "border-white/20";
     const bgClass = isWinner ? "bg-amber-300/10" : amount > 0 ? "bg-black/25" : "bg-black/20";
 
     return (
         <div className="flex flex-col items-center gap-1">
-            <div className="relative">
+            <div className="relative" style={diamond ? { padding: "10px" } : undefined}>
                 <button
                     onClick={clickable ? onAdd : undefined}
                     disabled={!clickable}
-                    className={`flex flex-col items-center justify-center rounded-full border-2 transition-all duration-200 ${ringClass} ${bgClass} ${clickable ? "hover:border-white/60 cursor-pointer" : "cursor-default"}`}
-                    style={{ width: dim, height: dim }}
+                    className={`flex flex-col items-center justify-center border-2 transition-all duration-200 ${diamond ? "rounded-sm" : "rounded-full"} ${ringClass} ${bgClass} ${clickable ? (diamond ? "hover:border-amber-300/80 cursor-pointer" : "hover:border-white/60 cursor-pointer") : "cursor-default"}`}
+                    style={{ width: dim, height: dim, ...(diamond ? { transform: "rotate(45deg)" } : {}) }}
                 >
-                    {chips.length > 0 ? (
-                        <div className="flex flex-col items-center">
-                            <div className="flex flex-col-reverse items-center">
-                                {chips.slice(0, 4).map((chip, i) => {
-                                    const c = chipColor(chip);
-                                    return <div key={i} className="rounded-full border" style={{ width: 22, height: 7, background: c.bg, borderColor: c.border, marginTop: i > 0 ? -3 : 0 }} />;
-                                })}
-                            </div>
-                            <span className="mt-1 text-[10px] font-extrabold text-white">{formatMoney(amount)}</span>
-                        </div>
-                    ) : (
-                        <span className="text-[9px] text-white/30">{locked && amount > 0 ? formatMoney(amount) : "—"}</span>
-                    )}
+                    <div style={diamond ? { transform: "rotate(-45deg)" } : undefined} className="flex flex-col items-center">
+                        {chips.length > 0 ? (
+                            <>
+                                <div className="flex flex-col-reverse items-center">
+                                    {chips.slice(0, 4).map((chip, i) => {
+                                        const c = chipColor(chip);
+                                        return <div key={i} className="rounded-full border" style={{ width: 22, height: 7, background: c.bg, borderColor: c.border, marginTop: i > 0 ? -3 : 0 }} />;
+                                    })}
+                                </div>
+                                <span className="mt-1 text-[10px] font-extrabold text-white">{formatMoney(amount)}</span>
+                            </>
+                        ) : (
+                            <span className="text-[9px] text-white/30">{locked && amount > 0 ? formatMoney(amount) : "—"}</span>
+                        )}
+                    </div>
                 </button>
                 {clearable && (
                     <button onClick={onClear} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500/80 text-[11px] font-bold text-white transition hover:bg-red-500" aria-label={`Clear ${label} bet`}>×</button>
@@ -345,13 +349,13 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
 function PayoutColumn({ title, entries, highlight }: { title: string; entries: Record<string, number>; highlight?: string | null; }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-[9px] font-extrabold uppercase tracking-[0.2em] text-amber-200/60 text-center">{title}</div>
+            <div className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70 text-center">{title}</div>
             {Object.entries(entries).sort((a, b) => b[1] - a[1]).map(([hand, mult]) => {
                 const isHit = highlight === hand;
                 return (
-                    <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[10px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
-                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/40"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/30"}`}>{mult}:1</span>
+                    <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
+                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
+                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
                     </div>
                 );
             })}
@@ -588,126 +592,112 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     </div>
                 }
             >
-                {/* Three-column layout */}
+                {/* Title — full width at the very top */}
+                <div className="mb-3 flex select-none flex-col items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90" style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+                            Ultimate Texas Hold&apos;em
+                        </h1>
+                        <button onClick={() => setShowRules(true)} className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15" aria-label="Show rules">i</button>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                        <span>DEALER QUALIFIES WITH PAIR OR BETTER</span>
+                        <span className="text-white/20">·</span>
+                        <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] text-white/25">
+                        <span>PLAY BET</span>
+                        <span className="text-white/15">·</span>
+                        <span>4x OR 3x PREFLOP</span>
+                        <span className="text-white/15">·</span>
+                        <span>2x AFTER FLOP</span>
+                        <span className="text-white/15">·</span>
+                        <span>1x ON RIVER</span>
+                    </div>
+                </div>
+
+                {/* Three-column body: betting left | cards center | payout tables right */}
                 <div className="flex flex-1 gap-3 overflow-hidden">
 
-                    {/* Left: Blind + Trips payout tables */}
-                    <div className="hidden w-40 shrink-0 flex-col lg:flex">
-                        <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHighlight as string | null} />
-                        <div className="mt-3">
-                            <PayoutColumn title="Trips Pays" entries={TRIPS_PAYTABLE} highlight={tripsHighlight as string | null} />
-                        </div>
-                    </div>
+                    {/* Betting column — vertically centered */}
+                    <div className="flex w-64 shrink-0 flex-col items-center justify-center gap-5 py-2">
+                        <BetBar
+                            pendingBet={committedBet}
+                            returned={payout ? payout.total : 0}
+                            net={showFinalNet ? (payout ? payout.net : visibleNet) : visibleNet}
+                            showResult={showFinalNet}
+                        />
 
-                    {/* Center: felt */}
-                    <div className="flex flex-1 flex-col items-center gap-3 py-2">
-
-                        {/* Table label */}
-                        <div className="flex select-none flex-col items-center gap-1">
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90" style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
-                                    Ultimate Texas Hold&apos;em
-                                </h1>
-                                <button onClick={() => setShowRules(true)} className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15" aria-label="Show rules">i</button>
+                        {/* Betting circles */}
+                        <div className="flex flex-col items-center gap-5">
+                            {/* Row 1: TRIPS (diamond) + 6 CARD (circle) */}
+                            <div className="flex items-center gap-8">
+                                <BetCircle
+                                    label="TRIPS"
+                                    sublabel={`max $${MAX_TRIPS}`}
+                                    amount={trips}
+                                    size="small"
+                                    diamond
+                                    canBet={isBetting}
+                                    selectedChip={selectedChip}
+                                    onAdd={() => setTrips(t => Math.min(MAX_TRIPS, t + (selectedChip ?? 0)))}
+                                    onClear={() => setTrips(0)}
+                                />
+                                <BetCircle
+                                    label="6 CARD"
+                                    sublabel={`max $${MAX_SIX_BONUS}`}
+                                    amount={sixCardBonus}
+                                    size="small"
+                                    canBet={isBetting}
+                                    selectedChip={selectedChip}
+                                    onAdd={() => setSixCardBonus(v => Math.min(MAX_SIX_BONUS, v + (selectedChip ?? 0)))}
+                                    onClear={() => setSixCardBonus(0)}
+                                />
                             </div>
-                            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                                <span>DEALER QUALIFIES WITH PAIR OR BETTER</span>
-                                <span className="text-white/20">·</span>
-                                <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
+
+                            {/* Row 2: ANTE = BLIND */}
+                            <div className="flex items-center gap-3">
+                                <BetCircle
+                                    label="ANTE"
+                                    amount={ante}
+                                    size="large"
+                                    canBet={isBetting}
+                                    selectedChip={selectedChip}
+                                    isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)}
+                                    onAdd={() => setAnte(a => a + (selectedChip ?? 0))}
+                                    onClear={() => setAnte(MIN_MAIN_BET)}
+                                />
+                                <span className="text-base font-bold text-white/50" style={{ letterSpacing: "0.05em" }}>=</span>
+                                <BetCircle
+                                    label="BLIND"
+                                    amount={blind}
+                                    size="large"
+                                    locked
+                                    canBet={false}
+                                    selectedChip={null}
+                                    isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)}
+                                    onAdd={() => {}}
+                                    onClear={() => {}}
+                                />
                             </div>
-                        </div>
 
-                        <BetBar pendingBet={committedBet} returned={payout ? payout.total : 0} net={showFinalNet ? (payout ? payout.net : visibleNet) : visibleNet} showResult={showFinalNet} />
-
-                        {/* Cards */}
-                        <AnimatePresence mode="wait">
-                            {showSixCardView ? (
-                                <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-2">
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">6 Card Bonus</span>
-                                    <div className="flex flex-wrap items-center justify-center gap-2">
-                                        {round.player.map(card => <PlayingCard key={card.id} card={toShared(card, true)} className={CARD_CLS} />)}
-                                        <span className="text-lg font-bold text-white/30">+</span>
-                                        {round.hiddenSixBonusCards.map((card, i) => (
-                                            <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
-                                                <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                    {sixBonusResult && <span className={`text-sm font-extrabold ${sixBonusResult.category === "No Bonus" ? "text-white/50" : "text-amber-200"}`}>{sixBonusResult.category}</span>}
-                                </motion.div>
-                            ) : (
-                                <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
-                                    {/* Dealer */}
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
-                                        <div className="flex gap-2">
-                                            <AnimatePresence>
-                                                {round.dealer.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
-                                                        <PlayingCard card={toShared(card, dealerRevealed)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {round.dealer.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
-                                        </div>
-                                        {dealerHandText && <span className="text-xs font-semibold text-amber-100/70">{dealerHandText}</span>}
-                                    </div>
-                                    {/* Board */}
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
-                                        <div className="flex gap-1.5">
-                                            <AnimatePresence>
-                                                {round.board.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
-                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {stage !== "betting" && round.board.length < 5 && Array.from({ length: 5 - round.board.length }).map((_, i) => (
-                                                <div key={i} className={`${CARD_CLS} border border-white/10 bg-white/5 opacity-20`} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {/* Player */}
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="flex gap-2">
-                                            <AnimatePresence>
-                                                {round.player.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
-                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {round.player.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
-                                        </div>
-                                        {playerHandText && <span className="text-xs font-semibold text-amber-100/70">{playerHandText}</span>}
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        <p className="text-sm font-semibold text-amber-50/60">{message}</p>
-
-                        {/* Betting circles — side bets top, then Ante + Blind, then Play below */}
-                        <div className="flex flex-col items-center gap-4">
-                            {/* Side bets */}
-                            <div className="flex items-end gap-10">
-                                <BetCircle label="TRIPS" sublabel={`max $${MAX_TRIPS}`} amount={trips} size="small" canBet={isBetting} selectedChip={selectedChip} onAdd={() => setTrips(t => Math.min(MAX_TRIPS, t + (selectedChip ?? 0)))} onClear={() => setTrips(0)} />
-                                <BetCircle label="6 CARD" sublabel={`max $${MAX_SIX_BONUS}`} amount={sixCardBonus} size="small" canBet={isBetting} selectedChip={selectedChip} onAdd={() => setSixCardBonus(v => Math.min(MAX_SIX_BONUS, v + (selectedChip ?? 0)))} onClear={() => setSixCardBonus(0)} />
-                            </div>
-                            {/* Ante + Blind */}
-                            <div className="flex items-end gap-6">
-                                <BetCircle label="ANTE" amount={ante} size="large" canBet={isBetting} selectedChip={selectedChip} isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)} onAdd={() => setAnte(a => a + (selectedChip ?? 0))} onClear={() => setAnte(MIN_MAIN_BET)} />
-                                <BetCircle label="BLIND" sublabel="= ANTE" amount={blind} size="large" locked canBet={false} selectedChip={null} isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)} onAdd={() => {}} onClear={() => {}} />
-                            </div>
-                            {/* Play below */}
-                            <BetCircle label="PLAY" amount={play} size="large" locked canBet={false} selectedChip={null} isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded && play > 0)} onAdd={() => {}} onClear={() => {}} />
+                            {/* Row 3: PLAY */}
+                            <BetCircle
+                                label="PLAY"
+                                amount={play}
+                                size="large"
+                                locked
+                                canBet={false}
+                                selectedChip={null}
+                                isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded && play > 0)}
+                                onAdd={() => {}}
+                                onClear={() => {}}
+                            />
                         </div>
 
-                        {/* Settlement — compact, no background box */}
+                        {/* Settlement — no background box */}
                         {resolvedHand && payout && stage === "roundOver" && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="mt-1 flex flex-col items-center gap-2">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2">
                                 <div className="flex items-center gap-4 text-xs">
                                     <div className="text-center">
                                         <div className="text-[9px] uppercase tracking-[0.12em] text-white/35">Player</div>
@@ -740,9 +730,90 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         )}
                     </div>
 
-                    {/* Right: 6 Card Bonus payout table */}
-                    <div className="hidden w-40 shrink-0 flex-col lg:flex">
-                        <PayoutColumn title="6 Card Bonus" entries={SIX_CARD_BONUS_PAYTABLE as Record<string, number>} highlight={sixCardHighlight as string | null} />
+                    {/* Cards column — vertically centered */}
+                    <div className="flex flex-1 flex-col items-center justify-center gap-5 py-2">
+                        <AnimatePresence mode="wait">
+                            {showSixCardView ? (
+                                <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">6 Card Bonus</span>
+                                    <div className="flex flex-wrap items-center justify-center gap-2">
+                                        {round.player.map(card => <PlayingCard key={card.id} card={toShared(card, true)} className={CARD_CLS} />)}
+                                        <span className="text-lg font-bold text-white/30">+</span>
+                                        {round.hiddenSixBonusCards.map((card, i) => (
+                                            <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                                <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                    {sixBonusResult && <span className={`text-sm font-extrabold ${sixBonusResult.category === "No Bonus" ? "text-white/50" : "text-amber-200"}`}>{sixBonusResult.category}</span>}
+                                </motion.div>
+                            ) : (
+                                <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-5">
+                                    {/* Dealer */}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                                        <div className="flex gap-2">
+                                            <AnimatePresence>
+                                                {round.dealer.map((card, i) => (
+                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                                        <PlayingCard card={toShared(card, dealerRevealed)} className={CARD_CLS} />
+                                                    </motion.div>
+                                                ))}
+                                            </AnimatePresence>
+                                            {round.dealer.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
+                                        </div>
+                                        {dealerHandText && <span className="text-xs font-semibold text-amber-100/70">{dealerHandText}</span>}
+                                    </div>
+                                    {/* Board */}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
+                                        <div className="flex gap-2">
+                                            <AnimatePresence>
+                                                {round.board.map((card, i) => (
+                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
+                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
+                                                    </motion.div>
+                                                ))}
+                                            </AnimatePresence>
+                                            {stage !== "betting" && round.board.length < 5 && Array.from({ length: 5 - round.board.length }).map((_, i) => (
+                                                <div key={i} className={`${CARD_CLS} border border-white/10 bg-white/5 opacity-20`} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {/* Player */}
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="flex gap-2">
+                                            <AnimatePresence>
+                                                {round.player.map((card, i) => (
+                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
+                                                    </motion.div>
+                                                ))}
+                                            </AnimatePresence>
+                                            {round.player.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
+                                        </div>
+                                        {playerHandText && <span className="text-xs font-semibold text-amber-100/70">{playerHandText}</span>}
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        <p className="text-sm font-semibold text-amber-50/60">{message}</p>
+                    </div>
+
+                    {/* Payout tables — vertically centered, right side */}
+                    <div className="hidden w-72 shrink-0 flex-col justify-center lg:flex">
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHighlight as string | null} />
+                            </div>
+                            <div className="flex flex-1 flex-col">
+                                <PayoutColumn title="Trips Pays" entries={TRIPS_PAYTABLE} highlight={tripsHighlight as string | null} />
+                                <div className="mt-3">
+                                    <PayoutColumn title="6 Card Bonus" entries={SIX_CARD_BONUS_PAYTABLE as Record<string, number>} highlight={sixCardHighlight as string | null} />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </TableShell>
