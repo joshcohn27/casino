@@ -430,7 +430,6 @@ function ResultBanner({ winner, pandaHit, dragonHit }: {
 const BTN_BASE    = "rounded-xl px-4 py-2.5 text-sm font-extrabold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
 const BTN_NEUTRAL = `${BTN_BASE} border border-white/20 bg-white/10 text-white hover:bg-white/16`;
 const BTN_GOLD    = `${BTN_BASE} border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] text-slate-950 hover:brightness-105`;
-const BTN_GREEN   = `${BTN_BASE} border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] text-slate-950 hover:brightness-105`;
 
 function SlideBtn({ children }: { children: React.ReactNode }) {
     return (
@@ -450,18 +449,18 @@ function SlideBtn({ children }: { children: React.ReactNode }) {
 function BaccaratBar({
     stage, isShuffling, totalBet, bankroll,
     selectedChip, onChipSelect,
-    onClear, onDeal, onDoubleAndDeal,
+    onClear, onDeal, onChangeBet,
 }: {
     stage: Stage; isShuffling: boolean; totalBet: number; bankroll: number;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onDeal: () => void; onDoubleAndDeal: () => void;
+    onClear: () => void; onDeal: () => void; onChangeBet: () => void;
 }) {
     const isBetting = stage === "betting";
     const isDone    = stage === "done";
     const isDealing = stage === "dealing";
 
     const canDeal       = (isBetting || isDone) && !isShuffling && totalBet > 0 && bankroll >= totalBet;
-    const canDoubleDeal = isDone && !isShuffling && totalBet > 0 && bankroll >= totalBet * 2;
+    const canChangeBet  = isDone;
     const canClear      = (isBetting || isDone) && totalBet > 0;
 
     return (
@@ -484,18 +483,19 @@ function BaccaratBar({
                             <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling}>Clear</button>
                         </SlideBtn>
                     )}
+                    {isDone && (
+                        <SlideBtn key="change-bet">
+                            <button className={BTN_NEUTRAL} onClick={onChangeBet} disabled={!canChangeBet}>
+                                Change Bet
+                            </button>
+                        </SlideBtn>
+                    )}
                     {(isBetting || isDone) && (
                         <SlideBtn key="deal">
                             <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
-                    {isDone && (
-                        <SlideBtn key="double-deal">
-                            <button className={BTN_GREEN} onClick={onDoubleAndDeal} disabled={!canDoubleDeal}>
-                                Double &amp; Deal
-                            </button>
-                        </SlideBtn>
-                    )}
+                    
                     {isDealing && (
                         <motion.span
                             key="dealing"
@@ -854,29 +854,6 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         );
     };
 
-    const doubleAndDeal = () => {
-        if (totalBet <= 0 || bankroll < totalBet * 2) return;
-        const d = {
-            player: sanitizeBet(playerBet * 2),
-            banker: sanitizeBet(bankerBet * 2),
-            tie:    sanitizeBet(tieBet    * 2),
-            panda:  sanitizeBet(pandaBet  * 2),
-            dragon: sanitizeBet(dragonBet * 2),
-        };
-        if (d.player > 0) setPlayerChips(buildChipStackFromAmount(d.player)); else setPlayerChips([]);
-        if (d.banker > 0) setBankerChips(buildChipStackFromAmount(d.banker)); else setBankerChips([]);
-        if (d.tie    > 0) setTieChips(buildChipStackFromAmount(d.tie));       else setTieChips([]);
-        if (d.panda  > 0) setPandaChips(buildChipStackFromAmount(d.panda));   else setPandaChips([]);
-        if (d.dragon > 0) setDragonChips(buildChipStackFromAmount(d.dragon)); else setDragonChips([]);
-        setPlayerBet(d.player); setBankerBet(d.banker); setTieBet(d.tie);
-        setPandaBet(d.panda);   setDragonBet(d.dragon);
-        setPlayerCards([]); setBankerCards([]);
-        setWinner(null); setPandaHitResult(false); setDragonHitResult(false);
-        dealOverridesRef.current = d;
-        setStage("betting");
-        setTimeout(() => void deal(), 0);
-    };
-
     const playerWon = winner === "player";
     const bankerWon = winner === "banker";
     const tieWon    = winner === "tie";
@@ -911,7 +888,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             else clearAllBets();
                         }}
                         onDeal={() => void deal()}
-                        onDoubleAndDeal={doubleAndDeal}
+                        onChangeBet={() => nextRound(false)}
                     />
                 }
             >
