@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import TableShell from "./shared/TableShell";
+import ChipTray from "./shared/ChipTray";
+import PlayingCard from "./shared/Card";
+import type { Card as SharedCard } from "./shared/cards";
+import type { ChipDenomination } from "./shared/money";
+
+// ─── Types (preserved) ───────────────────────────────────────────────────────
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
@@ -56,6 +63,8 @@ type RoundBreakdown = {
     sideBets: SideBetBreakdown[];
 };
 
+// ─── Game constants (preserved) ──────────────────────────────────────────────
+
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"] as Suit[];
 const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
@@ -74,8 +83,37 @@ const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION
 const SIDE_MAX = 100;
 const SIDE_STEP = 5;
 
-const CARD_BACK_URL =
-    "https://png.pngtree.com/png-clipart/20240206/original/pngtree-single-playing-cards-back-on-a-white-background-with-shadow-and-png-image_14247732.png";
+// ─── UI constants ─────────────────────────────────────────────────────────────
+
+const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
+const CARD_VARIANTS = {
+    initial: { opacity: 0, y: -18, scale: 0.94 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+};
+const CARD_TRANSITION = (delay: number) => ({
+    duration: 0.32,
+    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    delay,
+});
+
+const BTN_NEUTRAL = "rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GOLD    = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GREEN   = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+
+const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
+    1:    { bg: "#f1f5f9", border: "#94a3b8", text: "#1e293b", label: "$1"    },
+    2.5:  { bg: "#f9a8d4", border: "#be185d", text: "#500724", label: "$2.50" },
+    5:    { bg: "#dc2626", border: "#7f1d1d", text: "#fff",    label: "$5"    },
+    25:   { bg: "#16a34a", border: "#14532d", text: "#fff",    label: "$25"   },
+    100:  { bg: "#1e293b", border: "#0f172a", text: "#e2e8f0", label: "$100"  },
+    500:  { bg: "#7c3aed", border: "#4c1d95", text: "#fff",    label: "$500"  },
+    1000: { bg: "#b45309", border: "#78350f", text: "#fef3c7", label: "$1K"   },
+    5000: { bg: "#babbbd", border: "#6b7280", text: "#111827", label: "$5K"   },
+};
+
+const STACK_GAP = 9;
+
+// ─── Game pure functions (preserved) ─────────────────────────────────────────
 
 function shuffle<T>(arr: T[]) {
     const a = [...arr];
@@ -223,27 +261,19 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
     const basePaid = !hand.baseBet.isFree;
     const paidDouble = hand.doubleType === "paid";
     const freeDouble = hand.doubleType === "free";
-
     const moneyAtRisk = getHandMoneyAtRisk(hand);
 
     const win =
-        !busted &&
-        !dealerHas22 &&
-        (dealerBusted || handTotal > dealerTotal);
-
-    const push = !busted && (dealerHas22 || (!dealerBusted && handTotal === dealerTotal));
+        !busted && !dealerHas22 && (dealerBusted || handTotal > dealerTotal);
+    const push =
+        !busted && (dealerHas22 || (!dealerBusted && handTotal === dealerTotal));
 
     let totalReturn = 0;
     const lines: string[] = [];
 
     if (busted) {
         lines.push(`Lost ${formatMoney(moneyAtRisk)}.`);
-        return {
-            result,
-            settlementText: lines,
-            totalReturn,
-            netProfit: totalReturn - moneyAtRisk,
-        };
+        return { result, settlementText: lines, totalReturn, netProfit: totalReturn - moneyAtRisk };
     }
 
     if (win) {
@@ -254,23 +284,15 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
             totalReturn += baseAmount;
             lines.push(`Free split win: ${formatMoney(baseAmount)} profit.`);
         }
-
         if (paidDouble) {
             totalReturn += baseAmount * 2;
             lines.push(`Paid double return: ${formatMoney(baseAmount * 2)}.`);
         }
-
         if (freeDouble) {
             totalReturn += baseAmount;
             lines.push(`Free double winnings: ${formatMoney(baseAmount)}.`);
         }
-
-        return {
-            result,
-            settlementText: lines,
-            totalReturn,
-            netProfit: totalReturn - moneyAtRisk,
-        };
+        return { result, settlementText: lines, totalReturn, netProfit: totalReturn - moneyAtRisk };
     }
 
     if (push) {
@@ -280,290 +302,495 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
         } else {
             lines.push("Free split hand pushes. Free token removed.");
         }
-
         if (paidDouble) {
             totalReturn += baseAmount;
             lines.push(`Paid double push: ${formatMoney(baseAmount)} returned.`);
         }
-
         if (freeDouble) {
             lines.push("Free double pushes. Free token removed.");
         }
-
-        return {
-            result,
-            settlementText: lines,
-            totalReturn,
-            netProfit: totalReturn - moneyAtRisk,
-        };
+        return { result, settlementText: lines, totalReturn, netProfit: totalReturn - moneyAtRisk };
     }
 
     lines.push(`Lost ${formatMoney(moneyAtRisk)}.`);
+    return { result, settlementText: lines, totalReturn, netProfit: totalReturn - moneyAtRisk };
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+
+function buildChipStackFromAmount(amount: number): ChipDenomination[] {
+    const CHIP_VALUES: ChipDenomination[] = [5000, 1000, 500, 100, 25, 5, 2.5, 1];
+    let remaining = Math.round(amount * 100);
+    const stack: ChipDenomination[] = [];
+    for (const denom of CHIP_VALUES) {
+        const cents = Math.round(Number(denom) * 100);
+        while (remaining >= cents) { stack.push(denom); remaining -= cents; }
+    }
+    return stack;
+}
+
+function toShared(card: Card, faceUp: boolean): SharedCard {
     return {
-        result,
-        settlementText: lines,
-        totalReturn,
-        netProfit: totalReturn - moneyAtRisk,
+        id: card.id,
+        suit: card.suit as SharedCard["suit"],
+        rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
+        faceUp,
     };
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+// ─── UI Components ────────────────────────────────────────────────────────────
+
+function Chip({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex rounded-full border border-sky-200/30 bg-black/35 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.22em] text-sky-50 shadow sm:px-3 sm:text-[10px] sm:tracking-[0.24em]">
+        <div className="inline-flex rounded-full border border-amber-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-100">
             {children}
         </div>
     );
 }
 
-function StatPill({
-    label,
-    value,
-    accent = "default",
-}: {
-    label: string;
-    value: React.ReactNode;
-    accent?: "default" | "gold" | "green";
-}) {
-    const accentClasses =
-        accent === "gold"
-            ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
-            : accent === "green"
-                ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-50"
-                : "border-white/10 bg-white/5 text-white";
+const BADGE: Record<string, string> = {
+    Winner:    "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
+    Blackjack: "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
+    "Push 22": "bg-amber-500/20  border-amber-400/40  text-amber-200",
+    Push:      "bg-amber-500/20  border-amber-400/40  text-amber-200",
+    Bust:      "bg-red-500/20    border-red-400/40    text-red-300",
+    Lose:      "bg-red-600/20    border-red-500/40    text-red-300",
+};
 
+function Badge({ result }: { result: string }) {
     return (
-        <div className={`rounded-2xl border px-3 py-2.5 shadow-lg sm:px-4 sm:py-3 ${accentClasses}`}>
-            <div className="text-[9px] font-bold uppercase tracking-[0.18em] opacity-80 sm:text-[10px] sm:tracking-[0.22em]">
-                {label}
-            </div>
-            <div className="mt-1 text-sm font-extrabold sm:text-lg">{value}</div>
-        </div>
+        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${BADGE[result] ?? ""}`}>
+            {result}
+        </span>
     );
 }
 
-function CardFront({ card, large = false }: { card?: Card; large?: boolean }) {
-    const isRed = card?.suit === "♥" || card?.suit === "♦";
-    const textColor = isRed ? "text-red-600" : "text-slate-900";
-    const sizeClasses = large
-        ? "h-[72px] w-[50px] rounded-[11px] sm:h-[82px] sm:w-[58px] sm:rounded-[12px] lg:h-[94px] lg:w-[66px] lg:rounded-[14px]"
-        : "h-[62px] w-[44px] rounded-[10px] sm:h-[72px] sm:w-[50px] sm:rounded-[11px] lg:h-[80px] lg:w-[56px] lg:rounded-[12px]";
-    const isAce = card?.rank === "A";
-
+function TableLabel() {
     return (
-        <div
-            className={`relative flex items-center justify-center border font-bold shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses} border-slate-300/90 bg-[linear-gradient(180deg,_#ffffff,_#f4f4f5)]`}
-        >
-            {!card ? (
-                <div className="text-xl text-slate-400 sm:text-2xl">?</div>
-            ) : (
-                <>
-                    <div className={`absolute left-[5px] top-[5px] text-left leading-[0.9] sm:left-[6px] sm:top-[6px] lg:left-[7px] lg:top-[6px] ${textColor}`}>
-                        <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">{card.rank}</div>
-                        <div className="mt-[1px] text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                    </div>
-                    <div className={`absolute bottom-[5px] right-[5px] rotate-180 text-left leading-[0.9] sm:bottom-[6px] sm:right-[6px] lg:bottom-[6px] lg:right-[7px] ${textColor}`}>
-                        <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">{card.rank}</div>
-                        <div className="mt-[1px] text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                    </div>
-                    {isAce && (
-                        <>
-                            <div className={`absolute right-[5px] top-[5px] text-center leading-[0.9] sm:right-[6px] sm:top-[6px] lg:right-[7px] lg:top-[6px] ${textColor}`}>
-                                <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">A</div>
-                                <div className="text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                            </div>
-                            <div className={`absolute bottom-[5px] left-[5px] rotate-180 text-center leading-[0.9] sm:bottom-[6px] sm:left-[6px] lg:bottom-[6px] lg:left-[7px] ${textColor}`}>
-                                <div className="text-[12px] font-extrabold sm:text-[13px] lg:text-[15px]">A</div>
-                                <div className="text-[10px] sm:text-[11px] lg:text-[13px]">{card.suit}</div>
-                            </div>
-                        </>
-                    )}
-                    <div className={`${textColor} ${isAce ? "text-[24px] sm:text-[27px] lg:text-[30px]" : "text-[18px] sm:text-[21px] lg:text-[24px]"}`}>
-                        {card.suit}
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function CardBack({ large = false }: { large?: boolean }) {
-    const sizeClasses = large
-        ? "h-[72px] w-[50px] rounded-[11px] sm:h-[82px] sm:w-[58px] sm:rounded-[12px] lg:h-[94px] lg:w-[66px] lg:rounded-[14px]"
-        : "h-[62px] w-[44px] rounded-[10px] sm:h-[72px] sm:w-[50px] sm:rounded-[11px] lg:h-[80px] lg:w-[56px] lg:rounded-[12px]";
-
-    return (
-        <div className={`relative overflow-hidden border border-white/15 bg-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses}`}>
-            <img
-                src={CARD_BACK_URL}
-                alt="Card back"
-                className="absolute left-1/2 top-1/2 h-[150%] w-[150%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover"
-                draggable={false}
-            />
-        </div>
-    );
-}
-
-function CardFace({ card, hidden = false, large = false }: { card?: Card; hidden?: boolean; large?: boolean }) {
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: -18, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            className="[perspective:1000px]"
-        >
-            <motion.div
-                animate={{ rotateY: hidden ? 0 : 180 }}
-                transition={{ duration: 0.55, ease: "easeInOut" }}
-                style={{ transformStyle: "preserve-3d" }}
-                className="relative"
+        <div className="flex flex-col items-center gap-1 select-none">
+            <h1
+                className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
             >
-                <div
-                    className="absolute inset-0"
-                    style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
-                >
-                    <CardBack large={large} />
-                </div>
-                <div style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}>
-                    <CardFront card={card} large={large} />
-                </div>
-            </motion.div>
-        </motion.div>
+                Free Bet Blackjack
+            </h1>
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                <span>BLACKJACK PAYS 3 TO 2</span>
+                <span className="text-white/20">·</span>
+                <span>FREE DOUBLES ON 9-10-11</span>
+                <span className="text-white/20">·</span>
+                <span>FREE SPLITS ON 2-9 AND ACES</span>
+                <span className="text-white/20">·</span>
+                <span>DEALER 22 PUSHES</span>
+            </div>
+        </div>
     );
 }
 
-function CardLane({
-    label,
-    cards,
-    large,
-    result,
-    hiddenIndexes = [],
+function BetBar({
+    displayBet,
+    returned,
+    net,
+    showResult,
 }: {
-    label: string;
-    cards: Array<Card | undefined>;
-    large?: boolean;
-    result?: string;
-    hiddenIndexes?: number[];
+    displayBet: number;
+    returned: number;
+    net: number;
+    showResult: boolean;
 }) {
     return (
-        <div className="flex min-w-0 flex-col items-center">
-            <SectionLabel>{label}</SectionLabel>
-            <div className="mt-2 flex max-w-full flex-wrap justify-center gap-1.5 sm:mt-3 sm:gap-2.5">
+        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
+            {[
+                { label: "Bet",      val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
+                { label: "Returned", val: showResult ? formatMoney(returned) : "—",        color: "text-white" },
+                {
+                    label: "Net",
+                    val: showResult ? `${net > 0 ? "+" : ""}${formatMoney(net)}` : "—",
+                    color: showResult
+                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
+                        : "text-white",
+                },
+            ].map(({ label, val, color }, i, arr) => (
+                <React.Fragment key={label}>
+                    <div className="text-center">
+                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
+                    </div>
+                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
+                </React.Fragment>
+            ))}
+        </div>
+    );
+}
+
+function DealerLane({ cards, revealedCount, stage }: {
+    cards: Card[]; revealedCount: number; stage: Stage;
+}) {
+    const revealed = stage === "dealer" || stage === "done";
+    const t = cards.length ? total(cards) : null;
+    return (
+        <div className="flex flex-col items-center gap-2">
+            <Chip>Dealer{revealed && t !== null ? ` · ${t}${isSoft(cards) ? " soft" : ""}` : ""}</Chip>
+            <div className="flex flex-wrap justify-center gap-2">
                 <AnimatePresence initial={false}>
-                    {cards.map((card, index) => (
+                    {cards.map((card, i) => (
                         <motion.div
-                            key={`${label}-${index}-${card?.id ?? "empty"}`}
-                            layout
-                            initial={{ opacity: 0, y: 16, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.92 }}
-                            transition={{ duration: 0.22, ease: "easeOut" }}
-                            className="shrink-0"
+                            key={card.id}
+                            variants={CARD_VARIANTS}
+                            initial="initial"
+                            animate="animate"
+                            transition={CARD_TRANSITION(i * 0.08)}
                         >
-                            <CardFace card={card} hidden={hiddenIndexes.includes(index) || !card} large={large} />
+                            <PlayingCard card={toShared(card, i < revealedCount)} className={CARD_CLS} />
                         </motion.div>
                     ))}
                 </AnimatePresence>
             </div>
-            <div className="mt-2 min-h-[18px] px-2 text-center text-xs font-semibold text-sky-50/95 sm:min-h-[20px] sm:text-sm">
-                {result ?? ""}
-            </div>
         </div>
     );
 }
 
-function ActionButton({
-    children,
-    onClick,
-    disabled,
-    variant = "default",
-}: {
-    children: React.ReactNode;
-    onClick: () => void | Promise<void>;
-    disabled?: boolean;
-    variant?: "default" | "bet" | "success";
+function HandBox({ hand, index, isActive, stage, dealerTotal }: {
+    hand: HandState; index: number; isActive: boolean; stage: Stage; dealerTotal: number;
 }) {
-    const base =
-        "min-w-[132px] rounded-2xl border px-4 py-3 text-sm font-extrabold shadow-xl transition active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-45 sm:min-w-[110px] sm:px-5";
-    const styles =
-        variant === "bet"
-            ? "border-sky-200/80 bg-[linear-gradient(180deg,_#7dd3fc,_#38bdf8)] text-slate-950 hover:brightness-105"
-            : variant === "success"
-                ? "border-emerald-200/80 bg-[linear-gradient(180deg,_#4ade80,_#16a34a)] text-slate-950 hover:brightness-105"
-                : "border-slate-500/80 bg-[linear-gradient(180deg,_#475569,_#334155)] text-white hover:brightness-110";
+    const t = total(hand.cards);
+    const bust = t > 21;
+    const result = hand.result !== "" ? hand.result : null;
+    const betTag = hand.baseBet.isFree ? "Free" : "Paid";
+    const doubleSuffix =
+        hand.doubleType === "free" ? " + Free ×2" :
+        hand.doubleType === "paid" ? " + Paid ×2" : "";
+
+    void dealerTotal;
+    void stage;
 
     return (
-        <button onClick={() => void onClick()} disabled={disabled} className={`${base} ${styles}`}>
-            {children}
-        </button>
-    );
-}
-
-function DealButton({ onClick, disabled }: { onClick: () => void | Promise<void>; disabled?: boolean }) {
-    return (
-        <motion.button
-            onClick={() => void onClick()}
-            disabled={disabled}
-            whileHover={{ scale: disabled ? 1 : 1.03 }}
-            whileTap={{ scale: disabled ? 1 : 0.98 }}
-            className="w-full max-w-[280px] rounded-full border border-sky-100/80 bg-[linear-gradient(180deg,_#bfdbfe,_#38bdf8)] px-8 py-4 text-base font-extrabold tracking-wide text-slate-950 shadow-[0_14px_34px_rgba(0,0,0,0.38)] transition disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:px-12 sm:text-lg"
+        <div className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition-colors duration-300
+            ${isActive ? "border-amber-300/50 bg-amber-300/[0.08] ring-2 ring-amber-300/20" : "border-white/10 bg-black/15"}`}
         >
-            Deal
-        </motion.button>
-    );
-}
-
-function BetInput({
-    label,
-    value,
-    onChange,
-    disabled,
-    min = MIN_BET,
-    max,
-    step = 5,
-}: {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    disabled?: boolean;
-    min?: number;
-    max?: number;
-    step?: number;
-}) {
-    return (
-        <div className="rounded-2xl border border-sky-200/15 bg-black/20 p-3">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100/85 sm:text-[11px] sm:tracking-[0.2em]">
-                {label}
+            <div className="flex items-center gap-2">
+                <Chip>Hand {index + 1}</Chip>
+                {result && <Badge result={result} />}
             </div>
-            <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-white/70">$</span>
-                <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    step={step}
-                    value={value}
-                    disabled={disabled}
-                    onChange={(e) => onChange(Number(e.target.value || 0))}
-                    className="w-full rounded-xl border border-white/10 bg-black/35 py-3 pl-8 pr-3 text-base font-bold text-white outline-none disabled:opacity-60 sm:text-lg"
-                />
+            <div className="flex flex-wrap justify-center gap-1.5">
+                <AnimatePresence initial={false}>
+                    {hand.cards.map((card, i) => (
+                        <motion.div
+                            key={card.id}
+                            variants={CARD_VARIANTS}
+                            initial="initial"
+                            animate="animate"
+                            transition={CARD_TRANSITION(i * 0.08)}
+                        >
+                            <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+            <div className="text-sm font-bold text-amber-100">
+                {t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}
+            </div>
+            <div className="text-xs text-white/45">
+                {betTag} {formatMoney(hand.baseBet.amount)}{doubleSuffix}
             </div>
         </div>
     );
 }
 
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
+function PayoutColumn({ title, entries, highlight }: {
+    title: string; entries: Record<string, number>; highlight?: string | null;
+}) {
     return (
-        <div className="rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.03))] p-3 shadow-2xl backdrop-blur sm:rounded-[1.35rem] sm:p-4">
-            <div className="mb-3 text-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-sky-100 sm:text-[12px] sm:tracking-[0.22em]">
+        <div className="flex flex-col gap-1 pt-2">
+            <div className="mb-1 text-center text-[12px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
                 {title}
             </div>
-            {children}
+            {Object.entries(entries)
+                .sort((a, b) => b[1] - a[1])
+                .map(([label, mult]) => {
+                    const isHit = highlight === label;
+                    return (
+                        <div
+                            key={label}
+                            className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[13px] transition ${isHit ? "bg-amber-300/[0.12]" : ""}`}
+                        >
+                            <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{label}</span>
+                            <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                        </div>
+                    );
+                })}
         </div>
     );
 }
 
+function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: number }) {
+    const visible  = chips.slice(-3);
+    const startIdx = chips.length - visible.length;
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.88 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="flex flex-col items-center"
+        >
+            <div
+                className="relative z-10 flex justify-center"
+                style={{ width: 48, height: 48 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
+            >
+                <AnimatePresence>
+                    {visible.map((denom, i) => {
+                        const cfg = CHIP_COLORS[denom];
+                        return (
+                            <motion.div
+                                key={startIdx + i}
+                                className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center justify-center rounded-full text-[10px] font-extrabold"
+                                style={{
+                                    bottom: i * STACK_GAP, zIndex: i + 1,
+                                    backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
+                                    boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
+                                }}
+                                initial={{ opacity: 0, y: -22, scale: 0.72 }}
+                                animate={{ opacity: 1, y: 0,   scale: 1    }}
+                                exit={{    opacity: 0, y: 6,   scale: 0.8  }}
+                                transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                            >
+                                {cfg.label}
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
+            <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-2 border-dashed border-white/30 bg-black/20 backdrop-blur-sm">
+                {visible.length === 0 && totalBet === 0 && (
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">Bet</span>
+                )}
+                {visible.length === 0 && totalBet > 0 && (
+                    <span className="text-sm font-extrabold text-amber-100/70">{formatMoney(totalBet)}</span>
+                )}
+                {visible.length > 0 && (
+                    <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
+function SideChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
+    const visible  = chips.slice(-3);
+    const startIdx = chips.length - visible.length;
+    const stackH   = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
+    return (
+        <div
+            className="relative flex cursor-pointer justify-center"
+            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
+            onClick={onClick}
+        >
+            <AnimatePresence>
+                {visible.map((denom, i) => {
+                    const cfg = CHIP_COLORS[denom];
+                    return (
+                        <motion.div
+                            key={startIdx + i}
+                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
+                            style={{
+                                bottom: i * STACK_GAP, zIndex: i + 1,
+                                backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
+                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
+                            }}
+                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
+                            animate={{ opacity: 1, y: 0,   scale: 1    }}
+                            exit={{    opacity: 0, y: 6,   scale: 0.8  }}
+                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                        >
+                            {cfg.label}
+                        </motion.div>
+                    );
+                })}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, onClick, onRemove, canBet }: {
+    chips: ChipDenomination[]; totalBet: number; label: string; sublabel: string;
+    isSelected: boolean; isWinner: boolean; onClick: () => void; onRemove: () => void; canBet: boolean;
+}) {
+    const dim  = 82;
+    const ring = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
+               : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
+               :               "border-white/30";
+    const bg   = isWinner   ? "bg-amber-300/10"
+               : isSelected ? "bg-white/10"
+               :               "bg-black/20";
+    return (
+        <div className="flex flex-col items-center">
+            {chips.length > 0 ? (
+                <SideChipStack chips={chips} onClick={onRemove} />
+            ) : (
+                <div style={{ height: 0 }} />
+            )}
+            <button
+                onClick={onClick}
+                disabled={!canBet}
+                className={`relative flex flex-col items-center justify-center rounded-full border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
+                style={{ width: dim, height: dim }}
+            >
+                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
+                <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>
+                {totalBet > 0 && (
+                    <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
+                )}
+            </button>
+        </div>
+    );
+}
+
+function SlideBtn({ children }: { children: React.ReactNode }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.88 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+function FreeBetBar({
+    stage, isShuffling, bet, buyIn, bankroll,
+    canDouble, canSplit, isFreeDouble, isFreeSplitAction, isResolvingAction,
+    canDealFromDone,
+    selectedChip, onChipSelect,
+    onClear, onChangeBet, onDeal, onHit, onStay, onDouble, onSplit,
+}: {
+    stage: Stage; isShuffling: boolean; bet: number; buyIn: number; bankroll: number;
+    canDouble: boolean; canSplit: boolean; isFreeDouble: boolean; isFreeSplitAction: boolean;
+    isResolvingAction: boolean;
+    canDealFromDone: boolean;
+    selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
+    onClear: () => void; onChangeBet: () => void; onDeal: () => void; onHit: () => void; onStay: () => void;
+    onDouble: () => void; onSplit: () => void;
+}) {
+    const isBetting = stage === "betting";
+    const isDone    = stage === "done";
+    const isPlayer  = stage === "player";
+    const isDealer  = stage === "dealer";
+
+    const canClear = isBetting && bet > 0;
+    const canDeal  = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= buyIn;
+
+    return (
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+
+            {/* Left: chip tray */}
+            <div className="flex items-center">
+                {!isDealer ? (
+                    <ChipTray
+                        selectedChip={selectedChip}
+                        onSelect={onChipSelect}
+                        disabled={isPlayer || isDone || isShuffling}
+                    />
+                ) : (
+                    <div className="w-px" />
+                )}
+            </div>
+
+            {/* Center: stage buttons */}
+            <div className="flex items-center justify-center gap-2">
+                <AnimatePresence mode="popLayout" initial={false}>
+
+                    {canClear && (
+                        <SlideBtn key="clear">
+                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling}>Clear</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="hit">
+                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="stay">
+                            <button className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stay</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="double">
+                            <button
+                                className={isFreeDouble ? BTN_GREEN : BTN_GOLD}
+                                onClick={onDouble}
+                                disabled={!canDouble || isResolvingAction}
+                            >
+                                {isFreeDouble ? "Free Double" : "Double"}
+                            </button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="split">
+                            <button
+                                className={isFreeSplitAction ? BTN_GREEN : BTN_GOLD}
+                                onClick={onSplit}
+                                disabled={!canSplit || isResolvingAction}
+                            >
+                                {isFreeSplitAction ? "Free Split" : "Split"}
+                            </button>
+                        </SlideBtn>
+                    )}
+
+                    {isDealer && (
+                        <motion.span
+                            key="dealer-msg"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-sm italic text-white/40"
+                        >
+                            Dealer playing…
+                        </motion.span>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="clear-done">
+                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="change-bet">
+                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                        </SlideBtn>
+                    )}
+
+                    {(isBetting || isDone) && (
+                        <SlideBtn key="deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={isBetting ? !canDeal : !canDealFromDone}>Deal</button>
+                        </SlideBtn>
+                    )}
+
+                </AnimatePresence>
+            </div>
+
+            {/* Right: invisible mirror for true centering */}
+            <div className="invisible">
+                <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
+            </div>
+
+        </div>
+    );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
+
+    // ── Game state (preserved) ────────────────────────────────────────────────
+
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
     const [dealer, setDealer] = useState<Card[]>([]);
     const [hands, setHands] = useState<HandState[]>([]);
@@ -592,12 +819,36 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     const [isShuffling, setIsShuffling] = useState(false);
     const [freeBetTokens, setFreeBetTokens] = useState(0);
     const [roundBreakdown, setRoundBreakdown] = useState<RoundBreakdown>({
-        totalReturned: 0,
-        totalNet: 0,
-        lines: [],
-        sideBets: [],
+        totalReturned: 0, totalNet: 0, lines: [], sideBets: [],
     });
     const [sideBetSnapshot, setSideBetSnapshot] = useState<SideBetSnapshot>({ push22: 0, potOfGold: 0 });
+
+    // ── UI state ──────────────────────────────────────────────────────────────
+
+    const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
+        if (typeof window === "undefined") return [];
+        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
+        const parsed = raw ? Number(raw) : 10;
+        const amount = Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
+        return buildChipStackFromAmount(amount);
+    });
+    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => {
+        if (typeof window === "undefined") return [];
+        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
+        const parsed = raw ? Number(raw) : 0;
+        return Number.isFinite(parsed) && parsed > 0 ? buildChipStackFromAmount(parsed) : [];
+    });
+    const [potOfGoldStack, setPotOfGoldStack] = useState<ChipDenomination[]>(() => {
+        if (typeof window === "undefined") return [];
+        const raw = window.localStorage.getItem(POT_OF_GOLD_STORAGE_KEY);
+        const parsed = raw ? Number(raw) : 0;
+        return Number.isFinite(parsed) && parsed > 0 ? buildChipStackFromAmount(parsed) : [];
+    });
+    const [selectedZone, setSelectedZone] = useState<"push22" | "potOfGold" | null>(null);
+    const [isResolvingAction, setIsResolvingAction] = useState(false);
+
+    // ── localStorage effects (preserved) ─────────────────────────────────────
 
     useEffect(() => {
         window.localStorage.setItem(BET_STORAGE_KEY, String(clampMainBet(bet)));
@@ -611,11 +862,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         window.localStorage.setItem(POT_OF_GOLD_STORAGE_KEY, String(clampSideBet(potOfGoldBet)));
     }, [potOfGoldBet]);
 
-    const dealerDisplayTotal = useMemo(() => {
-        if (dealer.length === 0) return "";
-        if (stage === "done" || stage === "dealer") return String(total(dealer));
-        return dealer[0] ? String(dealer[0].value === 11 ? 11 : dealer[0].value) : "";
-    }, [dealer, stage]);
+    // ── Derived values (preserved) ────────────────────────────────────────────
 
     const activeHand = hands[active];
 
@@ -623,55 +870,27 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         return hands.reduce((sum, hand) => sum + getHandMoneyAtRisk(hand), 0);
     }, [hands]);
 
+    void liveMoneyOnFelt;
+
     const totalBuyIn = useMemo(() => {
         if (stage === "betting") {
             return clampMainBet(bet) + clampSideBet(push22Bet) + clampSideBet(potOfGoldBet);
         }
-
-        const activeSideBets =
-            sideBetSnapshot.push22 + sideBetSnapshot.potOfGold;
-
+        const activeSideBets = sideBetSnapshot.push22 + sideBetSnapshot.potOfGold;
         return hands.reduce((sum, hand) => sum + getHandMoneyAtRisk(hand), 0) + activeSideBets;
     }, [bet, push22Bet, potOfGoldBet, stage, hands, sideBetSnapshot]);
-    
+
     const showFinalNet = stage === "done" && hands.some((h) => h.result !== "");
 
-    const handRows = hands.map((hand, index) => ({
-        label: `Hand ${index + 1}`,
-        value:
-            hand.result !== ""
-                ? `${hand.result}${hand.netProfit >= 0 ? ` • +${formatMoney(hand.netProfit)}` : ` • ${formatMoney(hand.netProfit)}`}`
-                : index === active && stage === "player"
-                    ? "Active"
-                    : "Waiting",
-    }));
+    // BetBar display: raw chip amount + side bets during betting; totalBuyIn after deal
+    const displayBet = useMemo(() => {
+        if (stage === "betting") {
+            return bet > 0 ? bet + clampSideBet(push22Bet) + clampSideBet(potOfGoldBet) : 0;
+        }
+        return totalBuyIn;
+    }, [stage, bet, push22Bet, potOfGoldBet, totalBuyIn]);
 
-    const sideBetRows = [
-        {
-            label: "Push 22",
-            value:
-                push22Bet <= 0
-                    ? "No Bet"
-                    : stage !== "done"
-                        ? "Pending"
-                        : roundBreakdown.sideBets.find((s) => s.name === "Push 22")?.resultText ?? "Lose",
-        },
-        {
-            label: "Pot of Gold",
-            value:
-                potOfGoldBet <= 0
-                    ? "No Bet"
-                    : stage !== "done"
-                        ? "Pending"
-                        : roundBreakdown.sideBets.find((s) => s.name === "Pot of Gold")?.resultText ?? "Lose",
-        },
-    ];
-
-    const preRoundRows = [
-        { label: "Base Bet", value: formatMoney(clampMainBet(bet)) },
-        { label: "Push 22", value: formatMoney(clampSideBet(push22Bet)) },
-        { label: "Pot of Gold", value: formatMoney(clampSideBet(potOfGoldBet)) },
-    ];
+    // ── Game handlers (preserved) ─────────────────────────────────────────────
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
@@ -697,20 +916,14 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                 totalReturn += returned;
                 lines.push(`Push 22 return: ${formatMoney(returned)}.`);
                 sideBets.push({
-                    name: "Push 22",
-                    wager: snapshot.push22,
-                    totalReturn: returned,
-                    netProfit,
+                    name: "Push 22", wager: snapshot.push22, totalReturn: returned, netProfit,
                     detail: `Dealer made 22. ${formatMoney(snapshot.push22)} bet paid 11 to 1 and returned ${formatMoney(returned)} total.`,
                     resultText: "Win 11 to 1",
                 });
             } else {
                 lines.push(`Push 22 lost ${formatMoney(snapshot.push22)}.`);
                 sideBets.push({
-                    name: "Push 22",
-                    wager: snapshot.push22,
-                    totalReturn: 0,
-                    netProfit: -snapshot.push22,
+                    name: "Push 22", wager: snapshot.push22, totalReturn: 0, netProfit: -snapshot.push22,
                     detail: `Dealer finished on ${dealerTotal}, so the side bet lost.`,
                     resultText: "Lose",
                 });
@@ -725,32 +938,21 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                 totalReturn += returned;
                 lines.push(`Pot of Gold return: ${formatMoney(returned)} with ${tokenCount} token${tokenCount === 1 ? "" : "s"}.`);
                 sideBets.push({
-                    name: "Pot of Gold",
-                    wager: snapshot.potOfGold,
-                    totalReturn: returned,
-                    netProfit,
+                    name: "Pot of Gold", wager: snapshot.potOfGold, totalReturn: returned, netProfit,
                     detail: `${tokenCount} token${tokenCount === 1 ? "" : "s"} earned ${multiplier} to 1, returning ${formatMoney(returned)} total.`,
                     resultText: `Win ${multiplier} to 1`,
                 });
             } else {
                 lines.push(`Pot of Gold lost ${formatMoney(snapshot.potOfGold)} with ${tokenCount} tokens.`);
                 sideBets.push({
-                    name: "Pot of Gold",
-                    wager: snapshot.potOfGold,
-                    totalReturn: 0,
-                    netProfit: -snapshot.potOfGold,
+                    name: "Pot of Gold", wager: snapshot.potOfGold, totalReturn: 0, netProfit: -snapshot.potOfGold,
                     detail: `${tokenCount} token${tokenCount === 1 ? "" : "s"} did not qualify for a payout.`,
                     resultText: "Lose",
                 });
             }
         }
 
-        return {
-            totalReturn,
-            netProfit: totalReturn - snapshot.push22 - snapshot.potOfGold,
-            lines,
-            sideBets,
-        };
+        return { totalReturn, netProfit: totalReturn - snapshot.push22 - snapshot.potOfGold, lines, sideBets };
     };
 
     const applyRoundBreakdown = (
@@ -773,59 +975,37 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         });
 
         const side = settleSideBets(dealerCards, tokenCount, snapshot);
-
         const totalReturned = handsReturn + side.totalReturn;
         const totalRisk = handsRisk + snapshot.push22 + snapshot.potOfGold;
         const totalNet = totalReturned - totalRisk;
 
         setRoundBreakdown({
-            totalReturned,
-            totalNet,
+            totalReturned, totalNet,
             lines: [
-                ...handLines,
-                ...side.lines,
+                ...handLines, ...side.lines,
                 `Round total returned: ${formatMoney(totalReturned)}.`,
                 `Round net: ${totalNet >= 0 ? "+" : ""}${formatMoney(totalNet)}.`,
             ],
             sideBets: side.sideBets,
         });
 
-        if (totalReturned > 0) {
-            setBankroll((b) => b + totalReturned);
-        }
+        if (totalReturned > 0) setBankroll((b) => b + totalReturned);
     };
 
-    const finishRoundWithoutDealer = async (
-        finalHands: HandState[],
-        snapshot: SideBetSnapshot
-    ) => {
+    const finishRoundWithoutDealer = async (finalHands: HandState[], snapshot: SideBetSnapshot) => {
         const allBusted = finalHands.length > 0 && finalHands.every((hand) => total(hand.cards) > 21);
+        if (allBusted) setMessage("All hands bust. Dealer reveals hole card.");
+        else setMessage("Round complete.");
 
-        if (allBusted) {
-            setMessage("All hands bust. Dealer reveals hole card.");
-        } else {
-            setMessage("Round complete.");
-        }
-
-        if (dealer.length > 0) {
-            setDealerRevealedCount(dealer.length);
-            await wait(1000);
-        }
+        if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(1000); }
 
         const finalized = finalHands.map((hand) => {
             const settled = settleHand({ ...hand, result: "Bust" }, dealer);
-            return {
-                ...hand,
-                result: settled.result,
-                settlementText: settled.settlementText,
-                totalReturn: settled.totalReturn,
-                netProfit: settled.netProfit,
-            };
+            return { ...hand, result: settled.result, settlementText: settled.settlementText, totalReturn: settled.totalReturn, netProfit: settled.netProfit };
         });
 
         setHands(finalized);
         applyRoundBreakdown(finalized, dealer, freeBetTokens, snapshot);
-
         setStage("done");
         setMessage(allBusted ? "All hands bust. Dealer does not draw." : "Round complete.");
     };
@@ -837,94 +1017,53 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         snapshot: SideBetSnapshot
     ) => {
         const liveHands = handsInPlay.filter((hand) => total(hand.cards) <= 21);
-        if (liveHands.length === 0) {
-            await finishRoundWithoutDealer(handsInPlay, snapshot);
-            return;
-        }
+        if (liveHands.length === 0) { await finishRoundWithoutDealer(handsInPlay, snapshot); return; }
 
         let nextDealer = [...dealer];
         let nextDeck = [...shoeInPlay];
         let revealedCount = 1;
 
-        setStage("dealer");
-        setMessage("Dealer reveals hole card.");
-        setDealerRevealedCount(2);
-        revealedCount = 2;
-
+        setStage("dealer"); setMessage("Dealer reveals hole card."); setDealerRevealedCount(2); revealedCount = 2;
         await wait(450);
 
         while (total(nextDealer) < 17 || (total(nextDealer) === 17 && isSoft(nextDealer))) {
             const card = nextDeck.shift();
             if (!card) break;
-
             nextDealer.push(card);
-            setDealer([...nextDealer]);
-            setDeck([...nextDeck]);
-
-            setDealerRevealedCount(revealedCount);
+            setDealer([...nextDealer]); setDeck([...nextDeck]); setDealerRevealedCount(revealedCount);
             await wait(140);
-
             revealedCount = nextDealer.length;
-            setDealerRevealedCount(revealedCount);
-            setMessage("Dealer draws.");
+            setDealerRevealedCount(revealedCount); setMessage("Dealer draws.");
             await wait(360);
         }
 
         const settledHands = handsInPlay.map((hand) => {
             const settled = settleHand(hand, nextDealer);
-            return {
-                ...hand,
-                result: settled.result,
-                settlementText: settled.settlementText,
-                totalReturn: settled.totalReturn,
-                netProfit: settled.netProfit,
-            };
+            return { ...hand, result: settled.result, settlementText: settled.settlementText, totalReturn: settled.totalReturn, netProfit: settled.netProfit };
         });
 
-        setDeck(nextDeck);
-        setDealer(nextDealer);
-        setDealerRevealedCount(nextDealer.length);
+        setDeck(nextDeck); setDealer(nextDealer); setDealerRevealedCount(nextDealer.length);
         setHands(settledHands);
-
         applyRoundBreakdown(settledHands, nextDealer, tokenCount, snapshot);
 
         const dealerTotal = total(nextDealer);
         setStage("done");
         setMessage(
-            dealerTotal === 22
-                ? "Dealer makes 22. All live hands push."
-                : dealerTotal > 21
-                    ? "Dealer busts."
-                    : "Round complete."
+            dealerTotal === 22 ? "Dealer makes 22. All live hands push." :
+            dealerTotal > 21   ? "Dealer busts." : "Round complete."
         );
     };
 
-    const ensureHandHasSecondCard = async (
-        handsInPlay: HandState[],
-        handIndex: number,
-        shoeInPlay: Card[]
-    ) => {
+    const ensureHandHasSecondCard = async (handsInPlay: HandState[], handIndex: number, shoeInPlay: Card[]) => {
         const targetHand = handsInPlay[handIndex];
-        if (!targetHand || targetHand.cards.length !== 1) {
-            return { hands: handsInPlay, deck: shoeInPlay };
-        }
-
+        if (!targetHand || targetHand.cards.length !== 1) return { hands: handsInPlay, deck: shoeInPlay };
         const nextDeck = [...shoeInPlay];
         const drawnCard = nextDeck.shift();
-        if (!drawnCard) {
-            return { hands: handsInPlay, deck: shoeInPlay };
-        }
-
+        if (!drawnCard) return { hands: handsInPlay, deck: shoeInPlay };
         const nextHands = [...handsInPlay];
-        nextHands[handIndex] = {
-            ...nextHands[handIndex],
-            cards: [...nextHands[handIndex].cards, drawnCard],
-        };
-
-        setHands(nextHands);
-        setDeck(nextDeck);
+        nextHands[handIndex] = { ...nextHands[handIndex], cards: [...nextHands[handIndex].cards, drawnCard] };
+        setHands(nextHands); setDeck(nextDeck);
         await wait(250);
-
         return { hands: nextHands, deck: nextDeck };
     };
 
@@ -940,7 +1079,6 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         if (nextIndex < nextHands.length) {
             setActive(nextIndex);
             setMessage(`Playing hand ${nextIndex + 1} of ${nextHands.length}.`);
-
             const dealt = await ensureHandHasSecondCard(nextHands, nextIndex, nextDeck);
             const nextHand = dealt.hands[nextIndex];
             const nextTotal = total(nextHand.cards);
@@ -950,16 +1088,13 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                 await moveToNextHand(dealt.hands, dealt.deck, tokenCount, nextIndex, snapshot);
                 return;
             }
-
             if (nextTotal > 21) {
                 const bustedHands = [...dealt.hands];
                 bustedHands[nextIndex] = { ...bustedHands[nextIndex], result: "Bust" };
-                setHands(bustedHands);
-                setMessage(`Hand ${nextIndex + 1} busts.`);
+                setHands(bustedHands); setMessage(`Hand ${nextIndex + 1} busts.`);
                 await moveToNextHand(bustedHands, dealt.deck, tokenCount, nextIndex, snapshot);
                 return;
             }
-
             return;
         }
 
@@ -967,7 +1102,6 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             await dealerTurn(nextHands, nextDeck, tokenCount, snapshot);
             return;
         }
-
         await finishRoundWithoutDealer(nextHands, snapshot);
     };
 
@@ -977,55 +1111,28 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         if (activeHand.cards.length !== 2) return;
         if (!canSplitRanks(activeHand.cards)) return;
 
-        const freeSplit = isFreeSplit(activeHand.cards);
-        const splitCost = freeSplit ? 0 : activeHand.baseBet.amount;
-
+        const freeSpl = isFreeSplit(activeHand.cards);
+        const splitCost = freeSpl ? 0 : activeHand.baseBet.amount;
         if (bankroll < splitCost) return;
-
-        if (splitCost > 0) {
-            setBankroll((b) => b - splitCost);
-        }
+        if (splitCost > 0) setBankroll((b) => b - splitCost);
 
         const firstCard = activeHand.cards[0];
         const secondCard = activeHand.cards[1];
 
         const firstHand: HandState = {
-            cards: [firstCard],
-            baseBet: { ...activeHand.baseBet },
-            doubleType: "none",
-            splitDepth: activeHand.splitDepth + 1,
-            result: "",
-            settlementText: [],
-            totalReturn: 0,
-            netProfit: 0,
+            cards: [firstCard], baseBet: { ...activeHand.baseBet }, doubleType: "none",
+            splitDepth: activeHand.splitDepth + 1, result: "", settlementText: [], totalReturn: 0, netProfit: 0,
         };
-
         const secondHand: HandState = {
-            cards: [secondCard],
-            baseBet: {
-                amount: activeHand.baseBet.amount,
-                isFree: freeSplit,
-            },
-            doubleType: "none",
-            splitDepth: activeHand.splitDepth + 1,
-            result: "",
-            settlementText: [],
-            totalReturn: 0,
-            netProfit: 0,
+            cards: [secondCard], baseBet: { amount: activeHand.baseBet.amount, isFree: freeSpl },
+            doubleType: "none", splitDepth: activeHand.splitDepth + 1, result: "", settlementText: [], totalReturn: 0, netProfit: 0,
         };
 
-        const nextHands = [
-            ...hands.slice(0, active),
-            firstHand,
-            secondHand,
-            ...hands.slice(active + 1),
-        ];
+        const nextHands = [...hands.slice(0, active), firstHand, secondHand, ...hands.slice(active + 1)];
+        const nextTokenCount = freeSpl ? freeBetTokens + 1 : freeBetTokens;
 
-        const nextTokenCount = freeSplit ? freeBetTokens + 1 : freeBetTokens;
-
-        setHands(nextHands);
-        setFreeBetTokens(nextTokenCount);
-        setMessage(freeSplit ? `Free split on hand ${active + 1}.` : `Paid split on hand ${active + 1}.`);
+        setHands(nextHands); setFreeBetTokens(nextTokenCount);
+        setMessage(freeSpl ? `Free split on hand ${active + 1}.` : `Paid split on hand ${active + 1}.`);
 
         const dealt = await ensureHandHasSecondCard(nextHands, active, deck);
         const activeTotal = total(dealt.hands[active].cards);
@@ -1035,12 +1142,10 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             await moveToNextHand(dealt.hands, dealt.deck, nextTokenCount, active, sideBetSnapshot);
             return;
         }
-
         if (activeTotal > 21) {
             const bustedHands = [...dealt.hands];
             bustedHands[active] = { ...bustedHands[active], result: "Bust" };
-            setHands(bustedHands);
-            setMessage(`Hand ${active + 1} busts.`);
+            setHands(bustedHands); setMessage(`Hand ${active + 1} busts.`);
             await moveToNextHand(bustedHands, dealt.deck, nextTokenCount, active, sideBetSnapshot);
         }
     };
@@ -1053,21 +1158,14 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         const clampedPotOfGold = clampSideBet(potOfGoldBet);
         const buyIn = wager + clampedPush22 + clampedPotOfGold;
 
-        if (bankroll < buyIn) {
-            setMessage("Not enough bankroll for those bets.");
-            return;
-        }
+        if (bankroll < buyIn) { setMessage("Not enough bankroll for those bets."); return; }
 
         let nextDeck = [...deck];
         nextDeck = await performShuffleIfNeeded(nextDeck);
-
-        if (nextDeck.length < 4) {
-            nextDeck = await performShuffleIfNeeded([]);
-        }
+        if (nextDeck.length < 4) nextDeck = await performShuffleIfNeeded([]);
 
         const snapshot: SideBetSnapshot = { push22: clampedPush22, potOfGold: clampedPotOfGold };
         setSideBetSnapshot(snapshot);
-
         setBankroll((b) => b - buyIn);
 
         const playerHand = [nextDeck[0], nextDeck[1]];
@@ -1075,22 +1173,12 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         nextDeck = nextDeck.slice(4);
 
         const openingHand: HandState = {
-            cards: playerHand,
-            baseBet: { amount: wager, isFree: false },
-            doubleType: "none",
-            splitDepth: 0,
-            result: "",
-            settlementText: [],
-            totalReturn: 0,
-            netProfit: 0,
+            cards: playerHand, baseBet: { amount: wager, isFree: false }, doubleType: "none",
+            splitDepth: 0, result: "", settlementText: [], totalReturn: 0, netProfit: 0,
         };
 
-        setDeck(nextDeck);
-        setDealer(dealerHand);
-        setDealerRevealedCount(1);
-        setHands([openingHand]);
-        setActive(0);
-        setFreeBetTokens(0);
+        setDeck(nextDeck); setDealer(dealerHand); setDealerRevealedCount(1);
+        setHands([openingHand]); setActive(0); setFreeBetTokens(0);
         setRoundBreakdown({ totalReturned: 0, totalNet: 0, lines: [], sideBets: [] });
 
         const dealerBJ = isBlackjack(dealerHand);
@@ -1098,50 +1186,29 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
         if (dealerBJ) {
             setDealerRevealedCount(2);
-
             let settledHand: HandState;
             if (playerBJ) {
-                settledHand = {
-                    ...openingHand,
-                    result: "Push",
-                    settlementText: [`Blackjack push: ${formatMoney(wager)} returned.`],
-                    totalReturn: wager,
-                    netProfit: 0,
-                };
+                settledHand = { ...openingHand, result: "Push", settlementText: [`Blackjack push: ${formatMoney(wager)} returned.`], totalReturn: wager, netProfit: 0 };
                 setMessage("Both player and dealer have blackjack. Push.");
             } else {
-                settledHand = {
-                    ...openingHand,
-                    result: "Lose",
-                    settlementText: [`Lost ${formatMoney(wager)}.`],
-                    totalReturn: 0,
-                    netProfit: -wager,
-                };
+                settledHand = { ...openingHand, result: "Lose", settlementText: [`Lost ${formatMoney(wager)}.`], totalReturn: 0, netProfit: -wager };
                 setMessage("Dealer blackjack. Hand over.");
             }
-
             setHands([settledHand]);
             applyRoundBreakdown([settledHand], dealerHand, 0, snapshot);
-            setStage("done");
-            return;
+            setStage("done"); return;
         }
 
         if (playerBJ) {
             setDealerRevealedCount(2);
-
             const settledHand: HandState = {
-                ...openingHand,
-                result: "Blackjack",
+                ...openingHand, result: "Blackjack",
                 settlementText: [`Blackjack return: ${formatMoney(wager * 2.5)}.`],
-                totalReturn: wager * 2.5,
-                netProfit: wager * 1.5,
+                totalReturn: wager * 2.5, netProfit: wager * 1.5,
             };
-
             setHands([settledHand]);
             applyRoundBreakdown([settledHand], dealerHand, 0, snapshot);
-            setStage("done");
-            setMessage("Blackjack pays 3 to 2.");
-            return;
+            setStage("done"); setMessage("Blackjack pays 3 to 2."); return;
         }
 
         setStage("player");
@@ -1150,33 +1217,18 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
     const hit = async () => {
         if (!activeHand) return;
-
         const nextDeck = [...deck];
         const card = nextDeck.shift();
         if (!card) return;
-
         const nextHands = [...hands];
-        nextHands[active] = {
-            ...nextHands[active],
-            cards: [...nextHands[active].cards, card],
-        };
-
-        setDeck(nextDeck);
-        setHands(nextHands);
-
+        nextHands[active] = { ...nextHands[active], cards: [...nextHands[active].cards, card] };
+        setDeck(nextDeck); setHands(nextHands);
         const handTotal = total(nextHands[active].cards);
-
-        if (handTotal === 21) {
-            setMessage(`Hand ${active + 1} makes 21.`);
-            await moveToNextHand(nextHands, nextDeck, freeBetTokens, active, sideBetSnapshot);
-            return;
-        }
-
+        if (handTotal === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(nextHands, nextDeck, freeBetTokens, active, sideBetSnapshot); return; }
         if (handTotal > 21) {
             const bustedHands = [...nextHands];
             bustedHands[active] = { ...bustedHands[active], result: "Bust" };
-            setHands(bustedHands);
-            setMessage(`Hand ${active + 1} busts.`);
+            setHands(bustedHands); setMessage(`Hand ${active + 1} busts.`);
             await moveToNextHand(bustedHands, nextDeck, freeBetTokens, active, sideBetSnapshot);
         }
     };
@@ -1188,467 +1240,256 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     const doubleDown = async () => {
         if (!activeHand) return;
         if (activeHand.cards.length !== 2) return;
-
         const freeDouble = isHardFreeDouble(activeHand.cards);
         const cost = freeDouble ? 0 : activeHand.baseBet.amount;
-
         if (bankroll < cost) return;
-
-        if (cost > 0) {
-            setBankroll((b) => b - cost);
-        }
+        if (cost > 0) setBankroll((b) => b - cost);
 
         const nextTokenCount = freeDouble ? freeBetTokens + 1 : freeBetTokens;
         const nextHands = [...hands];
-        nextHands[active] = {
-            ...nextHands[active],
-            doubleType: freeDouble ? "free" : "paid",
-        };
-
+        nextHands[active] = { ...nextHands[active], doubleType: freeDouble ? "free" : "paid" };
         const nextDeck = [...deck];
         const card = nextDeck.shift();
         if (!card) return;
-
-        nextHands[active] = {
-            ...nextHands[active],
-            cards: [...nextHands[active].cards, card],
-        };
-
-        setHands(nextHands);
-        setDeck(nextDeck);
-        setFreeBetTokens(nextTokenCount);
+        nextHands[active] = { ...nextHands[active], cards: [...nextHands[active].cards, card] };
+        setHands(nextHands); setDeck(nextDeck); setFreeBetTokens(nextTokenCount);
 
         if (total(nextHands[active].cards) > 21) {
             nextHands[active] = { ...nextHands[active], result: "Bust" };
             setHands([...nextHands]);
-            setMessage(
-                freeDouble
-                    ? `Hand ${active + 1} busts after free double.`
-                    : `Hand ${active + 1} busts after doubling.`
-            );
+            setMessage(freeDouble ? `Hand ${active + 1} busts after free double.` : `Hand ${active + 1} busts after doubling.`);
         }
-
         await moveToNextHand(nextHands, nextDeck, nextTokenCount, active, sideBetSnapshot);
     };
 
-    const nextRound = () => {
-        setDealer([]);
-        setHands([]);
-        setActive(0);
-        setDealerRevealedCount(1);
-        setStage("betting");
-        setFreeBetTokens(0);
-        setRoundBreakdown({ totalReturned: 0, totalNet: 0, lines: [], sideBets: [] });
-        setMessage(
-            shouldShuffle(deck)
-                ? "Cut card reached. Next hand will shuffle the shoe."
-                : "Set your bets and press Deal."
-        );
-    };
+    // ── Derived action flags (preserved) ─────────────────────────────────────
 
     const canSplit =
-        stage === "player" &&
-        !!activeHand &&
-        activeHand.cards.length === 2 &&
-        hands.length < MAX_HANDS &&
-        canSplitRanks(activeHand.cards) &&
+        stage === "player" && !!activeHand && activeHand.cards.length === 2 &&
+        hands.length < MAX_HANDS && canSplitRanks(activeHand.cards) &&
         (isFreeSplit(activeHand.cards) || bankroll >= activeHand.baseBet.amount);
 
     const canDouble =
-        stage === "player" &&
-        !!activeHand &&
-        activeHand.cards.length === 2 &&
+        stage === "player" && !!activeHand && activeHand.cards.length === 2 &&
         (isHardFreeDouble(activeHand.cards) || bankroll >= activeHand.baseBet.amount);
 
-    const cardsUsed = SHOE_SIZE - deck.length;
-    const penetrationPct = Math.min(100, Math.round((cardsUsed / SHOE_SIZE) * 100));
+    // ── UI handlers ───────────────────────────────────────────────────────────
+
+    const handleChipSelect = (chip: ChipDenomination) => {
+        setSelectedChip(chip);
+        if (stage === "betting") {
+            if (selectedZone === "push22") {
+                if (push22Bet + chip <= SIDE_MAX) {
+                    setPush22Bet((b) => Math.min(SIDE_MAX, b + chip));
+                    setPush22Stack((s) => [...s, chip]);
+                }
+            } else if (selectedZone === "potOfGold") {
+                if (potOfGoldBet + chip <= SIDE_MAX) {
+                    setPotOfGoldBet((b) => Math.min(SIDE_MAX, b + chip));
+                    setPotOfGoldStack((s) => [...s, chip]);
+                }
+            } else {
+                setBet((b) => b + chip);
+                setChipStack((s) => [...s, chip]);
+            }
+        }
+    };
+
+    const clearAll = () => {
+        setBet(0); setChipStack([]);
+        setPush22Bet(0); setPush22Stack([]);
+        setPotOfGoldBet(0); setPotOfGoldStack([]);
+        setDealer([]); setHands([]); setActive(0); setDealerRevealedCount(1);
+        setStage("betting"); setFreeBetTokens(0);
+        setRoundBreakdown({ totalReturned: 0, totalNet: 0, lines: [], sideBets: [] });
+        setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle the shoe." : "Set your bets and press Deal.");
+        setSelectedZone(null);
+    };
+
+    const changeBet = () => {
+        setDealer([]); setHands([]); setActive(0); setDealerRevealedCount(1);
+        setStage("betting"); setFreeBetTokens(0);
+        setRoundBreakdown({ totalReturned: 0, totalNet: 0, lines: [], sideBets: [] });
+        setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle the shoe." : "Set your bets and press Deal.");
+        setSelectedZone(null);
+    };
+
+    const runAction = async (fn: () => Promise<void>) => {
+        if (isResolvingAction) return;
+        setIsResolvingAction(true);
+        try { await fn(); } finally { setIsResolvingAction(false); }
+    };
+
+    // ── Payout column data ────────────────────────────────────────────────────
+
+    const push22Entries: Record<string, number> = { "Dealer 22": 11 };
+    const potOfGoldEntries: Record<string, number> = {
+        "7+ tokens": 1000, "6 tokens": 300, "5 tokens": 100,
+        "4 tokens": 60, "3 tokens": 30, "2 tokens": 10, "1 token": 3,
+    };
+
+    const dealerTotalNow = dealer.length ? total(dealer) : 0;
+    const push22Highlight  = stage === "done" && dealerTotalNow === 22 ? "Dealer 22" : null;
+    const potOfGoldHighlight = stage === "done" && freeBetTokens > 0
+        ? freeBetTokens >= 7 ? "7+ tokens" : `${freeBetTokens} token${freeBetTokens === 1 ? "" : "s"}`
+        : null;
+
+    const isFreeDouble      = !!activeHand && isHardFreeDouble(activeHand.cards);
+    const isFreeSplitAction = !!activeHand && isFreeSplit(activeHand.cards);
+
+    const buyIn = stage === "betting"
+        ? clampMainBet(bet) + clampSideBet(push22Bet) + clampSideBet(potOfGoldBet)
+        : totalBuyIn;
+
+    const canDealFromDone =
+        stage === "done" && !isShuffling &&
+        clampMainBet(bet) >= MIN_BET &&
+        bankroll >= clampMainBet(bet) + clampSideBet(push22Bet) + clampSideBet(potOfGoldBet);
+
+    // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,_#60a5fa,_#2563eb_28%,_#0f3f8c_58%,_#061933_100%)] text-white">
+        <>
             {isShuffling && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-sky-200/25 bg-black/65 px-10 py-8 text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)] sm:px-12 sm:py-9">
-                        <div className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-sky-100 sm:text-[12px]">
-                            Free Bet Blackjack
-                        </div>
-                        <div className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Shuffling Shoe</div>
-                        <div className="mt-3 text-sm text-sky-50/85">Please wait…</div>
+                    <div className="rounded-[1.6rem] border border-amber-300/25 bg-black/65 px-10 py-8 text-center shadow-2xl">
+                        <div className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-amber-200">Free Bet Blackjack</div>
+                        <div className="mt-2 text-3xl font-extrabold text-white">Shuffling Shoe</div>
+                        <div className="mt-2 text-sm text-amber-100/80">Please wait…</div>
                     </div>
                 </div>
             )}
 
-            <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1700px] flex-col gap-3 px-2 py-2 sm:px-3 sm:py-3">
-                <div className="rounded-[1.35rem] border border-sky-200/15 bg-black/25 p-3 shadow-2xl backdrop-blur sm:rounded-[1.7rem] sm:p-4">
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                        <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-sky-100/90 sm:text-[12px] sm:tracking-[0.3em]">
-                                Casino Table
-                            </div>
-                            <h2 className="mt-1 text-2xl font-extrabold tracking-[0.02em] text-sky-50 sm:text-4xl md:text-5xl">
-                                Free Bet Blackjack
-                            </h2>
+            <TableShell
+                feltColor="#7f1d1d"
+                gameName="Free Bet Blackjack"
+                bankroll={bankroll}
+                hideHeader
+                actionBar={
+                    <FreeBetBar
+                        stage={stage}
+                        isShuffling={isShuffling}
+                        bet={bet}
+                        buyIn={buyIn}
+                        bankroll={bankroll}
+                        canDouble={canDouble}
+                        canSplit={canSplit}
+                        isFreeDouble={isFreeDouble}
+                        isFreeSplitAction={isFreeSplitAction}
+                        isResolvingAction={isResolvingAction}
+                        canDealFromDone={canDealFromDone}
+                        selectedChip={selectedChip}
+                        onChipSelect={handleChipSelect}
+                        onClear={clearAll}
+                        onChangeBet={changeBet}
+                        onDeal={() => void deal()}
+                        onHit={() => void runAction(hit)}
+                        onStay={() => void runAction(stay)}
+                        onDouble={() => void runAction(doubleDown)}
+                        onSplit={() => void runAction(split)}
+                    />
+                }
+            >
+                <div className="flex flex-1 flex-col items-center gap-3 py-0">
+
+                    <TableLabel />
+
+                    {/* Felt area: payout columns float left/right at lg */}
+                    <div className="relative w-full">
+
+                        <div className="hidden lg:absolute lg:left-0 lg:top-0 lg:block lg:w-[148px] lg:pl-3 lg:pr-2">
+                            <PayoutColumn title="Push 22" entries={push22Entries} highlight={push22Highlight} />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                            <StatPill label="Bankroll" value={formatMoney(bankroll)} accent="gold" />
-                            <StatPill label="Stage" value={<span className="capitalize">{stage}</span>} />
-                            <StatPill label="Active Hand" value={hands.length > 0 ? `${active + 1} / ${hands.length}` : "—"} />
-                            <StatPill label="Tokens" value={freeBetTokens} accent="green" />
-                            <StatPill label="Dealer Showing" value={dealer[0] ? `${dealer[0].rank}${dealer[0].suit}` : "—"} />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rounded-[1.45rem] border border-white/10 bg-black/20 p-2.5 shadow-2xl backdrop-blur sm:rounded-[1.8rem] sm:p-3">
-                    <div className="rounded-[1.2rem] border border-sky-200/20 bg-[linear-gradient(180deg,_rgba(0,0,0,0.22),_rgba(0,0,0,0.12))] px-4 py-3 text-center shadow-lg sm:rounded-[1.45rem] sm:px-5 sm:py-4">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100 sm:text-[11px] sm:tracking-[0.24em]">
-                            Table Message
-                        </div>
-                        <div className="mt-2 text-base font-bold text-sky-50 sm:text-lg md:text-xl">{message}</div>
-                    </div>
-
-                    <div className="mt-3 grid gap-3 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-                        <div className="order-3 space-y-3 xl:order-1">
-                            <InfoCard title="Rules">
-                                <div className="space-y-2 text-sm text-sky-50/90">
-                                    <div>• 6 decks.</div>
-                                    <div>• Dealer hits soft 17.</div>
-                                    <div>• Blackjack pays 3 to 2.</div>
-                                    <div>• Double after split allowed.</div>
-                                    <div>• Double on 2 cards only.</div>
-                                    <div>• Split up to 4 hands, including aces.</div>
-                                    <div>• No surrender.</div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Free Bet Rules">
-                                <div className="space-y-2 text-sm text-sky-50/90">
-                                    <div>• Free double on hard 9, 10, or 11.</div>
-                                    <div>• Free split on A through 9 pairs.</div>
-                                    <div>• 10-value pairs can still be split for a paid wager.</div>
-                                    <div>• Dealer 22 pushes all live hands.</div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Side Bets">
-                                <div className="space-y-2 text-sm text-sky-50/90">
-                                    <div>• Push 22 pays 11 to 1.</div>
-                                    <div>• Pot of Gold pays by free-bet token count.</div>
-                                    <div>• 1 token = 3 to 1</div>
-                                    <div>• 2 = 10 to 1</div>
-                                    <div>• 3 = 30 to 1</div>
-                                    <div>• 4 = 60 to 1</div>
-                                    <div>• 5 = 100 to 1</div>
-                                    <div>• 6 = 300 to 1</div>
-                                    <div>• 7+ = 1000 to 1</div>
-                                </div>
-                            </InfoCard>
+                        <div className="hidden lg:absolute lg:right-0 lg:top-0 lg:block lg:w-[148px] lg:pl-2 lg:pr-3">
+                            <PayoutColumn title="Pot of Gold" entries={potOfGoldEntries} highlight={potOfGoldHighlight} />
                         </div>
 
-                        <div className="order-1 min-w-0 rounded-[1.25rem] border border-white/10 bg-[radial-gradient(circle_at_center,_rgba(125,211,252,0.3),_rgba(56,189,248,0.22)_38%,_rgba(14,116,144,0.26)_65%,_rgba(0,0,0,0.22)_88%)] p-2.5 sm:rounded-[1.6rem] sm:p-4 xl:order-2">
-                            <div className="flex h-full flex-col gap-3 sm:gap-4">
-                                <div className="overflow-hidden rounded-[1rem] border border-white/10 bg-black/10 px-2 py-3 sm:rounded-[1.25rem] sm:px-3 sm:py-4">
-                                    <div className="flex flex-col gap-5 sm:gap-6">
-                                        <CardLane
-                                            label="Dealer"
-                                            cards={dealer}
-                                            hiddenIndexes={dealer
-                                                .map((_, index) => index)
-                                                .filter((index) => index >= dealerRevealedCount)}
-                                            large
-                                            result={
-                                                dealer.length > 0 && (stage === "done" || stage === "dealer")
-                                                    ? `${total(dealer)}${isSoft(dealer) ? " soft" : ""}`
-                                                    : ""
-                                            }
+                        {/* Main content column */}
+                        <div className="flex flex-col items-center gap-3 lg:px-[164px]">
+
+                            <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
+
+                            <BetBar
+                                displayBet={displayBet}
+                                returned={roundBreakdown.totalReturned}
+                                net={roundBreakdown.totalNet}
+                                showResult={showFinalNet}
+                            />
+
+                            {/* Bet circles: betting stage only */}
+                            <AnimatePresence>
+                                {stage === "betting" && (
+                                    <motion.div
+                                        key="bet-circles"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="flex items-end justify-center gap-6"
+                                    >
+                                        <BetZone
+                                            chips={push22Stack}
+                                            totalBet={push22Bet}
+                                            label="PUSH 22"
+                                            sublabel="11:1"
+                                            isSelected={selectedZone === "push22"}
+                                            isWinner={false}
+                                            onClick={() => setSelectedZone(selectedZone === "push22" ? null : "push22")}
+                                            onRemove={() => { setPush22Bet(0); setPush22Stack([]); }}
+                                            canBet={!isShuffling}
                                         />
 
-                                        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                                            {Array.from({ length: Math.max(hands.length, 1) }).map((_, index) => {
-                                                const hand = hands[index];
-                                                const handTotal = hand ? total(hand.cards) : null;
-                                                const dealerTotal = dealer.length > 0 ? total(dealer) : 0;
-                                                const busted = handTotal !== null && handTotal > 21;
-                                                const dealerBusted = dealerTotal > 21;
-                                                const dealerHas22 = dealerTotal === 22;
-                                                const finalResult =
-                                                    stage === "done" && hand && handTotal !== null
-                                                        ? getHandOutcomeLabel(handTotal, dealerTotal, dealerHas22, busted, dealerBusted)
-                                                        : index === active && stage === "player"
-                                                            ? "Active"
-                                                            : "";
+                                        <BetCircle chips={chipStack} totalBet={bet} />
 
-                                                const betLabel = hand
-                                                    ? `${hand.baseBet.isFree ? "Free" : "Paid"} ${formatMoney(hand.baseBet.amount)}${hand.doubleType === "free" ? " + Free Double" : hand.doubleType === "paid" ? " + Paid Double" : ""}`
-                                                    : "—";
+                                        <BetZone
+                                            chips={potOfGoldStack}
+                                            totalBet={potOfGoldBet}
+                                            label="POT OF GOLD"
+                                            sublabel="varies"
+                                            isSelected={selectedZone === "potOfGold"}
+                                            isWinner={false}
+                                            onClick={() => setSelectedZone(selectedZone === "potOfGold" ? null : "potOfGold")}
+                                            onRemove={() => { setPotOfGoldBet(0); setPotOfGoldStack([]); }}
+                                            canBet={!isShuffling}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className={`rounded-[1.3rem] border p-3 shadow-xl backdrop-blur sm:p-4 ${index === active && stage === "player"
-                                                            ? "border-sky-100/40 bg-sky-200/10 ring-2 ring-sky-100/20"
-                                                            : "border-white/10 bg-black/18"
-                                                            }`}
-                                                    >
-                                                        <CardLane
-                                                            label={`Hand ${index + 1}`}
-                                                            cards={hand?.cards ?? []}
-                                                            large
-                                                            result={
-                                                                handTotal !== null
-                                                                    ? `${handTotal}${hand && isSoft(hand.cards) ? " soft" : ""}${finalResult ? ` • ${finalResult}` : ""}`
-                                                                    : "Waiting"
-                                                            }
-                                                        />
-
-                                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-center text-sm font-semibold text-sky-50">
-                                                            {betLabel}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="sticky bottom-2 z-10 -mx-1 mt-1 rounded-[1.1rem] border border-white/10 bg-black/45 px-2 py-2 backdrop-blur sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
-                                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                                        <AnimatePresence mode="wait" initial={false}>
-                                            {stage === "betting" && (
-                                                <motion.div
-                                                    key="deal"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                >
-                                                    <DealButton onClick={deal} disabled={isShuffling} />
-                                                </motion.div>
-                                            )}
-
-                                            {stage === "player" && (
-                                                <motion.div
-                                                    key="player-actions"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                    className="flex flex-wrap items-center justify-center gap-2 sm:gap-3"
-                                                >
-                                                    <ActionButton onClick={hit}>Hit</ActionButton>
-                                                    <ActionButton onClick={stay}>Stay</ActionButton>
-                                                    <ActionButton onClick={doubleDown} variant="bet" disabled={!canDouble}>
-                                                        {activeHand && isHardFreeDouble(activeHand.cards) ? "Free Double" : "Double"}
-                                                    </ActionButton>
-                                                    <ActionButton onClick={split} variant="bet" disabled={!canSplit}>
-                                                        {activeHand && isFreeSplit(activeHand.cards) ? "Free Split" : "Split"}
-                                                    </ActionButton>
-                                                </motion.div>
-                                            )}
-
-                                            {stage === "done" && (
-                                                <motion.div
-                                                    key="done-actions"
-                                                    initial={{ opacity: 0, y: 18, scale: 0.96 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                                >
-                                                    <ActionButton onClick={nextRound} variant="success">
-                                                        Next Hand
-                                                    </ActionButton>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
+                            {/* Free bet token counter */}
+                            <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition-colors ${
+                                freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
+                            }`}>
+                                <span className={`text-[9px] font-bold uppercase tracking-[0.18em] ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/30"}`}>
+                                    Tokens
+                                </span>
+                                <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/30"}`}>
+                                    {freeBetTokens}
+                                </span>
                             </div>
-                        </div>
 
-                        <div className="order-2 space-y-3 xl:order-3">
-                            <InfoCard title="Betting Area">
-                                <div className="space-y-3">
-                                    <BetInput
-                                        label="Base Bet"
-                                        value={bet}
-                                        onChange={setBet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                        min={MIN_BET}
-                                        step={5}
-                                    />
-                                    <BetInput
-                                        label="Push 22 Side Bet"
-                                        value={push22Bet}
-                                        onChange={setPush22Bet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                        min={0}
-                                        max={SIDE_MAX}
-                                        step={SIDE_STEP}
-                                    />
-                                    <BetInput
-                                        label="Pot of Gold Side Bet"
-                                        value={potOfGoldBet}
-                                        onChange={setPotOfGoldBet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                        min={0}
-                                        max={SIDE_MAX}
-                                        step={SIDE_STEP}
-                                    />
+                            <p className="text-sm font-semibold text-amber-100/70">{message}</p>
 
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[9px] uppercase tracking-[0.16em] text-white/60 sm:text-[10px]">
-                                                    Bet
-                                                </div>
-                                                <div className="mt-1 text-sm font-extrabold text-white">
-                                                    {formatMoney(totalBuyIn)}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[9px] uppercase tracking-[0.16em] text-white/60 sm:text-[10px]">
-                                                    Returned
-                                                </div>
-                                                <div className="mt-1 text-sm font-extrabold text-white">
-                                                    {showFinalNet ? formatMoney(roundBreakdown.totalReturned) : "—"}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[9px] uppercase tracking-[0.16em] text-white/60 sm:text-[10px]">
-                                                    Net
-                                                </div>
-                                                <div
-                                                    className={`mt-1 text-sm font-extrabold ${showFinalNet
-                                                        ? roundBreakdown.totalNet > 0
-                                                            ? "text-emerald-300"
-                                                            : roundBreakdown.totalNet < 0
-                                                                ? "text-red-300"
-                                                                : "text-sky-100"
-                                                        : "text-sky-100"
-                                                        }`}
-                                                >
-                                                    {showFinalNet ? `${roundBreakdown.totalNet > 0 ? "+" : ""}${formatMoney(roundBreakdown.totalNet)}` : "—"}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-sky-50/90 sm:text-sm">
-                                        {stage === "betting"
-                                            ? "Place base bet and optional side bets."
-                                            : stage === "player"
-                                                ? `Playing hand ${hands.length > 0 ? active + 1 : 0}${hands.length > 0 ? ` of ${hands.length}` : ""}.`
-                                                : stage === "dealer"
-                                                    ? "Dealer is resolving the round."
-                                                    : "Round finished."}
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-sky-50/90 sm:text-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span>Dealer showing</span>
-                                            <span className="font-semibold text-white">
-                                                {dealer[0] ? `${dealer[0].rank}${dealer[0].suit}` : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Active hand total</span>
-                                            <span className="font-semibold text-white">
-                                                {activeHand?.cards.length
-                                                    ? `${total(activeHand.cards)}${isSoft(activeHand.cards) ? " soft" : ""}`
-                                                    : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Live money on felt</span>
-                                            <span className="font-semibold text-white">{formatMoney(liveMoneyOnFelt)}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-[11px] sm:text-xs">
-                                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100/60">
-                                            Hand Results
-                                        </div>
-                                        <div className="space-y-1">
-                                            {handRows.length > 0 ? (
-                                                handRows.map((row) => (
-                                                    <div key={row.label} className="flex items-center justify-between gap-2">
-                                                        <span className="text-white/70">{row.label}</span>
-                                                        <span className="font-bold text-sky-100">{row.value}</span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-white/70">Main Hand</span>
-                                                    <span className="font-bold text-sky-100">Pending</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-[11px] sm:text-xs">
-                                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100/60">
-                                            Side Bet Results
-                                        </div>
-                                        <div className="space-y-1">
-                                            {sideBetRows.map((row) => (
-                                                <div key={row.label} className="flex items-center justify-between gap-2">
-                                                    <span className="text-white/70">{row.label}</span>
-                                                    <span className="font-bold text-sky-100">{row.value}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {!showFinalNet && (
-                                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-[11px] text-sky-50/85 sm:text-xs">
-                                            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100/60">
-                                                Current Bets
-                                            </div>
-                                            <div className="space-y-1">
-                                                {preRoundRows.map((row) => (
-                                                    <div key={row.label} className="flex items-center justify-between gap-2">
-                                                        <span>{row.label}</span>
-                                                        <span className="font-bold text-white">{row.value}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="rounded-2xl border border-sky-200/15 bg-sky-950/30 px-4 py-3 text-center text-xs font-medium text-sky-50/95 sm:text-sm">
-                                        One shared bankroll is used across all casino games.
-                                    </div>
+                            {hands.length > 0 && (
+                                <div className="flex flex-wrap justify-center gap-3">
+                                    {hands.map((hand, i) => (
+                                        <HandBox
+                                            key={i}
+                                            hand={hand}
+                                            index={i}
+                                            isActive={i === active && stage === "player"}
+                                            stage={stage}
+                                            dealerTotal={dealerTotalNow}
+                                        />
+                                    ))}
                                 </div>
-                            </InfoCard>
+                            )}
 
-                            <InfoCard title="Table Info">
-                                <div className="space-y-2 text-sm text-sky-50/90">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Dealer total</span>
-                                        <span className="font-semibold text-white">{dealerDisplayTotal || "—"}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Cards left</span>
-                                        <span className="font-semibold text-white">{deck.length}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Shoe used</span>
-                                        <span className="font-semibold text-white">{penetrationPct}%</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Hands in play</span>
-                                        <span className="font-semibold text-white">{hands.length || 0}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Free bet tokens</span>
-                                        <span className="font-semibold text-white">{freeBetTokens}</span>
-                                    </div>
-                                </div>
-                            </InfoCard>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </TableShell>
+        </>
     );
 }
