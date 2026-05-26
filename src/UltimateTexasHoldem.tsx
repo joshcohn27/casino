@@ -14,30 +14,30 @@ type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "
 type Card = { rank: Rank; suit: Suit; value: number; id: string; };
 type Stage = "betting" | "preflop" | "flop" | "river" | "showdown" | "awaitingBonusReveal" | "roundOver";
 type Decision = "check" | "bet" | "fold";
-type FiveCardCategory = "High Card"|"Pair"|"Two Pair"|"Trips"|"Straight"|"Flush"|"Full House"|"Quads"|"Straight Flush"|"Royal Flush";
+type FiveCardCategory = "High Card" | "Pair" | "Two Pair" | "Trips" | "Straight" | "Flush" | "Full House" | "Quads" | "Straight Flush" | "Royal Flush";
 type BestFive = { category: FiveCardCategory; score: number[]; cards: Card[]; label: string; };
-type SixCardBonusCategory = "No Bonus"|"Trips"|"Straight"|"Flush"|"Full House"|"Quads"|"Straight Flush"|"Royal Flush"|"6-Card Straight Flush"|"6-Card Royal Flush";
+type SixCardBonusCategory = "No Bonus" | "Trips" | "Straight" | "Flush" | "Full House" | "Quads" | "Straight Flush" | "Royal Flush" | "6-Card Straight Flush" | "6-Card Royal Flush";
 type RoundState = { deck: Card[]; player: Card[]; dealer: Card[]; board: Card[]; hiddenSixBonusCards: Card[]; };
 type PayoutBreakdown = { ante: number; blind: number; play: number; trips: number; sixCardBonus: number; total: number; net: number; summary: string[]; };
-type ResolvedHand = { playerBest: BestFive|null; dealerBest: BestFive|null; dealerQualified: boolean; compare: number; folded: boolean; blindCategory: FiveCardCategory|null; tripsCategory: FiveCardCategory|null; sixCardCategory: SixCardBonusCategory|null; blindMultiplier: number; tripsMultiplier: number; sixCardMultiplier: number; };
+type ResolvedHand = { playerBest: BestFive | null; dealerBest: BestFive | null; dealerQualified: boolean; compare: number; folded: boolean; blindCategory: FiveCardCategory | null; tripsCategory: FiveCardCategory | null; sixCardCategory: SixCardBonusCategory | null; blindMultiplier: number; tripsMultiplier: number; sixCardMultiplier: number; };
 type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateAction<number>>; };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SUITS: Suit[] = ["♠","♥","♦","♣"];
-const RANKS: Rank[] = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
-const RANK_VALUES: Record<Rank,number> = {"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,J:11,Q:12,K:13,A:14};
+const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
+const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+const RANK_VALUES: Record<Rank, number> = { "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14 };
 const MIN_MAIN_BET = 5;
 const MIN_SIX_BONUS = 5;
 const MAX_SIX_BONUS = 25;
 const MAX_TRIPS = 100;
 const CARD_REVEAL_DELAY_MS = 280;
 
-const TRIPS_PAYTABLE: Record<string,number> = { "Royal Flush":50,"Straight Flush":40,Quads:30,"Full House":8,Flush:7,Straight:4,Trips:3 };
-const BLIND_PAYTABLE: Record<string,number> = { "Royal Flush":500,"Straight Flush":50,Quads:10,"Full House":3,Flush:1.5,Straight:1 };
-const SIX_CARD_BONUS_PAYTABLE: Record<Exclude<SixCardBonusCategory,"No Bonus">,number> = {
-    "6-Card Royal Flush":10000,"6-Card Straight Flush":5000,"Royal Flush":1000,"Straight Flush":200,
-    Quads:50,"Full House":20,Flush:15,Straight:10,Trips:5,
+const TRIPS_PAYTABLE: Record<string, number> = { "Royal Flush": 50, "Straight Flush": 40, Quads: 30, "Full House": 8, Flush: 7, Straight: 4, Trips: 3 };
+const BLIND_PAYTABLE: Record<string, number> = { "Royal Flush": 500, "Straight Flush": 50, Quads: 10, "Full House": 3, Flush: 1.5, Straight: 1 };
+const SIX_CARD_BONUS_PAYTABLE: Record<Exclude<SixCardBonusCategory, "No Bonus">, number> = {
+    "6-Card Royal Flush": 10000, "6-Card Straight Flush": 5000, "Royal Flush": 1000, "Straight Flush": 200,
+    Quads: 50, "Full House": 20, Flush: 15, Straight: 10, Trips: 5,
 };
 
 // ─── Game functions (all preserved exactly) ───────────────────────────────────
@@ -149,13 +149,13 @@ function evaluateSixCardBonus(cards: Card[]): { category: SixCardBonusCategory; 
     if (sameSuit && sixStraight && isRoyalSet(values)) return { category: "6-Card Royal Flush", multiplier: SIX_CARD_BONUS_PAYTABLE["6-Card Royal Flush"] };
     if (sameSuit && sixStraight) return { category: "6-Card Straight Flush", multiplier: SIX_CARD_BONUS_PAYTABLE["6-Card Straight Flush"] };
     const b = evaluateBestFrom(cards);
-    if (b.category === "Royal Flush")    return { category: "Royal Flush",    multiplier: SIX_CARD_BONUS_PAYTABLE["Royal Flush"] };
+    if (b.category === "Royal Flush") return { category: "Royal Flush", multiplier: SIX_CARD_BONUS_PAYTABLE["Royal Flush"] };
     if (b.category === "Straight Flush") return { category: "Straight Flush", multiplier: SIX_CARD_BONUS_PAYTABLE["Straight Flush"] };
-    if (b.category === "Quads")          return { category: "Quads",          multiplier: SIX_CARD_BONUS_PAYTABLE.Quads };
-    if (b.category === "Full House")     return { category: "Full House",     multiplier: SIX_CARD_BONUS_PAYTABLE["Full House"] };
-    if (b.category === "Flush")          return { category: "Flush",          multiplier: SIX_CARD_BONUS_PAYTABLE.Flush };
-    if (b.category === "Straight")       return { category: "Straight",       multiplier: SIX_CARD_BONUS_PAYTABLE.Straight };
-    if (b.category === "Trips")          return { category: "Trips",          multiplier: SIX_CARD_BONUS_PAYTABLE.Trips };
+    if (b.category === "Quads") return { category: "Quads", multiplier: SIX_CARD_BONUS_PAYTABLE.Quads };
+    if (b.category === "Full House") return { category: "Full House", multiplier: SIX_CARD_BONUS_PAYTABLE["Full House"] };
+    if (b.category === "Flush") return { category: "Flush", multiplier: SIX_CARD_BONUS_PAYTABLE.Flush };
+    if (b.category === "Straight") return { category: "Straight", multiplier: SIX_CARD_BONUS_PAYTABLE.Straight };
+    if (b.category === "Trips") return { category: "Trips", multiplier: SIX_CARD_BONUS_PAYTABLE.Trips };
     return { category: "No Bonus", multiplier: 0 };
 }
 
@@ -168,17 +168,17 @@ function valueToLabel(value: number) { if (value === 14) return "Ace"; if (value
 function describeBestHand(best: BestFive | null) {
     if (!best) return "—";
     switch (best.category) {
-        case "High Card":      return `${valueToLabel(best.score[1])} High`;
-        case "Pair":           return `Pair of ${valueToLabel(best.score[1])}s`;
-        case "Two Pair":       return `${valueToLabel(best.score[1])}s and ${valueToLabel(best.score[2])}s`;
-        case "Trips":          return `Three ${valueToLabel(best.score[1])}s`;
-        case "Straight":       return `${valueToLabel(best.score[1])}-High Straight`;
-        case "Flush":          return `${valueToLabel(best.score[1])}-High Flush`;
-        case "Full House":     return `${valueToLabel(best.score[1])}s Full of ${valueToLabel(best.score[2])}s`;
-        case "Quads":          return `Four ${valueToLabel(best.score[1])}s`;
+        case "High Card": return `${valueToLabel(best.score[1])} High`;
+        case "Pair": return `Pair of ${valueToLabel(best.score[1])}s`;
+        case "Two Pair": return `${valueToLabel(best.score[1])}s and ${valueToLabel(best.score[2])}s`;
+        case "Trips": return `Three ${valueToLabel(best.score[1])}s`;
+        case "Straight": return `${valueToLabel(best.score[1])}-High Straight`;
+        case "Flush": return `${valueToLabel(best.score[1])}-High Flush`;
+        case "Full House": return `${valueToLabel(best.score[1])}s Full of ${valueToLabel(best.score[2])}s`;
+        case "Quads": return `Four ${valueToLabel(best.score[1])}s`;
         case "Straight Flush": return `${valueToLabel(best.score[1])}-High Straight Flush`;
-        case "Royal Flush":    return "Royal Flush";
-        default:               return best.label;
+        case "Royal Flush": return "Royal Flush";
+        default: return best.label;
     }
 }
 
@@ -205,12 +205,12 @@ const CARD_TRANSITION = (delay: number) => ({ duration: 0.32, ease: [0.22, 1, 0.
 const CARD_CLS = "h-[94px] w-[66px] rounded-[10px]";
 
 function chipColor(chip: ChipDenomination): { bg: string; border: string } {
-    if (chip === 1)    return { bg: "#f1f5f9", border: "#94a3b8" };
-    if (chip === 2.5)  return { bg: "#ef4444", border: "#dc2626" };
-    if (chip === 5)    return { bg: "#e11d48", border: "#be123c" };
-    if (chip === 25)   return { bg: "#16a34a", border: "#15803d" };
-    if (chip === 100)  return { bg: "#2563eb", border: "#1d4ed8" };
-    if (chip === 500)  return { bg: "#7c3aed", border: "#6d28d9" };
+    if (chip === 1) return { bg: "#f1f5f9", border: "#94a3b8" };
+    if (chip === 2.5) return { bg: "#ef4444", border: "#dc2626" };
+    if (chip === 5) return { bg: "#e11d48", border: "#be123c" };
+    if (chip === 25) return { bg: "#16a34a", border: "#15803d" };
+    if (chip === 100) return { bg: "#2563eb", border: "#1d4ed8" };
+    if (chip === 500) return { bg: "#7c3aed", border: "#6d28d9" };
     if (chip === 1000) return { bg: "#ea580c", border: "#c2410c" };
     return { bg: "#0f172a", border: "#1e293b" };
 }
@@ -305,8 +305,8 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
     const ringClass = isWinner
         ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]"
         : diamond
-        ? amount > 0 ? "border-amber-400/60" : "border-amber-300/25"
-        : amount > 0 ? "border-white/40" : "border-white/20";
+            ? amount > 0 ? "border-amber-400/60" : "border-amber-300/25"
+            : amount > 0 ? "border-white/40" : "border-white/20";
     const bgClass = isWinner ? "bg-amber-300/10" : amount > 0 ? "bg-black/25" : "bg-black/20";
 
     return (
@@ -454,7 +454,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         if (bankroll < totalBet) { setMessage("Not enough bankroll for those bets."); return; }
         const deck = createDeck(); let nextDeck = deck;
         let player: Card[], dealer: Card[], hiddenSix: Card[];
-        [player, nextDeck] = draw(nextDeck, 2); [dealer, nextDeck] = draw(nextDeck, 2); [hiddenSix, nextDeck] = draw(nextDeck, 4);
+        [player, nextDeck] = draw(nextDeck, 2);[dealer, nextDeck] = draw(nextDeck, 2);[hiddenSix, nextDeck] = draw(nextDeck, 4);
         setAnte(normalizedAnte); setTrips(normalizedTrips); setSixCardBonus(normalizedSix); setPlay(0); setWagerAtDeal(totalBet);
         setPayout(null); setResolvedHand(null); setLastDecision(null); setPendingSixCardReturn(0); setPendingSixCardSummary(null);
         setBankroll(b => b - totalBet);
@@ -534,9 +534,9 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const showSixCardView = stage === "roundOver" && sixCardBonus > 0;
 
     const btnBase = "min-w-[88px] rounded-full border px-5 py-2 text-sm font-extrabold shadow-lg transition disabled:opacity-45 active:translate-y-px";
-    const btnGold  = `${btnBase} border-amber-200/80 bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 hover:brightness-105`;
-    const btnGray  = `${btnBase} border-slate-500/60 bg-gradient-to-b from-slate-500 to-slate-700 text-white hover:brightness-110`;
-    const btnRed   = `${btnBase} border-red-300/60 bg-gradient-to-b from-red-500 to-red-700 text-white hover:brightness-105`;
+    const btnGold = `${btnBase} border-amber-200/80 bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 hover:brightness-105`;
+    const btnGray = `${btnBase} border-slate-500/60 bg-gradient-to-b from-slate-500 to-slate-700 text-white hover:brightness-110`;
+    const btnRed = `${btnBase} border-red-300/60 bg-gradient-to-b from-red-500 to-red-700 text-white hover:brightness-105`;
     const btnGreen = `${btnBase} border-emerald-200/70 bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 hover:brightness-105`;
 
     return (
@@ -588,7 +588,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                             </AnimatePresence>
                         </div>
-                        <div className="invisible" aria-hidden><ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={() => {}} /></div>
+                        <div className="invisible" aria-hidden><ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={() => { }} /></div>
                     </div>
                 }
             >
@@ -617,10 +617,10 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 </div>
 
                 {/* Three-column body: betting left | cards center | payout tables right */}
-                <div className="flex flex-1 gap-3 overflow-hidden">
+                <div className="flex flex-1 gap-3 overflow-hidden px-6">
 
                     {/* Betting column — vertically centered */}
-                    <div className="flex w-64 shrink-0 flex-col items-center justify-center gap-5 py-2">
+                    <div className="flex w-64 shrink-0 flex-col items-center justify-center gap-3 py-2">
                         <BetBar
                             pendingBet={committedBet}
                             returned={payout ? payout.total : 0}
@@ -629,7 +629,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         />
 
                         {/* Betting circles */}
-                        <div className="flex flex-col items-center gap-5">
+                        <div className="flex flex-col items-center gap-3">
                             {/* Row 1: TRIPS (diamond) + 6 CARD (circle) */}
                             <div className="flex items-center gap-8">
                                 <BetCircle
@@ -676,8 +676,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     canBet={false}
                                     selectedChip={null}
                                     isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)}
-                                    onAdd={() => {}}
-                                    onClear={() => {}}
+                                    onAdd={() => { }}
+                                    onClear={() => { }}
                                 />
                             </div>
 
@@ -690,8 +690,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 canBet={false}
                                 selectedChip={null}
                                 isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded && play > 0)}
-                                onAdd={() => {}}
-                                onClear={() => {}}
+                                onAdd={() => { }}
+                                onClear={() => { }}
                             />
                         </div>
 
@@ -711,10 +711,10 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 </div>
                                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                                     {[
-                                        { name: "Ante",   result: anteResultText },
-                                        { name: "Blind",  result: blindResultText },
-                                        { name: "Play",   result: playResultText },
-                                        { name: "Trips",  result: tripsResultText },
+                                        { name: "Ante", result: anteResultText },
+                                        { name: "Blind", result: blindResultText },
+                                        { name: "Play", result: playResultText },
+                                        { name: "Trips", result: tripsResultText },
                                         { name: "6 Card", result: sixCardResultText },
                                     ].map(({ name, result }) => {
                                         const isWin = result.startsWith("Win"), isLose = result === "Lose";
@@ -731,7 +731,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Cards column — vertically centered */}
-                    <div className="flex flex-1 flex-col items-center justify-center gap-5 py-2">
+                    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-2">
                         <AnimatePresence mode="wait">
                             {showSixCardView ? (
                                 <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
@@ -748,7 +748,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     {sixBonusResult && <span className={`text-sm font-extrabold ${sixBonusResult.category === "No Bonus" ? "text-white/50" : "text-amber-200"}`}>{sixBonusResult.category}</span>}
                                 </motion.div>
                             ) : (
-                                <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-5">
+                                <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
                                     {/* Dealer */}
                                     <div className="flex flex-col items-center gap-2">
                                         <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
