@@ -8,7 +8,6 @@ import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
 import PaiGowPoker from "./PaiGow"
 import Feedback from "./Feedback"
-import heroImage from "./assets/hero.png"
 
 type Game =
     | "home"
@@ -54,7 +53,8 @@ function formatMoney(value: number) {
     return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
-        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
     }).format(value)
 }
 
@@ -96,8 +96,8 @@ function NavDropdown({
             <button
                 onClick={() => setOpen((prev) => !prev)}
                 className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                        ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                        : "border-white/15 bg-white/8 text-white hover:bg-white/14"
+                    ? "border-amber-200 bg-amber-400 text-black shadow-lg"
+                    : "border-white/15 bg-white/8 text-white hover:bg-white/14"
                     }`}
             >
                 <span className="flex items-center gap-2">
@@ -147,14 +147,14 @@ function DropdownItem({
 function GameCard({
     title,
     subtitle,
-    accent,
+    feltColor,
     onClick,
     bankroll,
     label = "Table Game",
 }: {
     title: string
     subtitle: string
-    accent: string
+    feltColor: string
     onClick: () => void
     bankroll: string
     label?: string
@@ -162,9 +162,9 @@ function GameCard({
     return (
         <button
             onClick={onClick}
-            className="group relative overflow-hidden rounded-[1.8rem] border border-white/12 bg-black/30 p-6 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-white/22 hover:bg-black/38"
+            className="group relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/30 p-6 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-white/22 hover:bg-black/38"
         >
-            <div className={`absolute inset-x-0 top-0 h-1.5 ${accent}`} />
+            <div className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: feltColor }} />
 
             <div className="relative flex h-full flex-col justify-between gap-8">
                 <div>
@@ -173,7 +173,7 @@ function GameCard({
                     </div>
 
                     <div className="text-3xl font-extrabold tracking-[0.02em] text-white">{title}</div>
-                    <div className="mt-3 max-w-[28ch] text-sm leading-6 text-white/72">{subtitle}</div>
+                    <div className="mt-3 max-w-[48ch] text-sm leading-6 text-white/72">{subtitle}</div>
                 </div>
 
                 <div className="flex items-end justify-between gap-4">
@@ -183,7 +183,7 @@ function GameCard({
                     </div>
 
                     <div className="rounded-full border border-amber-200/20 bg-amber-300/12 px-4 py-2 text-sm font-bold text-amber-100 transition group-hover:bg-amber-300/20">
-                        Enter
+                        Enter →
                     </div>
                 </div>
             </div>
@@ -258,141 +258,130 @@ export default function Casino() {
         }
 
         return (
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#151d33,_#0a1020_42%,_#05070d_78%)] text-white">
-                <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col px-4 pb-8 pt-6">
-                    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/26 shadow-2xl backdrop-blur">
-                        <div className="grid min-h-[420px] gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-                            <div className="flex flex-col justify-center p-8 md:p-10 lg:p-12">
-                                <div className="mb-4 inline-flex w-fit rounded-full border border-amber-200/18 bg-amber-300/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.28em] text-amber-200">
-                                    Main Casino Floor
+            <div
+                className="min-h-screen text-white"
+                style={{ background: "radial-gradient(circle at top, #0f1a0f, #050d05 50%, #020502 100%)" }}
+            >
+                <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-12">
+                    <div className="mb-14 text-center">
+                        <h1
+                            className="text-6xl font-bold md:text-7xl"
+                            style={{
+                                fontFamily: "Georgia, serif",
+                                background: "linear-gradient(135deg, #f59e0b, #fbbf24, #d97706)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                backgroundClip: "text",
+                            }}
+                        >
+                            Cohn Casino
+                        </h1>
+                        <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/50">
+                            Eight games · One bankroll
+                        </p>
+                        <p className="mx-auto mt-5 max-w-[60ch] text-base leading-7 text-white/65">
+                            A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
+                            with a shared bankroll that carries across every table. No real money, no ads, no accounts.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <GameCard
+                            title="Blackjack"
+                            subtitle="6-deck shoe · Blackjack pays 3:2 · Dealer stands on all 17s · Split up to 4 hands · Double after split · Reshuffles at 85% penetration"
+                            feltColor="#1f7a45"
+                            onClick={() => setGame("blackjack")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Free Bet Blackjack"
+                            subtitle="Free doubles on hard 9, 10, and 11 · Free splits on pairs through 9s and aces · Dealer 22 pushes all live hands · Push 22 side bet pays 11:1 · Pot of Gold side bet pays by free-bet token count"
+                            feltColor="#7f1d1d"
+                            onClick={() => setGame("freebetblackjack")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Ultimate Texas Hold'em"
+                            subtitle="Bet 4x or 3x preflop · 2x on the flop · 1x or fold on the river · Dealer qualifies with pair or better · Blind pays on straight or better · Trips and 6 Card Bonus side bets available"
+                            feltColor="#1a3a5c"
+                            onClick={() => setGame("uth")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Roulette"
+                            subtitle="American wheel with 38 pockets · Straight up pays 35:1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
+                            feltColor="#1b6b3a"
+                            onClick={() => setGame("roulette")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Baccarat"
+                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1:1 · Tie pays 8:1 · Dragon 7 side bet pays 40:1 · Panda 8 side bet pays 25:1 · 8-deck shoe"
+                            feltColor="#7f1d1d"
+                            onClick={() => setGame("baccarat")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Double Down Madness"
+                            subtitle="One-card blackjack with aggressive re-doubling · Push 22 side bet · Configurable blackjack pay · Insurance available"
+                            feltColor="#18181b"
+                            onClick={() => setGame("doubledownmadness")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Jacks or Better"
+                            subtitle="Classic video poker · Hold and draw · Full pay table displayed · Retro machine aesthetic"
+                            feltColor="#0f172a"
+                            onClick={() => setGame("videopoker")}
+                            bankroll={bankrollDisplay}
+                            label="Video Poker"
+                        />
+                        <GameCard
+                            title="Pai Gow Poker"
+                            subtitle="7 cards set into a 5-card back hand and 2-card front hand · Joker plays as semi-wild · Fortune and Ace High side bets · Dealer qualifies with Ace-high low hand"
+                            feltColor="#1a3a5c"
+                            onClick={() => setGame("paigow")}
+                            bankroll={bankrollDisplay}
+                        />
+                    </div>
+
+                    <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200">
+                                    Bankroll
                                 </div>
-
-                                <h1 className="max-w-[12ch] text-5xl font-extrabold leading-[1.02] tracking-[0.01em] text-white md:text-6xl">
-                                    Pick your table and play.
-                                </h1>
-
-                                <p className="mt-5 max-w-[54ch] text-base leading-7 text-white/72 md:text-lg">
-                                    One shared bankroll, clean table layouts, and saved progress through local storage so you can close the app and come right back.
-                                </p>
-
-                                <div className="mt-8 flex flex-wrap gap-4">
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Ultimate Texas Hold'em"
-                                            subtitle="Full pay tables, staged betting, hand result tracking, and the same bankroll used across the whole casino."
-                                            accent="bg-gradient-to-r from-emerald-400 via-green-300 to-amber-200"
-                                            onClick={() => setGame("uth")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Blackjack"
-                                            subtitle="Multi-hand splitting, double down, dealer blackjack handling, and a table style that now matches UTH."
-                                            accent="bg-gradient-to-r from-amber-300 via-orange-300 to-red-300"
-                                            onClick={() => setGame("blackjack")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Free Bet Blackjack"
-                                            subtitle="Free doubles on hard 9, 10, and 11, free splits through 9s, Push 22, and Pot of Gold side bets."
-                                            accent="bg-gradient-to-r from-yellow-300 via-amber-300 to-lime-300"
-                                            onClick={() => setGame("freebetblackjack")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Double Down Madness"
-                                            subtitle="One-card blackjack with aggressive re-doubling, insurance, Push 22, configurable blackjack pay, and a black-felt layout."
-                                            accent="bg-gradient-to-r from-zinc-200 via-stone-300 to-amber-200"
-                                            onClick={() => setGame("doubledownmadness")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Roulette"
-                                            subtitle="American roulette with a wheel, clickable board betting, outside bets, dozens, columns, and recent result tracking."
-                                            accent="bg-gradient-to-r from-rose-300 via-red-300 to-amber-200"
-                                            onClick={() => setGame("roulette")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Baccarat"
-                                            subtitle="No commission baccarat with Player, Banker, Tie, plus Panda 8 and Dragon 7 side bets on a red felt table."
-                                            accent="bg-gradient-to-r from-red-400 via-rose-300 to-pink-200"
-                                            onClick={() => setGame("baccarat")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Jacks or Better"
-                                            subtitle="Classic video poker with hold-and-draw gameplay, retro machine styling, and a full payout table."
-                                            accent="bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300"
-                                            onClick={() => setGame("videopoker")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-
-                                    <div className="min-w-[280px] flex-1">
-                                        <GameCard
-                                            title="Pai Gow Poker"
-                                            subtitle="Split seven cards into a back hand and front hand, with Fortune and Ace High side bets on a UTH-style table."
-                                            accent="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200"
-                                            onClick={() => setGame("paigow")}
-                                            bankroll={bankrollDisplay}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-5 md:p-6">
-                                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                        <div>
-                                            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200">
-                                                Support
-                                            </div>
-
-                                            <div className="mt-1 text-xl font-extrabold text-white">
-                                                Help improve the casino
-                                            </div>
-
-                                            <div className="mt-2 max-w-[48ch] text-sm leading-6 text-white/70">
-                                                Found a bug, want a new game, or think something feels off?
-                                                Send feedback directly.
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => setGame("feedback")}
-                                            className="rounded-full border border-amber-200 bg-amber-400 px-5 py-2.5 text-sm font-bold text-black shadow-lg transition hover:scale-[1.02]"
-                                        >
-                                            Give Feedback
-                                        </button>
-                                    </div>
-                                </div>
+                                <div className="mt-1 text-3xl font-extrabold text-amber-100">{bankrollDisplay}</div>
                             </div>
-
-                            <div className="relative flex items-center justify-center overflow-hidden border-t border-white/10 bg-[radial-gradient(circle_at_center,_rgba(168,85,247,0.22),_rgba(15,23,42,0.2)_45%,_rgba(0,0,0,0.1)_78%)] p-8 lg:border-l lg:border-t-0">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(251,191,36,0.08),_transparent_28%),radial-gradient(circle_at_80%_70%,_rgba(16,185,129,0.08),_transparent_24%)]" />
-                                <img
-                                    src={heroImage}
-                                    alt="Casino hero"
-                                    className="relative max-h-[440px] w-full max-w-[400px] object-contain opacity-90 drop-shadow-[0_20px_60px_rgba(168,85,247,0.3)]"
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={5}
+                                    value={bankrollInput}
+                                    onChange={(e) => setBankrollInput(e.target.value)}
+                                    className="w-[140px] rounded-full border border-white/15 bg-white/8 px-4 py-2 text-white outline-none"
                                 />
+                                <button
+                                    onClick={applyBankroll}
+                                    className="rounded-full border border-emerald-200 bg-emerald-400 px-5 py-2 text-sm font-bold text-black shadow-lg transition hover:scale-[1.02]"
+                                >
+                                    Set
+                                </button>
+                                <button
+                                    onClick={resetBankroll}
+                                    className="rounded-full border border-red-300/40 bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]"
+                                >
+                                    Reset to $1,000
+                                </button>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="mt-8 text-center">
+                        <p className="text-xs text-white/35">
+                            Purely for entertainment · No real money · Bankroll saves locally in your browser
+                        </p>
                     </div>
                 </div>
             </div>
