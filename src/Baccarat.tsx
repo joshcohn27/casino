@@ -41,7 +41,7 @@ type HandHistoryEntry = {
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
 const RANKS: Rank[] = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
-const BET_STEP = 5;
+const BET_STEP = 2.5;
 const SHOE_DECKS = 8;
 const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.82;

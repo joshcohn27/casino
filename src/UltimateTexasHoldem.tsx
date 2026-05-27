@@ -446,9 +446,9 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     };
 
     const startRound = () => {
-        const normalizedAnte = Math.max(MIN_MAIN_BET, Math.floor(ante / 5) * 5);
-        const normalizedTrips = Math.min(MAX_TRIPS, Math.max(0, Math.floor(trips / 5) * 5));
-        const normalizedSix = Math.min(MAX_SIX_BONUS, Math.max(0, Math.floor(sixCardBonus / 5) * 5));
+        const normalizedAnte = Math.max(MIN_MAIN_BET, Math.floor(ante / 2.5) * 2.5);
+        const normalizedTrips = Math.min(MAX_TRIPS, Math.max(0, Math.floor(trips / 2.5) * 2.5));
+        const normalizedSix = Math.min(MAX_SIX_BONUS, Math.max(0, Math.floor(sixCardBonus / 2.5) * 2.5));
         if (normalizedSix !== 0 && normalizedSix < MIN_SIX_BONUS) { setMessage("6 Card Bonus must be 0 or at least $5."); return; }
         const totalBet = normalizedAnte + normalizedAnte + normalizedTrips + normalizedSix;
         if (bankroll < totalBet) { setMessage("Not enough bankroll for those bets."); return; }

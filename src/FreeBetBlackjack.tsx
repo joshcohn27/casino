@@ -82,7 +82,7 @@ const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION
 const PLAYER_TO_DEALER_DELAY_MS = 500;
 
 const SIDE_MAX = 100;
-const SIDE_STEP = 5;
+const SIDE_STEP = 2.5;
 
 // ─── UI constants ─────────────────────────────────────────────────────────────
 
@@ -230,7 +230,7 @@ function potOfGoldMultiplier(tokens: number) {
 }
 
 function clampMainBet(value: number) {
-    return Math.max(MIN_BET, Math.floor(value / 5) * 5);
+    return Math.max(MIN_BET, Math.floor(value / 2.5) * 2.5);
 }
 
 function clampSideBet(value: number) {

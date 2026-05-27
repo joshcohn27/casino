@@ -665,7 +665,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         if (isShuffling) return;
         const override = dealBetRef.current;
         dealBetRef.current = null;
-        const wager = Math.max(MIN_BET, Math.floor((override ?? bet) / 5) * 5);
+        const wager = Math.max(MIN_BET, Math.floor((override ?? bet) / 2.5) * 2.5);
         if (bankroll < wager) { setMessage("Not enough bankroll."); return; }
 
         let nextDeck = [...deck];
