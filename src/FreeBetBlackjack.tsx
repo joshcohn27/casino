@@ -79,6 +79,7 @@ const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
+const PLAYER_TO_DEALER_DELAY_MS = 500;
 
 const SIDE_MAX = 100;
 const SIDE_STEP = 5;
@@ -183,6 +184,14 @@ function shouldShuffle(shoe: Card[]) {
 
 function wait(ms: number) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function waitForPaint() {
+    return new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => resolve());
+        });
+    });
 }
 
 function isTenValue(rank: Rank) {
@@ -1085,6 +1094,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
             if (nextTotal === 21) {
                 setMessage(`Hand ${nextIndex + 1} makes 21.`);
+                await waitForPaint();
+                await wait(PLAYER_TO_DEALER_DELAY_MS);
                 await moveToNextHand(dealt.hands, dealt.deck, tokenCount, nextIndex, snapshot);
                 return;
             }
@@ -1092,6 +1103,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                 const bustedHands = [...dealt.hands];
                 bustedHands[nextIndex] = { ...bustedHands[nextIndex], result: "Bust" };
                 setHands(bustedHands); setMessage(`Hand ${nextIndex + 1} busts.`);
+                await waitForPaint();
+                await wait(PLAYER_TO_DEALER_DELAY_MS);
                 await moveToNextHand(bustedHands, dealt.deck, tokenCount, nextIndex, snapshot);
                 return;
             }
@@ -1099,9 +1112,13 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         }
 
         if (nextHands.some((hand) => total(hand.cards) <= 21)) {
+            await waitForPaint();
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
             await dealerTurn(nextHands, nextDeck, tokenCount, snapshot);
             return;
         }
+        await waitForPaint();
+        await wait(PLAYER_TO_DEALER_DELAY_MS);
         await finishRoundWithoutDealer(nextHands, snapshot);
     };
 
@@ -1139,6 +1156,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
         if (activeTotal === 21) {
             setMessage(`Hand ${active + 1} makes 21.`);
+            await waitForPaint();
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
             await moveToNextHand(dealt.hands, dealt.deck, nextTokenCount, active, sideBetSnapshot);
             return;
         }
@@ -1146,6 +1165,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             const bustedHands = [...dealt.hands];
             bustedHands[active] = { ...bustedHands[active], result: "Bust" };
             setHands(bustedHands); setMessage(`Hand ${active + 1} busts.`);
+            await waitForPaint();
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
             await moveToNextHand(bustedHands, dealt.deck, nextTokenCount, active, sideBetSnapshot);
         }
     };
@@ -1224,11 +1245,19 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         nextHands[active] = { ...nextHands[active], cards: [...nextHands[active].cards, card] };
         setDeck(nextDeck); setHands(nextHands);
         const handTotal = total(nextHands[active].cards);
-        if (handTotal === 21) { setMessage(`Hand ${active + 1} makes 21.`); await moveToNextHand(nextHands, nextDeck, freeBetTokens, active, sideBetSnapshot); return; }
+        if (handTotal === 21) {
+            setMessage(`Hand ${active + 1} makes 21.`);
+            await waitForPaint();
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
+            await moveToNextHand(nextHands, nextDeck, freeBetTokens, active, sideBetSnapshot);
+            return;
+        }
         if (handTotal > 21) {
             const bustedHands = [...nextHands];
             bustedHands[active] = { ...bustedHands[active], result: "Bust" };
             setHands(bustedHands); setMessage(`Hand ${active + 1} busts.`);
+            await waitForPaint();
+            await wait(PLAYER_TO_DEALER_DELAY_MS);
             await moveToNextHand(bustedHands, nextDeck, freeBetTokens, active, sideBetSnapshot);
         }
     };
@@ -1259,6 +1288,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             setHands([...nextHands]);
             setMessage(freeDouble ? `Hand ${active + 1} busts after free double.` : `Hand ${active + 1} busts after doubling.`);
         }
+        await waitForPaint();
+        await wait(PLAYER_TO_DEALER_DELAY_MS);
         await moveToNextHand(nextHands, nextDeck, nextTokenCount, active, sideBetSnapshot);
     };
 
