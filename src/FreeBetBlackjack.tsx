@@ -374,15 +374,24 @@ function Badge({ result }: { result: string }) {
     );
 }
 
-function TableLabel() {
+function TableLabel({ onShowRules }: { onShowRules: () => void }) {
     return (
         <div className="flex flex-col items-center gap-1 select-none">
-            <h1
-                className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
-            >
-                Free Bet Blackjack
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1
+                    className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                >
+                    Free Bet Blackjack
+                </h1>
+                <button
+                    onClick={onShowRules}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.12)] transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
+                    aria-label="Show Free Bet Blackjack rules"
+                >
+                    i
+                </button>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
                 <span>BLACKJACK PAYS 3 TO 2</span>
                 <span className="text-white/20">·</span>
@@ -668,6 +677,111 @@ function SlideBtn({ children }: { children: React.ReactNode }) {
     );
 }
 
+
+// ─── Rules modal ──────────────────────────────────────────────────────────────
+
+function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+    if (!open) return null;
+
+    const sections = [
+        {
+            title: "How the Hand Starts",
+            items: [
+                "• Place a main bet, then optionally add Push 22 and Pot of Gold side bets.",
+                "• You and the dealer each get 2 cards. The dealer starts with 1 card hidden.",
+                "• Blackjack pays 3 to 2, unless the dealer also has blackjack.",
+            ],
+        },
+        {
+            title: "Free Doubles",
+            items: [
+                "• Hard 9, 10, and 11 qualify for a free double.",
+                "• A free double adds a second wager for free, so only the winnings are paid if it wins.",
+                "• Other doubles are paid doubles and add another main bet at risk.",
+            ],
+        },
+        {
+            title: "Free Splits",
+            items: [
+                "• Pairs of 2 through 9 and Aces qualify for free splits.",
+                "• A free split creates another hand without charging another main bet.",
+                "• Tens and face cards can still split, but they are paid splits.",
+            ],
+        },
+        {
+            title: "Push 22 and Pot of Gold",
+            items: [
+                "• If the dealer finishes on exactly 22, all standing main hands push instead of losing or winning.",
+                "• Push 22 wins when the dealer finishes on exactly 22 and pays 11 to 1.",
+                "• Pot of Gold pays based on how many free bet tokens you earn in the round.",
+            ],
+        },
+    ];
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+            >
+                <button
+                    className="absolute inset-0 bg-black/72 backdrop-blur-[3px]"
+                    onClick={onClose}
+                    aria-label="Close rules modal"
+                />
+                <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[1.5rem] border border-amber-200/20 bg-[linear-gradient(180deg,_rgba(127,29,29,0.98),_rgba(17,24,39,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+                >
+                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                        <div>
+                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">
+                                Game Info
+                            </div>
+                            <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">
+                                Free Bet Blackjack Rules
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10"
+                            aria-label="Close rules modal"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                        <div className="grid gap-3 text-sm leading-6 text-amber-50/88 sm:grid-cols-2">
+                            {sections.map((section) => (
+                                <div key={section.title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
+                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">
+                                        {section.title}
+                                    </div>
+                                    <div className="space-y-1">
+                                        {section.items.map((item) => (
+                                            <div key={item}>{item}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 rounded-2xl border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
+                            The big twist: qualifying doubles and splits can be made for free. You only risk the paid money you actually put on the table, but free double and free split wins can still add profit. Dealer 22 is the catch because it pushes standing main hands.
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
 function FreeBetBar({
     stage, isShuffling, bet, buyIn, bankroll,
     canDouble, canSplit, isFreeDouble, isFreeSplitAction, isResolvingAction,
@@ -856,6 +970,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     });
     const [selectedZone, setSelectedZone] = useState<"push22" | "potOfGold" | null>(null);
     const [isResolvingAction, setIsResolvingAction] = useState(false);
+    const [showRules, setShowRules] = useState(false);
 
     // ── localStorage effects (preserved) ─────────────────────────────────────
 
@@ -1391,6 +1506,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                 </div>
             )}
 
+            <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+
             <TableShell
                 feltColor="#7f1d1d"
                 gameName="Free Bet Blackjack"
@@ -1423,7 +1540,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             >
                 <div className="flex flex-1 flex-col items-center gap-3 py-0">
 
-                    <TableLabel />
+                    <TableLabel onShowRules={() => setShowRules(true)} />
 
                     {/* Felt area: payout columns float left/right at lg */}
                     <div className="relative w-full">

@@ -806,12 +806,13 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         <div className="flex gap-3">
                             <div className="flex-1">
                                 <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHighlight as string | null} />
-                            </div>
-                            <div className="flex flex-1 flex-col">
-                                <PayoutColumn title="Trips Pays" entries={TRIPS_PAYTABLE} highlight={tripsHighlight as string | null} />
                                 <div className="mt-3">
-                                    <PayoutColumn title="6 Card Bonus" entries={SIX_CARD_BONUS_PAYTABLE as Record<string, number>} highlight={sixCardHighlight as string | null} />
+                                    <PayoutColumn title="Trips Pays" entries={TRIPS_PAYTABLE} highlight={tripsHighlight as string | null} />
                                 </div>
+                            </div>
+
+                            <div className="flex-1">
+                                <PayoutColumn title="6 Card Bonus" entries={SIX_CARD_BONUS_PAYTABLE as Record<string, number>} highlight={sixCardHighlight as string | null} />
                             </div>
                         </div>
                     </div>

@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import TableShell from "./shared/TableShell";
+import ChipTray from "./shared/ChipTray";
+import PlayingCard from "./shared/Card";
+import type { Card as SharedCard } from "./shared/cards";
+import { type ChipDenomination } from "./shared/money";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank =
@@ -53,8 +58,7 @@ const SHUFFLE_DELAY_MS = 1800;
 const BET_STORAGE_KEY = "double-down-madness-main-bet";
 const PUSH22_STORAGE_KEY = "double-down-madness-push22-bet";
 
-const CARD_BACK_URL =
-    "https://png.pngtree.com/png-clipart/20240206/original/pngtree-single-playing-cards-back-on-a-white-background-with-shadow-and-png-image_14247732.png";
+// ─── Pure functions (preserved) ───────────────────────────────────────────────
 
 function shuffle<T>(arr: T[]) {
     const a = [...arr];
@@ -146,216 +150,6 @@ function isMadnessBlackjack(cards: Card[]) {
     return cards.length === 2 && total(cards) === 21;
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="inline-flex rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.22em] text-zinc-100 shadow">
-            {children}
-        </div>
-    );
-}
-
-function StatPill({
-    label,
-    value,
-    accent = "default",
-}: {
-    label: string;
-    value: React.ReactNode;
-    accent?: "default" | "gold" | "green";
-}) {
-    const accentClasses =
-        accent === "gold"
-            ? "border-amber-300/25 bg-amber-300/10 text-amber-100"
-            : accent === "green"
-                ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
-                : "border-white/10 bg-white/5 text-white";
-
-    return (
-        <div className={`rounded-2xl border px-4 py-3 shadow-lg ${accentClasses}`}>
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
-                {label}
-            </div>
-            <div className="mt-1 text-lg font-extrabold">{value}</div>
-        </div>
-    );
-}
-
-function CardFront({ card, large = false }: { card?: Card; large?: boolean }) {
-    const isRed = card?.suit === "♥" || card?.suit === "♦";
-    const textColor = isRed ? "text-red-600" : "text-slate-900";
-    const sizeClasses = large
-        ? "h-[94px] w-[66px] rounded-[14px] sm:h-[106px] sm:w-[74px]"
-        : "h-[80px] w-[56px] rounded-[12px] sm:h-[90px] sm:w-[62px]";
-
-    return (
-        <div
-            className={`relative flex items-center justify-center border border-slate-300/90 bg-[linear-gradient(180deg,_#ffffff,_#f4f4f5)] font-bold shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses}`}
-        >
-            {!card ? (
-                <div className="text-2xl text-slate-400">?</div>
-            ) : (
-                <>
-                    <div className={`absolute left-[6px] top-[6px] text-left leading-[0.9] ${textColor}`}>
-                        <div className="text-[15px] font-extrabold">{card.rank}</div>
-                        <div className="mt-[1px] text-[13px]">{card.suit}</div>
-                    </div>
-                    <div
-                        className={`absolute bottom-[6px] right-[6px] rotate-180 text-left leading-[0.9] ${textColor}`}
-                    >
-                        <div className="text-[15px] font-extrabold">{card.rank}</div>
-                        <div className="mt-[1px] text-[13px]">{card.suit}</div>
-                    </div>
-                    <div className={`${textColor} text-[24px]`}>{card.suit}</div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function CardBack({ large = false }: { large?: boolean }) {
-    const sizeClasses = large
-        ? "h-[94px] w-[66px] rounded-[14px] sm:h-[106px] sm:w-[74px]"
-        : "h-[80px] w-[56px] rounded-[12px] sm:h-[90px] sm:w-[62px]";
-
-    return (
-        <div className={`relative overflow-hidden border border-white/15 bg-white shadow-[0_10px_24px_rgba(0,0,0,0.28)] ${sizeClasses}`}>
-            <img
-                src={CARD_BACK_URL}
-                alt="Card back"
-                className="absolute left-1/2 top-1/2 h-[150%] w-[150%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover"
-                draggable={false}
-            />
-        </div>
-    );
-}
-
-function CardFace({
-    card,
-    hidden = false,
-    large = false,
-    sideways = false,
-}: {
-    card?: Card;
-    hidden?: boolean;
-    large?: boolean;
-    sideways?: boolean;
-}) {
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: -16, scale: 0.92, rotate: sideways ? 90 : 0 }}
-            animate={{ opacity: 1, y: 0, scale: 1, rotate: sideways ? 90 : 0 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            className={sideways ? "origin-center" : ""}
-            style={sideways ? { marginLeft: 16, marginRight: 16, marginTop: 8, marginBottom: 8 } : undefined}
-        >
-            <motion.div
-                animate={{ rotateY: hidden ? 0 : 180 }}
-                transition={{ duration: 0.55, ease: "easeInOut" }}
-                style={{ transformStyle: "preserve-3d" }}
-                className="relative [perspective:1000px]"
-            >
-                <div
-                    className="absolute inset-0"
-                    style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
-                >
-                    <CardBack large={large} />
-                </div>
-                <div
-                    style={{
-                        transform: "rotateY(180deg)",
-                        backfaceVisibility: "hidden",
-                        WebkitBackfaceVisibility: "hidden",
-                    }}
-                >
-                    <CardFront card={card} large={large} />
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-}
-
-function ActionButton({
-    children,
-    onClick,
-    disabled,
-    variant = "default",
-}: {
-    children: React.ReactNode;
-    onClick: () => void | Promise<void>;
-    disabled?: boolean;
-    variant?: "default" | "gold" | "success" | "danger";
-}) {
-    const base =
-        "min-w-[132px] rounded-2xl border px-5 py-3 text-sm font-extrabold shadow-xl transition active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-45";
-    const styles =
-        variant === "gold"
-            ? "border-amber-200/70 bg-[linear-gradient(180deg,_#fcd34d,_#d97706)] text-zinc-950 hover:brightness-105"
-            : variant === "success"
-                ? "border-emerald-200/70 bg-[linear-gradient(180deg,_#4ade80,_#15803d)] text-zinc-950 hover:brightness-105"
-                : variant === "danger"
-                    ? "border-red-200/60 bg-[linear-gradient(180deg,_#fb7185,_#be123c)] text-white hover:brightness-105"
-                    : "border-zinc-500/80 bg-[linear-gradient(180deg,_#52525b,_#27272a)] text-white hover:brightness-110";
-
-    return (
-        <button onClick={() => void onClick()} disabled={disabled} className={`${base} ${styles}`}>
-            {children}
-        </button>
-    );
-}
-
-function BetInput({
-    label,
-    value,
-    onChange,
-    disabled,
-    min = MIN_BET,
-    max,
-    step = 5,
-}: {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    disabled?: boolean;
-    min?: number;
-    max?: number;
-    step?: number;
-}) {
-    return (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-200/85">
-                {label}
-            </div>
-            <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-white/70">
-                    $
-                </span>
-                <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    step={step}
-                    value={value}
-                    disabled={disabled}
-                    onChange={(e) => onChange(Number(e.target.value || 0))}
-                    className="w-full rounded-xl border border-white/10 bg-black/35 py-3 pl-8 pr-3 text-lg font-bold text-white outline-none disabled:opacity-60"
-                />
-            </div>
-        </div>
-    );
-}
-
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-        <div className="rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.03))] p-4 shadow-2xl backdrop-blur">
-            <div className="mb-3 text-center text-[12px] font-extrabold uppercase tracking-[0.22em] text-zinc-100">
-                {title}
-            </div>
-            {children}
-        </div>
-    );
-}
-
 function getDealerDisplayTotal(dealer: Card[], stage: Stage) {
     if (!dealer.length) return "—";
     if (stage === "dealer" || stage === "done") {
@@ -365,6 +159,430 @@ function getDealerDisplayTotal(dealer: Card[], stage: Stage) {
     if (!up) return "—";
     return up.rank === "A" ? "11" : `${up.value}`;
 }
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+
+function buildChipStack(amount: number): ChipDenomination[] {
+    const CHIP_VALUES: ChipDenomination[] = [5000, 1000, 500, 100, 25, 5, 2.5, 1];
+    let remaining = Math.round(amount * 100);
+    const stack: ChipDenomination[] = [];
+    for (const denom of CHIP_VALUES) {
+        const cents = Math.round(Number(denom) * 100);
+        while (remaining >= cents) { stack.push(denom); remaining -= cents; }
+    }
+    return stack;
+}
+
+function toShared(card: Card, faceUp: boolean): SharedCard {
+    return {
+        id: card.id,
+        suit: card.suit as SharedCard["suit"],
+        rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
+        faceUp,
+    };
+}
+
+const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
+
+const CARD_VARIANTS = {
+    initial: { opacity: 0, y: -18, scale: 0.94 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+};
+
+const CARD_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
+
+const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
+    1: { bg: "#f1f5f9", border: "#94a3b8", text: "#1e293b", label: "$1" },
+    2.5: { bg: "#f9a8d4", border: "#be185d", text: "#500724", label: "$2.50" },
+    5: { bg: "#dc2626", border: "#7f1d1d", text: "#fff", label: "$5" },
+    25: { bg: "#16a34a", border: "#14532d", text: "#fff", label: "$25" },
+    100: { bg: "#1e293b", border: "#0f172a", text: "#e2e8f0", label: "$100" },
+    500: { bg: "#7c3aed", border: "#4c1d95", text: "#fff", label: "$500" },
+    1000: { bg: "#b45309", border: "#78350f", text: "#fef3c7", label: "$1K" },
+    5000: { bg: "#babbbd", border: "#6b7280", text: "#111827", label: "$5K" },
+};
+
+const BTN_NEUTRAL = "rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GOLD = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+const BTN_GREEN = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+
+function SlideBtn({ children }: { children: React.ReactNode }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.88 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="inline-flex rounded-full border border-zinc-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-100">
+            {children}
+        </div>
+    );
+}
+
+function BetBar({
+    pendingBet, totalRisk, returned, net, stage,
+}: {
+    pendingBet: number; totalRisk: number; returned: number; net: number; stage: Stage;
+}) {
+    const showResult = stage === "done";
+    const displayBet = totalRisk > 0 ? totalRisk : pendingBet;
+    return (
+        <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5">
+            {[
+                { label: "Bet In", val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
+                { label: "Returned", val: showResult ? formatMoney(returned) : "—", color: "text-white" },
+                {
+                    label: "Net",
+                    val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "—",
+                    color: showResult
+                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
+                        : "text-white",
+                },
+            ].map(({ label, val, color }, i, arr) => (
+                <React.Fragment key={label}>
+                    <div className="text-center">
+                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
+                    </div>
+                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
+                </React.Fragment>
+            ))}
+        </div>
+    );
+}
+
+const STACK_GAP = 9;
+
+function BetCircle({
+    chips, totalBet, label, interactive = false, onClick,
+}: {
+    chips: ChipDenomination[];
+    totalBet: number;
+    label: string;
+    interactive?: boolean;
+    onClick?: () => void;
+}) {
+    const visible = chips.slice(-3);
+    const startIdx = chips.length - visible.length;
+    return (
+        <div className="flex flex-col items-center gap-1.5">
+            <div className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/40">{label}</div>
+            <div className="flex flex-col items-center">
+                <div
+                    className="relative z-10 flex justify-center"
+                    style={{ width: 48, height: 48 + (visible.length > 1 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
+                >
+                    <AnimatePresence>
+                        {visible.map((denom, i) => {
+                            const cfg = CHIP_COLORS[denom];
+                            return (
+                                <motion.div
+                                    key={startIdx + i}
+                                    className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center justify-center rounded-full text-[10px] font-extrabold"
+                                    style={{
+                                        bottom: i * STACK_GAP, zIndex: i + 1,
+                                        backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
+                                        boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
+                                    }}
+                                    initial={{ opacity: 0, y: -22, scale: 0.72 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 6, scale: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                                >
+                                    {cfg.label}
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+                </div>
+                <button
+                    onClick={interactive ? onClick : undefined}
+                    disabled={!interactive}
+                    className={`flex h-[96px] w-[96px] items-center justify-center rounded-full border-2 border-dashed bg-black/20 backdrop-blur-sm transition ${interactive
+                        ? "cursor-pointer border-white/40 hover:border-white/60 hover:bg-black/30"
+                        : "cursor-default border-white/20"
+                        }`}
+                >
+                    {totalBet === 0 ? (
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">
+                            {interactive ? "Click" : "—"}
+                        </span>
+                    ) : (
+                        <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function InfoPanel({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div className="px-1 py-2">
+            <div className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-300/80">
+                {title}
+            </div>
+            {children}
+        </div>
+    );
+}
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+    return (
+        <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-zinc-400">{label}</span>
+            <span className="font-semibold text-white">{value}</span>
+        </div>
+    );
+}
+
+
+// ─── Rules modal ──────────────────────────────────────────────────────────────
+
+function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+    if (!open) return null;
+
+    const sections = [
+        {
+            title: "How the Hand Starts",
+            items: [
+                "• Place a main bet, then optionally add the Push 22 side bet.",
+                "• The dealer gets 2 cards and you start with 1 card.",
+                "• If the dealer shows an Ace, insurance is offered before the hand continues.",
+            ],
+        },
+        {
+            title: "Your Decisions",
+            items: [
+                "• You can hit, stand, double, or re-double while your total is under 21.",
+                "• Any card drawn from a double or re-double turns sideways on the felt.",
+                "• If you make 21, the dealer resolves the hand automatically.",
+            ],
+        },
+        {
+            title: "Blackjack Pays",
+            items: [
+                "• A 2-card 21 is blackjack.",
+                "• Suited blackjack pays 2 to 1.",
+                "• Unsuited blackjack pays 3 to 2.",
+            ],
+        },
+        {
+            title: "Dealer 22 + Push 22",
+            items: [
+                "• If the dealer makes exactly 22, standing main wagers push.",
+                "• The Push 22 side bet wins when the dealer finishes on exactly 22.",
+                "• Push 22 pays 12 to 1.",
+                "• If you bust but have Push 22 bet, the dealer still draws out the hand to resolve the side bet.",
+            ],
+        },
+    ];
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+            >
+                <button
+                    className="absolute inset-0 bg-black/72 backdrop-blur-[3px]"
+                    onClick={onClose}
+                    aria-label="Close rules modal"
+                />
+                <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[1.5rem] border border-zinc-200/20 bg-[linear-gradient(180deg,_rgba(39,39,42,0.98),_rgba(9,9,11,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+                >
+                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                        <div>
+                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">
+                                Game Info
+                            </div>
+                            <div className="mt-1 text-lg font-extrabold text-zinc-50 sm:text-2xl">
+                                Double Down Madness Rules
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10"
+                            aria-label="Close rules modal"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                        <div className="grid gap-3 text-sm leading-6 text-zinc-100/88 sm:grid-cols-2">
+                            {sections.map((section) => (
+                                <div key={section.title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
+                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">
+                                        {section.title}
+                                    </div>
+                                    <div className="space-y-1">
+                                        {section.items.map((item) => (
+                                            <div key={item}>{item}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 rounded-2xl border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
+                            The big twist: doubling does not end your hand. You can keep playing after a double, then re-double again if your total is still under 21. If you bust with Push 22 active, the dealer still draws because the side bet depends on the dealer making exactly 22.
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// ─── DDMBar ───────────────────────────────────────────────────────────────────
+
+function DDMBar({
+    stage, isShuffling, bet, sideBet, bankroll,
+    canDouble, canHit, canStand, canTakeInsurance,
+    doubleWagersCount,
+    selectedChip, onChipSelect,
+    onClear, onDeal, onTakeInsurance, onNoInsurance,
+    onHit, onStand, onDouble, onNextHand,
+}: {
+    stage: Stage; isShuffling: boolean;
+    bet: number; sideBet: number; bankroll: number;
+    canDouble: boolean; canHit: boolean; canStand: boolean; canTakeInsurance: boolean;
+    doubleWagersCount: number;
+    selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
+    onClear: () => void; onDeal: () => void;
+    onTakeInsurance: () => void; onNoInsurance: () => void;
+    onHit: () => void; onStand: () => void; onDouble: () => void;
+    onNextHand: () => void;
+}) {
+    const isBetting = stage === "betting";
+    const isDone = stage === "done";
+    const isPlayer = stage === "player";
+    const isDealer = stage === "dealer";
+    const isInsurance = stage === "insurance";
+
+    const canDeal = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= clampMainBet(bet) + sideBet;
+    const canClear = isBetting && (bet > 0 || sideBet > 0);
+
+    return (
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-[10px] py-3 backdrop-blur-xl sm:px-4">
+
+            {/* Left: chip tray */}
+            <div className="flex items-center">
+                {!isDealer ? (
+                    <ChipTray
+                        selectedChip={selectedChip}
+                        onSelect={onChipSelect}
+                        disabled={isPlayer || isInsurance || isShuffling}
+                    />
+                ) : (
+                    <div className="w-px" />
+                )}
+            </div>
+
+            {/* Center: stage buttons */}
+            <div className="flex items-center justify-center gap-2">
+                <AnimatePresence mode="popLayout" initial={false}>
+
+                    {canClear && (
+                        <SlideBtn key="clear">
+                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+
+                    {isBetting && (
+                        <SlideBtn key="deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                        </SlideBtn>
+                    )}
+
+                    {isInsurance && canTakeInsurance && (
+                        <SlideBtn key="take-insurance">
+                            <button className={BTN_GOLD} onClick={onTakeInsurance}>Take Insurance</button>
+                        </SlideBtn>
+                    )}
+
+                    {isInsurance && canTakeInsurance && (
+                        <SlideBtn key="no-insurance">
+                            <button className={BTN_NEUTRAL} onClick={onNoInsurance}>No Insurance</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="hit">
+                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={!canHit}>Hit</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="stand">
+                            <button className={BTN_NEUTRAL} onClick={onStand} disabled={!canStand}>Stand</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="double">
+                            <button
+                                className={doubleWagersCount > 0 ? BTN_GREEN : BTN_GOLD}
+                                onClick={onDouble}
+                                disabled={!canDouble}
+                            >
+                                {doubleWagersCount > 0 ? "Re-Double" : "Double"}
+                            </button>
+                        </SlideBtn>
+                    )}
+
+                    {isDealer && (
+                        <motion.span
+                            key="dealer-msg"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-sm italic text-white/40"
+                        >
+                            Dealer playing…
+                        </motion.span>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="clear-done">
+                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="next-hand">
+                            <button className={BTN_GOLD} onClick={onNextHand}>Next Hand</button>
+                        </SlideBtn>
+                    )}
+
+                </AnimatePresence>
+            </div>
+
+            {/* Right: invisible mirror for centering */}
+            <div className="invisible">
+                <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
+            </div>
+
+        </div>
+    );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
@@ -394,11 +612,29 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const [doubleWagers, setDoubleWagers] = useState<number[]>([]);
     const [message, setMessage] = useState("Set your bets and press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
+    const [showRules, setShowRules] = useState(false);
 
     const [roundReturned, setRoundReturned] = useState(0);
     const [roundNet, setRoundNet] = useState(0);
     const [resultLabel, setResultLabel] = useState("");
     const [resultLines, setResultLines] = useState<string[]>([]);
+
+    // UI-only state
+    const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
+        if (typeof window === "undefined") return buildChipStack(10);
+        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
+        const parsed = raw ? Number(raw) : 10;
+        const v = Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
+        return buildChipStack(v);
+    });
+    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => {
+        if (typeof window === "undefined") return [];
+        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
+        const parsed = raw ? Number(raw) : 0;
+        const v = Number.isFinite(parsed) ? parsed : 0;
+        return buildChipStack(v);
+    });
 
     useEffect(() => {
         window.localStorage.setItem(BET_STORAGE_KEY, String(clampMainBet(bet)));
@@ -426,9 +662,6 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const canHit = stage === "player" && playerTotal < 21;
     const canStand = stage === "player" && playerTotal < 21;
     const canDouble = stage === "player" && playerTotal < 21 && bankroll >= nextDoubleAmount;
-
-    const shoeUsed = SHOE_SIZE - deck.length;
-    const penetrationPct = Math.min(100, Math.round((shoeUsed / SHOE_SIZE) * 100));
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
@@ -783,389 +1016,277 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle." : "Set your bets and press Deal.");
     };
 
+    const handleChipSelect = (chip: ChipDenomination) => {
+        setSelectedChip(chip);
+        if (stage === "betting") {
+            setBet((b) => b + chip);
+            setChipStack((s) => [...s, chip]);
+        }
+    };
+
+    const handlePush22Click = () => {
+        if (stage !== "betting" || isShuffling) return;
+        const next = clampSideBet(push22Bet + selectedChip);
+        if (next > push22Bet) {
+            setPush22Bet(next);
+            setPush22Stack(buildChipStack(next));
+        }
+    };
+
+    const clearBets = () => {
+        if (stage === "done") {
+            clearRoundState();
+            setBet(0);
+            setChipStack([]);
+            setPush22Bet(0);
+            setPush22Stack([]);
+            setStage("betting");
+            setMessage("Set your bets and press Deal.");
+        } else if (stage === "betting") {
+            setBet(0);
+            setChipStack([]);
+            setPush22Bet(0);
+            setPush22Stack([]);
+        }
+    };
+
     const dealerCardsHiddenIndexes = dealerCards
         .map((_, idx) => idx)
         .filter((idx) => idx >= dealerRevealCount);
 
     return (
-        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,_#4b5563,_#18181b_28%,_#0f0f13_58%,_#030304_100%)] text-white">
+        <>
             {isShuffling && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-white/10 bg-black/65 px-12 py-9 text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+                    <div className="rounded-[1.6rem] border border-zinc-300/25 bg-black/65 px-12 py-9 text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
                         <div className="text-[12px] font-extrabold uppercase tracking-[0.28em] text-zinc-200">
                             Double Down Madness
                         </div>
-                        <div className="mt-2 text-4xl font-extrabold text-white">Shuffling Shoe</div>
+                        <div className="mt-2 text-4xl font-extrabold text-zinc-200">Shuffling Shoe</div>
                         <div className="mt-3 text-sm text-zinc-300">Please wait…</div>
                     </div>
                 </div>
             )}
 
-            <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1700px] flex-col gap-3 px-3 py-3">
-                <div className="rounded-[1.7rem] border border-white/10 bg-black/25 p-4 shadow-2xl backdrop-blur">
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                        <div>
-                            <div className="text-[12px] font-extrabold uppercase tracking-[0.3em] text-zinc-300/90">
-                                Casino Table
+            <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+
+            <TableShell
+                feltColor="#18181b"
+                gameName="Double Down Madness"
+                bankroll={bankroll}
+                hideHeader
+                actionBar={
+                    <DDMBar
+                        stage={stage}
+                        isShuffling={isShuffling}
+                        bet={bet}
+                        sideBet={sideBet}
+                        bankroll={bankroll}
+                        canDouble={canDouble}
+                        canHit={canHit}
+                        canStand={canStand}
+                        canTakeInsurance={canTakeInsurance}
+                        doubleWagersCount={doubleWagers.length}
+                        selectedChip={selectedChip}
+                        onChipSelect={handleChipSelect}
+                        onClear={clearBets}
+                        onDeal={() => void deal()}
+                        onTakeInsurance={() => void takeInsurance()}
+                        onNoInsurance={() => void declineInsurance()}
+                        onHit={() => void hit()}
+                        onStand={() => void stand()}
+                        onDouble={() => void doubleDown()}
+                        onNextHand={nextHand}
+                    />
+                }
+            >
+                <div className="flex flex-1 gap-3 px-[10px]">
+
+                    {/* ── Left column ───────────────────────────────────────── */}
+                    <div className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:gap-3">
+
+                        <InfoPanel title="Blackjack Pays">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2 text-sm">
+                                    <span className="text-amber-100/80">Suited</span>
+                                    <span className="font-extrabold text-amber-100">2 : 1</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 text-sm">
+                                    <span className="text-zinc-300/80">Unsuited</span>
+                                    <span className="font-extrabold text-white">3 : 2</span>
+                                </div>
                             </div>
-                            <h2 className="mt-1 text-4xl font-extrabold tracking-[0.02em] text-zinc-50 sm:text-5xl">
-                                Double Down Madness
-                            </h2>
-                        </div>
+                        </InfoPanel>
 
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                            <StatPill label="Bankroll" value={formatMoney(bankroll)} accent="gold" />
-                            <StatPill label="Stage" value={<span className="capitalize">{stage}</span>} />
-                            <StatPill label="Main Risk" value={formatMoney(totalRiskOnMain)} />
-                            <StatPill label="Next Double" value={formatMoney(nextDoubleAmount)} accent="green" />
-                            <StatPill
-                                label="Dealer Showing"
-                                value={dealerCards[0] ? `${dealerCards[0].rank}${dealerCards[0].suit}` : "—"}
-                            />
-                        </div>
-                    </div>
-                </div>
+                        <InfoPanel title="Double Ladder">
+                            <div className="space-y-2">
+                                {[
+                                    { label: "Base bet", amount: baseBet },
+                                    { label: "1st double", amount: baseBet },
+                                    { label: "2nd double", amount: baseBet * 2 },
+                                    { label: "3rd double", amount: baseBet * 4 },
+                                    { label: "4th double", amount: baseBet * 8 },
+                                ].map(({ label, amount }) => (
+                                    <Row key={label} label={label} value={formatMoney(amount)} />
+                                ))}
+                            </div>
+                        </InfoPanel>
 
-                <div className="rounded-[1.8rem] border border-white/10 bg-black/20 p-3 shadow-2xl backdrop-blur">
-                    <div className="rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.06),_rgba(255,255,255,0.02))] px-5 py-4 text-center shadow-lg">
-                        <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-300">
-                            Table Message
-                        </div>
-                        <div className="mt-2 text-lg font-bold text-zinc-50 sm:text-xl">{message}</div>
                     </div>
 
-                    <div className="mt-3 grid gap-3 xl:grid-cols-[290px_minmax(0,1fr)_350px]">
-                        <div className="order-3 space-y-3 xl:order-1">
-                            <InfoCard title="Rules">
-                                <div className="space-y-2 text-sm text-zinc-100/90">
-                                    <div>• 6 decks.</div>
-                                    <div>• You start with 1 card.</div>
-                                    <div>• Dealer gets 2 with a hole card.</div>
-                                    <div>• No splitting.</div>
-                                    <div>• Double Down on Any Card.</div>
-                                    <div>• Re-double allowed.</div>
-                                    <div>• Dealer hits soft 17.</div>
-                                    <div>• Dealer 22 pushes standing wagers.</div>
-                                </div>
-                            </InfoCard>
+                    {/* ── Center column ─────────────────────────────────────── */}
+                    <div className="flex min-w-0 flex-1 flex-col items-center gap-4">
 
-                            <InfoCard title="Blackjack Pay">
-                                <div className="space-y-3">
-                                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
-                                        Suited blackjack pays 2:1. Unsuited blackjack pays 3:2.
-                                    </div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Double Ladder">
-                                <div className="space-y-2 text-sm text-zinc-100/90">
-                                    <div className="flex items-center justify-between">
-                                        <span>Base bet</span>
-                                        <span className="font-bold text-white">{formatMoney(baseBet)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span>1st double</span>
-                                        <span className="font-bold text-white">{formatMoney(baseBet)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span>2nd double</span>
-                                        <span className="font-bold text-white">{formatMoney(baseBet * 2)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span>3rd double</span>
-                                        <span className="font-bold text-white">{formatMoney(baseBet * 4)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span>4th double</span>
-                                        <span className="font-bold text-white">{formatMoney(baseBet * 8)}</span>
-                                    </div>
-                                </div>
-                            </InfoCard>
-                        </div>
-
-                        <div className="order-1 min-w-0 rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_center,_rgba(64,64,64,0.6),_rgba(24,24,27,0.88)_36%,_rgba(9,9,11,0.95)_72%,_rgba(0,0,0,0.98)_100%)] p-4 xl:order-2">
-                            <div className="flex h-full flex-col gap-5">
-                                <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/15 px-3 py-5">
-                                    <div className="flex flex-col items-center gap-10">
-                                        <div className="flex min-w-0 flex-col items-center">
-                                            <SectionLabel>Dealer</SectionLabel>
-                                            <div className="mt-4 flex min-h-[132px] max-w-full flex-wrap items-center justify-center gap-3">
-                                                <AnimatePresence initial={false}>
-                                                    {dealerCards.map((card, index) => (
-                                                        <motion.div
-                                                            key={`dealer-${index}-${card.id}`}
-                                                            layout
-                                                            initial={{ opacity: 0, y: 18, scale: 0.92 }}
-                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                            exit={{ opacity: 0, y: -10, scale: 0.92 }}
-                                                            transition={{ duration: 0.24, ease: "easeOut" }}
-                                                        >
-                                                            <CardFace
-                                                                card={card}
-                                                                hidden={dealerCardsHiddenIndexes.includes(index)}
-                                                                large
-                                                            />
-                                                        </motion.div>
-                                                    ))}
-                                                </AnimatePresence>
-                                            </div>
-                                            <div className="mt-3 min-h-[20px] text-center text-sm font-semibold text-zinc-100">
-                                                {getDealerDisplayTotal(dealerCards, stage)}
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full max-w-[920px] rounded-[1.4rem] border border-white/10 bg-black/20 px-4 py-5">
-                                            <div className="flex flex-col items-center">
-                                                <SectionLabel>Player</SectionLabel>
-                                                <div className="mt-4 flex min-h-[160px] max-w-full flex-wrap items-center justify-center gap-3">
-                                                    <AnimatePresence initial={false}>
-                                                        {playerCards.map((card, index) => (
-                                                            <motion.div
-                                                                key={`player-${index}-${card.id}`}
-                                                                layout
-                                                                initial={{ opacity: 0, y: 18, scale: 0.92 }}
-                                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                exit={{ opacity: 0, y: -10, scale: 0.92 }}
-                                                                transition={{ duration: 0.24, ease: "easeOut" }}
-                                                            >
-                                                                <CardFace
-                                                                    card={card}
-                                                                    large
-                                                                    sideways={!!card.sideways}
-                                                                />
-                                                            </motion.div>
-                                                        ))}
-                                                    </AnimatePresence>
-                                                </div>
-                                                <div className="mt-3 text-center text-base font-semibold text-zinc-100">
-                                                    {playerCards.length
-                                                        ? `${playerTotal}${isSoft(playerCards) ? " soft" : ""}${resultLabel ? ` • ${resultLabel}` : ""}`
-                                                        : "—"}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid w-full max-w-[920px] gap-3 sm:grid-cols-3">
-                                            <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-center">
-                                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/60">
-                                                    Base Bet
-                                                </div>
-                                                <div className="mt-1 text-lg font-extrabold text-white">
-                                                    {formatMoney(baseBet)}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-center">
-                                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/60">
-                                                    Double Add-Ons
-                                                </div>
-                                                <div className="mt-1 text-lg font-extrabold text-white">
-                                                    {doubleWagers.length
-                                                        ? formatMoney(doubleWagers.reduce((a, b) => a + b, 0))
-                                                        : "—"}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-center">
-                                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/60">
-                                                    Total Main Risk
-                                                </div>
-                                                <div className="mt-1 text-lg font-extrabold text-white">
-                                                    {formatMoney(totalRiskOnMain)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="sticky bottom-2 z-10 rounded-[1.2rem] border border-white/10 bg-black/45 px-3 py-3 backdrop-blur">
-                                    <div className="flex flex-wrap items-center justify-center gap-2.5">
-                                        {stage === "betting" && (
-                                            <ActionButton onClick={deal} variant="gold" disabled={isShuffling}>
-                                                Deal
-                                            </ActionButton>
-                                        )}
-
-                                        {canTakeInsurance && (
-                                            <>
-                                                <ActionButton onClick={takeInsurance} variant="gold">
-                                                    Take Insurance
-                                                </ActionButton>
-                                                <ActionButton onClick={declineInsurance}>
-                                                    No Insurance
-                                                </ActionButton>
-                                            </>
-                                        )}
-
-                                        {stage === "player" && (
-                                            <>
-                                                <ActionButton onClick={hit} disabled={!canHit}>
-                                                    Hit
-                                                </ActionButton>
-                                                <ActionButton onClick={stand} disabled={!canStand}>
-                                                    Stand
-                                                </ActionButton>
-                                                <ActionButton onClick={doubleDown} variant="gold" disabled={!canDouble}>
-                                                    {doubleWagers.length === 0 ? "Double" : "Re-Double"}
-                                                </ActionButton>
-                                            </>
-                                        )}
-
-                                        {stage === "done" && (
-                                            <ActionButton onClick={nextHand} variant="success">
-                                                Next Hand
-                                            </ActionButton>
-                                        )}
-                                    </div>
-                                </div>
+                        {/* Table label */}
+                        <div className="flex flex-col items-center gap-1 select-none">
+                            <div className="flex items-center gap-2">
+                                <h1
+                                    className="text-xl font-extrabold uppercase tracking-[0.18em] text-zinc-100/80"
+                                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                                >
+                                    Double Down Madness
+                                </h1>
+                                <button
+                                    onClick={() => setShowRules(true)}
+                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.12)] transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
+                                    aria-label="Show Double Down Madness rules"
+                                >
+                                    i
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/30">
+                                <span>SUITED BLACKJACK PAYS 2:1</span>
+                                <span className="text-white/15">·</span>
+                                <span>UNSUITED BLACKJACK 3:2</span>
+                                <span className="text-white/15">·</span>
+                                <span>DEALER 22 PUSHES</span>
                             </div>
                         </div>
 
-                        <div className="order-2 space-y-3 xl:order-3">
-                            <InfoCard title="Betting Area">
-                                <div className="space-y-3">
-                                    <BetInput
+                        {/* Dealer lane */}
+                        <div className="flex flex-col items-center gap-2">
+                            <Chip>
+                                {"Dealer"}
+                                {dealerCards.length > 0
+                                    ? ` · ${getDealerDisplayTotal(dealerCards, stage)}`
+                                    : ""}
+                            </Chip>
+                            <div className="flex min-h-[100px] flex-wrap justify-center gap-2">
+                                <AnimatePresence initial={false}>
+                                    {dealerCards.map((card, index) => (
+                                        <motion.div
+                                            key={card.id}
+                                            variants={CARD_VARIANTS}
+                                            initial="initial"
+                                            animate="animate"
+                                            transition={CARD_TRANSITION}
+                                        >
+                                            <PlayingCard
+                                                card={toShared(card, !dealerCardsHiddenIndexes.includes(index))}
+                                                className={CARD_CLS}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+
+                        {/* Bet circles — only during betting */}
+                        <AnimatePresence>
+                            {stage === "betting" && (
+                                <motion.div
+                                    key="bet-circles"
+                                    initial={{ opacity: 0, scale: 0.88 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.88 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="flex items-end gap-8"
+                                >
+                                    <BetCircle
+                                        chips={chipStack}
+                                        totalBet={bet}
                                         label="Main Bet"
-                                        value={bet}
-                                        onChange={setBet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                        min={MIN_BET}
-                                        step={5}
                                     />
-                                    <BetInput
-                                        label="Push 22 Side Bet"
-                                        value={push22Bet}
-                                        onChange={setPush22Bet}
-                                        disabled={stage !== "betting" || isShuffling}
-                                        min={0}
-                                        max={SIDE_MAX}
-                                        step={SIDE_STEP}
+                                    <BetCircle
+                                        chips={push22Stack}
+                                        totalBet={push22Bet}
+                                        label="Push 22"
+                                        interactive
+                                        onClick={handlePush22Click}
                                     />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[10px] uppercase tracking-[0.16em] text-white/60">
-                                                    Bet In
-                                                </div>
-                                                <div className="mt-1 text-sm font-extrabold text-white">
-                                                    {formatMoney(stage === "betting" ? baseBet + sideBet : totalRiskAll)}
-                                                </div>
+                        {/* Message */}
+                        <p className="text-sm font-semibold text-zinc-100/70">{message}</p>
+
+                        {/* Player lane */}
+                        <div className="flex flex-col items-center gap-2">
+                            <Chip>
+                                {"Player"}
+                                {playerCards.length > 0
+                                    ? ` · ${playerTotal}${isSoft(playerCards) ? " soft" : ""}${resultLabel ? ` · ${resultLabel}` : ""}`
+                                    : ""}
+                            </Chip>
+                            <div className="flex min-h-[100px] flex-wrap justify-center gap-2">
+                                <AnimatePresence initial={false}>
+                                    {playerCards.map((card) => (
+                                        <motion.div
+                                            key={card.id}
+                                            variants={CARD_VARIANTS}
+                                            initial="initial"
+                                            animate="animate"
+                                            transition={CARD_TRANSITION}
+                                            className={card.sideways ? "mx-5 sm:mx-6" : undefined}
+                                        >
+                                            <div style={card.sideways ? { transform: "rotate(90deg)" } : undefined}>
+                                                <PlayingCard
+                                                    card={toShared(card, true)}
+                                                    className={CARD_CLS}
+                                                />
                                             </div>
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[10px] uppercase tracking-[0.16em] text-white/60">
-                                                    Returned
-                                                </div>
-                                                <div className="mt-1 text-sm font-extrabold text-white">
-                                                    {stage === "done" ? formatMoney(roundReturned) : "—"}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                                                <div className="text-[10px] uppercase tracking-[0.16em] text-white/60">
-                                                    Net
-                                                </div>
-                                                <div
-                                                    className={`mt-1 text-sm font-extrabold ${stage === "done"
-                                                        ? roundNet > 0
-                                                            ? "text-emerald-300"
-                                                            : roundNet < 0
-                                                                ? "text-red-300"
-                                                                : "text-zinc-100"
-                                                        : "text-zinc-100"
-                                                        }`}
-                                                >
-                                                    {stage === "done"
-                                                        ? `${roundNet > 0 ? "+" : ""}${formatMoney(roundNet)}`
-                                                        : "—"}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100/90">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span>Insurance</span>
-                                            <span className="font-semibold text-white">
-                                                {insuranceBet > 0 ? formatMoney(insuranceBet) : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Dealer showing</span>
-                                            <span className="font-semibold text-white">
-                                                {dealerCards[0] ? `${dealerCards[0].rank}${dealerCards[0].suit}` : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Player total</span>
-                                            <span className="font-semibold text-white">
-                                                {playerCards.length ? `${playerTotal}${isSoft(playerCards) ? " soft" : ""}` : "—"}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                            <span>Next add-on</span>
-                                            <span className="font-semibold text-white">
-                                                {formatMoney(nextDoubleAmount)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100/90">
-                                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-300/70">
-                                            Round Detail
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            {resultLines.length ? (
-                                                resultLines.map((line, idx) => (
-                                                    <div key={`${line}-${idx}`} className="leading-snug">
-                                                        {line}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div>
-                                                    {stage === "betting"
-                                                        ? "Place your wager and deal."
-                                                        : stage === "insurance"
-                                                            ? "Insurance decision pending."
-                                                            : stage === "player"
-                                                                ? "You can keep adding action with doubles."
-                                                                : stage === "dealer"
-                                                                    ? "Dealer is resolving."
-                                                                    : "—"}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </InfoCard>
-
-                            <InfoCard title="Table Info">
-                                <div className="space-y-2 text-sm text-zinc-100/90">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Dealer total</span>
-                                        <span className="font-semibold text-white">
-                                            {getDealerDisplayTotal(dealerCards, stage)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Cards left</span>
-                                        <span className="font-semibold text-white">{deck.length}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Shoe used</span>
-                                        <span className="font-semibold text-white">{penetrationPct}%</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Doubles made</span>
-                                        <span className="font-semibold text-white">{doubleWagers.length}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>Push 22 bet</span>
-                                        <span className="font-semibold text-white">{formatMoney(sideBet)}</span>
-                                    </div>
-                                </div>
-                            </InfoCard>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
                         </div>
+
+                        {/* Round detail lines (below lg where right col is hidden) */}
+                        {resultLines.length > 0 && (
+                            <div className="w-full max-w-sm space-y-1 px-4 py-2 text-sm text-zinc-300 lg:hidden">
+                                {resultLines.map((line, idx) => (
+                                    <div key={idx} className="leading-snug">{line}</div>
+                                ))}
+                            </div>
+                        )}
+
                     </div>
+
+                    {/* ── Right column ──────────────────────────────────────── */}
+                    <div className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:items-center lg:gap-3">
+                        <BetBar
+                            pendingBet={baseBet + sideBet}
+                            totalRisk={stage !== "betting" ? totalRiskAll : 0}
+                            returned={roundReturned}
+                            net={roundNet}
+                            stage={stage}
+                        />
+
+                        {insuranceBet > 0 && (
+                            <div className="w-full">
+                                <InfoPanel title="Insurance">
+                                    <div className="space-y-2">
+                                        <Row label="Bet" value={formatMoney(insuranceBet)} />
+                                        <Row label="Pays" value="2 : 1" />
+                                    </div>
+                                </InfoPanel>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
-            </div>
-        </div>
+            </TableShell>
+        </>
     );
 }
