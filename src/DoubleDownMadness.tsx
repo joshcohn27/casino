@@ -202,7 +202,7 @@ function BetBar({
             ].map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
                     <div className="text-center">
-                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
                         <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
                     </div>
                     {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
@@ -433,7 +433,7 @@ function DDMBar({
     const canClear = isBetting && (bet > 0 || sideBet > 0);
 
     return (
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-[10px] py-3 backdrop-blur-xl sm:px-4">
+        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-[10px] py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3 sm:px-4">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -527,7 +527,7 @@ function DDMBar({
             </div>
 
             {/* Right: invisible mirror for centering */}
-            <div className="invisible">
+            <div className="invisible hidden sm:block">
                 <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
             </div>
 
@@ -1107,7 +1107,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     i
                                 </button>
                             </div>
-                            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/30">
+                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/30">
                                 <span>SUITED BLACKJACK PAYS 2:1</span>
                                 <span className="text-white/15">·</span>
                                 <span>UNSUITED BLACKJACK 3:2</span>
@@ -1191,7 +1191,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                             initial="initial"
                                             animate="animate"
                                             transition={CARD_TRANSITION}
-                                            className={card.sideways ? "mx-5 sm:mx-6" : undefined}
+                                            className={card.sideways ? "mx-2 sm:mx-5" : undefined}
                                         >
                                             <div style={card.sideways ? { transform: "rotate(90deg)" } : undefined}>
                                                 <PlayingCard

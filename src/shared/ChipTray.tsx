@@ -9,7 +9,7 @@ interface Props {
 
 export default function ChipTray({ selectedChip, onSelect, disabled = false }: Props) {
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             {CHIP_DENOMINATIONS.map((denom) => {
                 const chip = CHIP_COLORS[denom];
                 const selected = selectedChip === denom;

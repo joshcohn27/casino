@@ -398,7 +398,7 @@ function BetBar({
             ].map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
                     <div className="text-center">
-                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
                         <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
                     </div>
                     {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
@@ -759,7 +759,7 @@ function FreeBetBar({
     const canDeal  = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= buyIn;
 
     return (
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -853,7 +853,7 @@ function FreeBetBar({
             </div>
 
             {/* Right: invisible mirror for true centering */}
-            <div className="invisible">
+            <div className="invisible hidden sm:block">
                 <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
             </div>
 

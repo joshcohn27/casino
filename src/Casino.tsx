@@ -195,6 +195,7 @@ export default function Casino() {
     const [game, setGame] = useState<Game>(() => readStoredGame())
     const [bankroll, setBankroll] = useState<number>(() => readStoredNumber(STORAGE_BANKROLL_KEY, DEFAULT_BANKROLL))
     const [bankrollInput, setBankrollInput] = useState(() => String(readStoredNumber(STORAGE_BANKROLL_KEY, DEFAULT_BANKROLL)))
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => {
         window.localStorage.setItem(STORAGE_BANKROLL_KEY, String(bankroll))
@@ -218,6 +219,11 @@ export default function Casino() {
         const value = Number(bankrollInput)
         if (!Number.isFinite(value) || value < 0) return
         setBankroll(Math.floor(value))
+    }
+
+    const navigate = (g: Game) => {
+        setGame(g)
+        setMobileMenuOpen(false)
     }
 
     const renderScreen = () => {
@@ -402,38 +408,49 @@ export default function Casino() {
         <div className="min-h-screen bg-black text-white">
             <div className="sticky top-0 z-50 border-b border-amber-300/15 bg-black/70 px-4 py-3 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <NavButton active={game === "home"} onClick={() => setGame("home")}>Home</NavButton>
+
+                    {/* Mobile-only site title — acts as Home link */}
+                    <button
+                        onClick={() => navigate("home")}
+                        className="text-sm font-extrabold text-amber-200 sm:hidden"
+                        style={{ fontFamily: "Georgia, serif" }}
+                    >
+                        Cohn Casino
+                    </button>
+
+                    {/* Nav links — hidden on mobile, shown sm: and above */}
+                    <div className="hidden sm:flex flex-wrap items-center gap-2">
+                        <NavButton active={game === "home"} onClick={() => navigate("home")}>Home</NavButton>
 
                         <NavDropdown label="Blackjack" active={blackjackActive}>
-                            <DropdownItem active={game === "blackjack"} onClick={() => setGame("blackjack")}>
+                            <DropdownItem active={game === "blackjack"} onClick={() => navigate("blackjack")}>
                                 Classic Blackjack
                             </DropdownItem>
-                            <DropdownItem active={game === "freebetblackjack"} onClick={() => setGame("freebetblackjack")}>
+                            <DropdownItem active={game === "freebetblackjack"} onClick={() => navigate("freebetblackjack")}>
                                 Free Bet Blackjack
                             </DropdownItem>
-                            <DropdownItem active={game === "doubledownmadness"} onClick={() => setGame("doubledownmadness")}>
+                            <DropdownItem active={game === "doubledownmadness"} onClick={() => navigate("doubledownmadness")}>
                                 Double Down Madness
                             </DropdownItem>
                         </NavDropdown>
 
                         <NavDropdown label="Poker Games" active={pokerActive}>
-                            <DropdownItem active={game === "uth"} onClick={() => setGame("uth")}>
+                            <DropdownItem active={game === "uth"} onClick={() => navigate("uth")}>
                                 Ultimate Texas Hold'em
                             </DropdownItem>
-                            <DropdownItem active={game === "videopoker"} onClick={() => setGame("videopoker")}>
+                            <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
                                 Jacks or Better
                             </DropdownItem>
-                            <DropdownItem active={game === "paigow"} onClick={() => setGame("paigow")}>
+                            <DropdownItem active={game === "paigow"} onClick={() => navigate("paigow")}>
                                 Pai Gow Poker
                             </DropdownItem>
                         </NavDropdown>
 
-                        <NavButton active={game === "roulette"} onClick={() => setGame("roulette")}>Roulette</NavButton>
-                        <NavButton active={game === "baccarat"} onClick={() => setGame("baccarat")}>Baccarat</NavButton>
+                        <NavButton active={game === "roulette"} onClick={() => navigate("roulette")}>Roulette</NavButton>
+                        <NavButton active={game === "baccarat"} onClick={() => navigate("baccarat")}>Baccarat</NavButton>
 
                         <button
-                            onClick={() => setGame("feedback")}
+                            onClick={() => navigate("feedback")}
                             className={`rounded-full border px-4 py-2 text-sm font-bold transition ${game === "feedback"
                                 ? "border-amber-200 bg-amber-400 text-black shadow-lg"
                                 : "border-amber-200/40 bg-amber-300/12 text-amber-100 hover:bg-amber-300/20"
@@ -443,7 +460,8 @@ export default function Casino() {
                         </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Bankroll controls — hidden on mobile, shown sm: and above */}
+                    <div className="hidden sm:flex flex-wrap items-center gap-2">
                         <div className="rounded-full border border-amber-300/18 bg-black/35 px-4 py-2">
                             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-200">Bankroll</div>
                             <div className="text-lg font-extrabold text-white">{bankrollDisplay}</div>
@@ -472,7 +490,126 @@ export default function Casino() {
                             Reset
                         </button>
                     </div>
+
+                    {/* Hamburger button — mobile only */}
+                    <button
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white sm:hidden"
+                        onClick={() => setMobileMenuOpen(o => !o)}
+                        aria-label="Toggle menu"
+                    >
+                        {mobileMenuOpen ? (
+                            <span className="text-lg font-bold">×</span>
+                        ) : (
+                            <span className="flex flex-col gap-[5px] items-center justify-center">
+                                <span className="block h-[2px] w-5 rounded bg-white"/>
+                                <span className="block h-[2px] w-5 rounded bg-white"/>
+                                <span className="block h-[2px] w-5 rounded bg-white"/>
+                            </span>
+                        )}
+                    </button>
                 </div>
+
+                {/* Mobile dropdown menu — hidden on sm: and above */}
+                {mobileMenuOpen && (
+                    <div className="border-t border-white/10 bg-black/90 backdrop-blur-xl sm:hidden">
+                        <div className="mx-auto flex max-w-[1600px] flex-col gap-1 px-4 py-3">
+
+                            <button
+                                onClick={() => navigate("home")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "home"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Home
+                            </button>
+
+                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                                Blackjack
+                            </div>
+                            <button
+                                onClick={() => navigate("blackjack")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "blackjack"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Classic Blackjack
+                            </button>
+                            <button
+                                onClick={() => navigate("freebetblackjack")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "freebetblackjack"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Free Bet Blackjack
+                            </button>
+                            <button
+                                onClick={() => navigate("doubledownmadness")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "doubledownmadness"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Double Down Madness
+                            </button>
+
+                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                                Poker
+                            </div>
+                            <button
+                                onClick={() => navigate("uth")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "uth"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Ultimate Texas Hold'em
+                            </button>
+                            <button
+                                onClick={() => navigate("videopoker")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "videopoker"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Jacks or Better
+                            </button>
+                            <button
+                                onClick={() => navigate("paigow")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "paigow"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Pai Gow Poker
+                            </button>
+
+                            <div className="my-1 h-px bg-white/10"/>
+
+                            <button
+                                onClick={() => navigate("roulette")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "roulette"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Roulette
+                            </button>
+                            <button
+                                onClick={() => navigate("baccarat")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "baccarat"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Baccarat
+                            </button>
+
+                            <div className="my-1 h-px bg-white/10"/>
+
+                            <button
+                                onClick={() => navigate("feedback")}
+                                className="rounded-xl border border-amber-200/40 bg-amber-300/12 px-3 py-2.5 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
+                            >
+                                Give Feedback
+                            </button>
+
+                        </div>
+                    </div>
+                )}
             </div>
 
             {renderScreen()}

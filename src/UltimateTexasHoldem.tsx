@@ -534,7 +534,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 bankroll={bankroll}
                 hideHeader
                 actionBar={
-                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+                    <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
                         <ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={setSelectedChip} disabled={!isBetting} />
                         <div className="flex items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
@@ -574,7 +574,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                             </AnimatePresence>
                         </div>
-                        <div className="invisible" aria-hidden><ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={() => { }} /></div>
+                        <div className="invisible hidden sm:block" aria-hidden><ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={() => { }} /></div>
                     </div>
                 }
             >
@@ -586,12 +586,12 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         </h1>
                         <button onClick={() => setShowRules(true)} className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15" aria-label="Show rules">i</button>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
                         <span>DEALER QUALIFIES WITH PAIR OR BETTER</span>
                         <span className="text-white/20">·</span>
                         <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] text-white/25">
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
                         <span>PLAY BET</span>
                         <span className="text-white/15">·</span>
                         <span>4x OR 3x PREFLOP</span>
@@ -603,10 +603,10 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 </div>
 
                 {/* Three-column body: betting left | cards center | payout tables right */}
-                <div className="flex flex-1 gap-3 overflow-hidden px-6">
+                <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* Betting column — vertically centered */}
-                    <div className="flex w-64 shrink-0 flex-col items-center justify-center gap-3 py-2">
+                    <div className="flex w-full flex-col items-center justify-center gap-3 py-2 lg:w-64 lg:shrink-0">
                         <BetBar
                             pendingBet={committedBet}
                             returned={payout ? payout.total : 0}
@@ -717,7 +717,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Cards column — vertically centered */}
-                    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-2">
+                    <div className="flex w-full flex-col items-center justify-center gap-3 py-2 lg:flex-1">
                         <AnimatePresence mode="wait">
                             {showSixCardView ? (
                                 <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">

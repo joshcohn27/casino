@@ -139,7 +139,7 @@ function TableLabel() {
                 style={{ fontFamily: 'Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
                 Blackjack
             </h1>
-            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
                 <span>BLACKJACK PAYS 3 to 2</span>
                 <span className="text-white/20">·</span>
                 <span>DEALER DRAWS TO 16</span>
@@ -170,7 +170,7 @@ function BetBar({ pendingBet, wagered, returned, net, stage }: {
             ].map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
                     <div className="text-center">
-                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
                         <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
                     </div>
                     {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
@@ -331,7 +331,7 @@ function BlackjackBar({
     const canDoubleDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet * 2;
 
     return (
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -418,7 +418,7 @@ function BlackjackBar({
             </div>
 
             {/* Right: spacer mirrors chip tray width for true centering */}
-            <div className="invisible">
+            <div className="invisible hidden sm:block">
                 <ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled />
             </div>
 

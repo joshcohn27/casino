@@ -32,7 +32,7 @@ export function buildChipStackFromAmount(amount: number): ChipDenomination[] {
     return stack;
 }
 
-export const BTN_BASE = "rounded-xl px-4 py-2.5 text-sm font-extrabold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
+export const BTN_BASE = "rounded-xl px-4 py-3 text-sm font-extrabold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
 export const BTN_NEUTRAL = `${BTN_BASE} border border-white/20 bg-white/10 text-white hover:bg-white/16`;
 export const BTN_GOLD = `${BTN_BASE} border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] text-slate-950 hover:brightness-105`;
 export const BTN_GREEN = `${BTN_BASE} border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] text-slate-950 hover:brightness-105`;

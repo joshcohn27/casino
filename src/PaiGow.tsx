@@ -797,12 +797,12 @@ function TableLabel({ onRules }: { onRules: () => void }) {
                     i
                 </button>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
                 <span>7 CARDS · SPLIT INTO 5-CARD HIGH AND 2-CARD LOW</span>
                 <span className="text-white/20">·</span>
                 <span>DEALER TIES WIN</span>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] text-white/25">
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
                 <span>WIN BOTH = EVEN MONEY</span>
                 <span className="text-white/15">·</span>
                 <span>SPLIT = PUSH</span>
@@ -828,7 +828,7 @@ function PaiGowBar({
     onNextHand: () => void;
 }) {
     return (
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
             <ChipTray selectedChip={selectedChip} onSelect={onChipSelect} disabled={stage !== "betting"} />
             <div className="flex items-center justify-center gap-2">
                 <AnimatePresence mode="popLayout" initial={false}>
@@ -860,7 +860,7 @@ function PaiGowBar({
                     )}
                 </AnimatePresence>
             </div>
-            <div className="invisible" aria-hidden>
+            <div className="invisible hidden sm:block" aria-hidden>
                 <ChipTray selectedChip={selectedChip} onSelect={() => {}} disabled />
             </div>
         </div>
@@ -1166,10 +1166,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             >
                 <TableLabel onRules={() => setShowRules(true)} />
 
-                <div className="flex flex-1 gap-3 overflow-hidden px-6">
+                <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* ── LEFT: betting ──────────────────────────────────── */}
-                    <div className="flex w-64 shrink-0 flex-col items-center justify-center gap-4 px-4 py-2">
+                    <div className="flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:w-64 lg:shrink-0">
 
                         {/* Wager / Net bar */}
                         <div className="flex w-full items-center justify-center gap-4 rounded-xl border border-white/10 bg-black/30 px-4 py-2">
@@ -1249,7 +1249,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* ── CENTER: cards ───────────────────────────────────── */}
-                    <div className="flex flex-1 flex-col items-center gap-3 py-2">
+                    <div className="flex w-full flex-col items-center gap-3 py-2 lg:flex-1">
 
                         {/* Dealer section */}
                         {dealerCards.length > 0 && (
@@ -1276,7 +1276,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.22 }}
-                                        className="flex gap-6"
+                                        className="flex flex-col gap-3 sm:flex-row sm:gap-6"
                                     >
                                         <div className="flex flex-col items-center gap-1">
                                             <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer High</span>
@@ -1343,7 +1343,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 )}
 
                                 {/* Player split display */}
-                                <div className="flex gap-6">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                                     <div className="flex flex-col items-center gap-1">
                                         <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">High (5)</span>
                                         {!playerHasStartedSetting ? (
