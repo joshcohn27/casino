@@ -47,7 +47,7 @@ const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
 const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
 const MIN_BET = 5;
-const SIDE_STEP = 5;
+const SIDE_STEP = 2.5;
 const SIDE_MAX = 100;
 const SHOE_DECKS = 6;
 const SHOE_SIZE = SHOE_DECKS * 52;
@@ -127,7 +127,7 @@ function wait(ms: number) {
 }
 
 function clampMainBet(value: number) {
-    return Math.max(MIN_BET, Math.floor(value / 5) * 5);
+    return Math.max(MIN_BET, Math.floor(value / 2.5) * 2.5);
 }
 
 function clampSideBet(value: number) {

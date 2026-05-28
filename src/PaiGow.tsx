@@ -112,7 +112,7 @@ function isJoker(card: Card) {
 
 function clampBet(n: number, min: number) {
     if (!Number.isFinite(n)) return min;
-    return Math.max(min, Math.floor(n / 5) * 5);
+    return Math.max(min, Math.floor(n / 2.5) * 2.5);
 }
 
 function shuffle<T>(items: T[]) {

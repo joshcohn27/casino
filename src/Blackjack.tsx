@@ -498,7 +498,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
     useEffect(() => {
         if (bet >= MIN_BET)
-            window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 5) * 5)));
+            window.localStorage.setItem(BET_STORAGE_KEY, String(Math.max(MIN_BET, Math.floor(bet / 2.5) * 2.5)));
     }, [bet]);
 
     const activeHand = hands[active] ?? [];
