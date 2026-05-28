@@ -202,7 +202,7 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 
 const CARD_VARIANTS = { initial: { opacity: 0, y: -18, scale: 0.94 }, animate: { opacity: 1, y: 0, scale: 1 } };
 const CARD_TRANSITION = (delay: number) => ({ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay });
-const CARD_CLS = "h-[94px] w-[66px] rounded-[10px]";
+const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
 
 function chipColor(chip: ChipDenomination): { bg: string; border: string } {
     if (chip === 1) return { bg: "#f1f5f9", border: "#94a3b8" };
@@ -242,7 +242,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                             <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">Help</div>
                             <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">Ultimate Texas Hold&apos;em Rules</div>
                         </div>
-                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">x</button>
+                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">×</button>
                     </div>
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                         <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
@@ -551,7 +551,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
                         <ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={setSelectedChip} disabled={!isBetting} />
                         <div className="flex items-center justify-center gap-2">
-                            <AnimatePresence mode="wait" initial={false}>
+                            <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (
                                     <motion.div key="deal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
                                         <motion.button onClick={startRound} disabled={!canAct} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="rounded-full border border-amber-200/80 bg-gradient-to-b from-amber-300 to-amber-500 px-10 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg disabled:opacity-45">Deal</motion.button>
