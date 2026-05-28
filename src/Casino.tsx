@@ -339,7 +339,7 @@ export default function Casino() {
                         <GameCard
                             title="Pai Gow Poker"
                             subtitle="7 cards set into a 5-card back hand and 2-card front hand · Joker plays as semi-wild · Fortune and Ace High side bets · Dealer qualifies with Ace-high low hand"
-                            feltColor="#1a3a5c"
+                            feltColor="#1a5c2e"
                             onClick={() => setGame("paigow")}
                             bankroll={bankrollDisplay}
                         />
