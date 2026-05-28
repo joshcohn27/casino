@@ -192,15 +192,24 @@ function Chip({ children }: { children: React.ReactNode }) {
     );
 }
 
-function TableLabel() {
+function TableLabel({ onRules }: { onRules: () => void }) {
     return (
         <div className="flex select-none flex-col items-center gap-1">
-            <h1
-                className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
-            >
-                Baccarat
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1
+                    className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                >
+                    Baccarat
+                </h1>
+                <button
+                    onClick={onRules}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                    aria-label="Show rules"
+                >
+                    i
+                </button>
+            </div>
             <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
                 <span>EZ BACCARAT</span>
                 <span className="text-white/20">·</span>
@@ -399,6 +408,101 @@ function ResultBanner({ winner, pandaHit, dragonHit }: {
     );
 }
 
+// ─── RulesModal ───────────────────────────────────────────────────────────────
+
+function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+    return (
+        <AnimatePresence>
+            {open && (
+                <motion.div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={onClose}
+                >
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                    <motion.div
+                        className="relative w-full max-w-md rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,_#1c0a0a,_#0f0404)] text-white shadow-2xl"
+                        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+                            <h2 className="text-base font-extrabold uppercase tracking-[0.18em] text-amber-100">
+                                Baccarat Rules
+                            </h2>
+                            <button
+                                onClick={onClose}
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/70 transition hover:bg-white/20"
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-4 overflow-y-auto px-6 py-5" style={{ maxHeight: "70vh" }}>
+                            <section>
+                                <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-rose-300">
+                                    How the Hand Works
+                                </h3>
+                                <ul className="space-y-1 text-[13px] text-white/80">
+                                    <li>Player and Banker each receive 2 cards.</li>
+                                    <li>Ace = 1, 2–9 = face value, 10 / J / Q / K = 0.</li>
+                                    <li>Only the last digit of the total counts (e.g. 15 = 5).</li>
+                                    <li><span className="font-semibold text-white">Player draws</span> a third card on 0–5; stands on 6–7.</li>
+                                    <li><span className="font-semibold text-white">Banker draw rules</span> depend on Banker's total and Player's third card value.</li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-rose-300">
+                                    EZ Baccarat
+                                </h3>
+                                <ul className="space-y-1 text-[13px] text-white/80">
+                                    <li>No commission on Banker wins — the house edge is built into the push rule.</li>
+                                    <li>When Banker wins with a <span className="font-semibold text-white">3-card total of 7</span>, the Banker bet pushes (stake returned, no profit).</li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-rose-300">
+                                    Main Bet Payouts
+                                </h3>
+                                <div className="space-y-1 text-[13px] text-white/80">
+                                    <div className="flex justify-between"><span>Player wins</span><span className="font-semibold text-white">1 : 1</span></div>
+                                    <div className="flex justify-between"><span>Banker wins</span><span className="font-semibold text-white">1 : 1 (push on 3-card 7)</span></div>
+                                    <div className="flex justify-between"><span>Tie</span><span className="font-semibold text-white">8 : 1</span></div>
+                                    <p className="pt-0.5 text-[12px] text-white/50">On a Tie, Player and Banker bets push.</p>
+                                </div>
+                            </section>
+                            <section>
+                                <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-rose-300">
+                                    Side Bets
+                                </h3>
+                                <div className="space-y-1 text-[13px] text-white/80">
+                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-semibold text-white">25 : 1</span></div>
+                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-semibold text-white">40 : 1</span></div>
+                                    <p className="pt-0.5 text-[12px] text-white/50">Side bets are independent of main bets and pay only on the specific outcome.</p>
+                                </div>
+                            </section>
+                            <section>
+                                <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-rose-300">
+                                    Natural
+                                </h3>
+                                <ul className="space-y-1 text-[13px] text-white/80">
+                                    <li>A 2-card total of 8 or 9 is a <span className="font-semibold text-white">Natural</span> — no more cards are drawn.</li>
+                                    <li>Naturals cannot trigger Dragon 7 or Panda 8 (those require 3 cards).</li>
+                                </ul>
+                            </section>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
+
 // ─── BaccaratBar ──────────────────────────────────────────────────────────────
 
 function BaccaratBar({
@@ -514,6 +618,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [stage,       setStage]       = useState<Stage>("betting");
     const [message,     setMessage]     = useState("Select a chip, click a betting zone, then press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
+    const [showRules,   setShowRules]   = useState(false);
     const [winner,      setWinner]      = useState<Winner | null>(null);
     const [pandaHitResult,  setPandaHitResult]  = useState(false);
     const [dragonHitResult, setDragonHitResult] = useState(false);
@@ -815,6 +920,8 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
 
     return (
         <>
+            <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+
             {isShuffling && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
                     <div className="rounded-[1.6rem] border border-rose-300/25 bg-black/65 px-10 py-8 text-center shadow-2xl">
@@ -849,7 +956,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
             >
                 <div className="flex flex-1 flex-col items-center gap-4 py-2">
 
-                    <TableLabel />
+                    <TableLabel onRules={() => setShowRules(true)} />
 
                     {/* Hand lanes — side by side: Player left, Banker right */}
                     <div className="flex w-full max-w-2xl gap-3">
