@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ActionBar from "./shared/ActionBar";
-import type { ChipDenomination } from "./shared/money";
+import { type ChipDenomination, formatMoney } from "./shared/money";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,9 +55,6 @@ const BALL_TRACK_RADIUS = 99;
 const BALL_VISUAL_OFFSET_DEG = 2.5;
 
 // ─── Helpers (game logic — untouched) ────────────────────────────────────────
-
-const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", {style:"currency", currency:"USD", maximumFractionDigits: Number.isInteger(n)?0:2}).format(n);
 
 function getNumberColor(n: RouletteNumber): "red"|"black"|"green" {
     if (n === "0" || n === "00") return "green";
@@ -681,7 +678,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
     const placeBet = (spotId: string) => {
         if (!canBet) return;
         setBets(prev => ({...prev, [spotId]: (prev[spotId]||0)+selectedChip}));
-        setMessage(`+${fmt(selectedChip)} on ${SPOT_MAP.get(spotId)?.label ?? "bet"}.`);
+        setMessage(`+${formatMoney(selectedChip)} on ${SPOT_MAP.get(spotId)?.label ?? "bet"}.`);
     };
 
     const removeBet = (spotId: string) => {
@@ -694,7 +691,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
             if (amt===0) delete next[spotId]; else next[spotId]=amt;
             return next;
         });
-        setMessage(`Removed ${fmt(selectedChip)} from ${SPOT_MAP.get(spotId)?.label ?? "bet"}.`);
+        setMessage(`Removed ${formatMoney(selectedChip)} from ${SPOT_MAP.get(spotId)?.label ?? "bet"}.`);
     };
 
     const clearBets = () => { if (!canBet) return; setBets({}); setMessage("All bets cleared."); };
@@ -795,7 +792,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                     <p className="text-sm font-semibold text-amber-50">{message}</p>
                     <div className="flex shrink-0 items-center gap-3 text-xs text-white/60">
                         <span>{activeBetCount} spot{activeBetCount!==1?"s":""}</span>
-                        <span className="font-bold text-amber-200">{fmt(totalBet)}</span>
+                        <span className="font-bold text-amber-200">{formatMoney(totalBet)}</span>
                         <button onClick={()=>setShowRules(true)} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-[11px] font-extrabold text-amber-100">i</button>
                     </div>
                 </div>
@@ -833,20 +830,20 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                                     </div>
                                     <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-center">
                                         <div className="text-white/55">Net</div>
-                                        <div className={`font-extrabold ${spinSummary.net>0?"text-emerald-300":spinSummary.net<0?"text-red-300":"text-amber-100"}`}>{fmt(spinSummary.net)}</div>
+                                        <div className={`font-extrabold ${spinSummary.net>0?"text-emerald-300":spinSummary.net<0?"text-red-300":"text-amber-100"}`}>{formatMoney(spinSummary.net)}</div>
                                     </div>
                                 </div>
                                 <div className="max-h-[180px] space-y-1 overflow-y-auto">
                                     {spinSummary.winningBets.map(b=>(
                                         <div key={b.id} className="flex items-center justify-between rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1.5 text-xs">
                                             <span className="font-bold text-emerald-100">{b.label}</span>
-                                            <span className="text-emerald-200">{fmt(b.returned)}</span>
+                                            <span className="text-emerald-200">{formatMoney(b.returned)}</span>
                                         </div>
                                     ))}
                                     {spinSummary.losingBets.slice(0,7).map(b=>(
                                         <div key={b.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs">
                                             <span className="text-white/75">{b.label}</span>
-                                            <span className="text-red-300">−{fmt(b.amount)}</span>
+                                            <span className="text-red-300">−{formatMoney(b.amount)}</span>
                                         </div>
                                     ))}
                                 </div>

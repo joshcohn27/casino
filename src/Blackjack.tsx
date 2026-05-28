@@ -4,7 +4,8 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination } from "./shared/money";
+import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { SlideBtn } from "./shared/SlideBtn";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
@@ -25,17 +26,6 @@ const PLAYER_TO_DEALER_DELAY_MS = 500;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
-
-const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
-    1: { bg: '#f1f5f9', border: '#94a3b8', text: '#1e293b', label: '$1' },
-    2.5: { bg: '#f9a8d4', border: '#be185d', text: '#500724', label: '$2.50' },
-    5: { bg: '#dc2626', border: '#7f1d1d', text: '#fff', label: '$5' },
-    25: { bg: '#16a34a', border: '#14532d', text: '#fff', label: '$25' },
-    100: { bg: '#1e293b', border: '#0f172a', text: '#e2e8f0', label: '$100' },
-    500: { bg: '#7c3aed', border: '#4c1d95', text: '#fff', label: '$500' },
-    1000: { bg: '#b45309', border: '#78350f', text: '#fef3c7', label: '$1K' },
-    5000: { bg: '#babbbd', border: '#6b7280', text: '#111827', label: '$5K' },
-};
 
 function shuffle<T>(arr: T[]) {
     const a = [...arr];
@@ -76,13 +66,6 @@ function isSoft(cards: Card[]) {
     return aces > 0;
 }
 
-function fmt(n: number) {
-    return new Intl.NumberFormat("en-US", {
-        style: "currency", currency: "USD",
-        maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
-    }).format(n);
-}
-
 function resultLabel(pt: number, dt: number, busted: boolean, dealerBusted: boolean) {
     if (busted) return "Bust";
     if (dealerBusted) return "Win";
@@ -105,17 +88,6 @@ function waitForPaint() {
             window.requestAnimationFrame(() => resolve());
         });
     });
-}
-
-function buildChipStackFromAmount(amount: number): ChipDenomination[] {
-    const CHIP_VALUES: ChipDenomination[] = [5000, 1000, 500, 100, 25, 5, 2.5, 1];
-    let remaining = Math.round(amount * 100);
-    const stack: ChipDenomination[] = [];
-    for (const denom of CHIP_VALUES) {
-        const cents = Math.round(Number(denom) * 100);
-        while (remaining >= cents) { stack.push(denom); remaining -= cents; }
-    }
-    return stack;
 }
 
 function toShared(card: Card, faceUp: boolean): SharedCard {
@@ -186,11 +158,11 @@ function BetBar({ pendingBet, wagered, returned, net, stage }: {
     return (
         <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
             {[
-                { label: "Bet", val: displayBet > 0 ? fmt(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? fmt(returned) : "—", color: "text-white" },
+                { label: "Bet", val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
+                { label: "Returned", val: showResult ? formatMoney(returned) : "—", color: "text-white" },
                 {
                     label: "Net",
-                    val: showResult ? fmt(net) : "—",
+                    val: showResult ? formatMoney(net) : "—",
                     color: showResult
                         ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
                         : "text-white",
@@ -253,10 +225,10 @@ function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: n
                     <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">Bet</span>
                 )}
                 {visible.length === 0 && totalBet > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100/70">{fmt(totalBet)}</span>
+                    <span className="text-sm font-extrabold text-amber-100/70">{formatMoney(totalBet)}</span>
                 )}
                 {visible.length > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100">{fmt(totalBet)}</span>
+                    <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
                 )}
             </div>
         </motion.div>
@@ -323,27 +295,8 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
-            <div className="text-xs text-white/45">Bet {fmt(bet)}</div>
+            <div className="text-xs text-white/45">Bet {formatMoney(bet)}</div>
         </div>
-    );
-}
-
-// ─── Button styles ────────────────────────────────────────────────────────────
-
-const BTN_NEUTRAL = "rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GOLD = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GREEN = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-
-function SlideBtn({ children }: { children: React.ReactNode }) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.88 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-        >
-            {children}
-        </motion.div>
     );
 }
 

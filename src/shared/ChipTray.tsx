@@ -1,23 +1,5 @@
 import { motion } from 'motion/react';
-import { CHIP_DENOMINATIONS, type ChipDenomination } from './money';
-
-interface ChipConfig {
-    bg: string;
-    border: string;
-    text: string;
-    label: string;
-}
-
-const CHIPS: Record<ChipDenomination, ChipConfig> = {
-    1:    { bg: '#f1f5f9', border: '#94a3b8', text: '#1e293b', label: '$1'    },
-    2.5:  { bg: '#f9a8d4', border: '#be185d', text: '#500724', label: '$2.50' },
-    5:    { bg: '#dc2626', border: '#7f1d1d', text: '#fff',    label: '$5'    },
-    25:   { bg: '#16a34a', border: '#14532d', text: '#fff',    label: '$25'   },
-    100:  { bg: '#1e293b', border: '#0f172a', text: '#e2e8f0', label: '$100'  },
-    500:  { bg: '#7c3aed', border: '#4c1d95', text: '#fff',    label: '$500'  },
-    1000: { bg: '#b45309', border: '#78350f', text: '#fef3c7', label: '$1K'   },
-    5000: { bg: '#babbbd', border: '#6b7280', text: '#111827', label: '$5K'   },
-};
+import { CHIP_DENOMINATIONS, CHIP_COLORS, type ChipDenomination } from './money';
 
 interface Props {
     selectedChip: ChipDenomination;
@@ -29,7 +11,7 @@ export default function ChipTray({ selectedChip, onSelect, disabled = false }: P
     return (
         <div className="flex flex-wrap items-center gap-2">
             {CHIP_DENOMINATIONS.map((denom) => {
-                const chip = CHIPS[denom];
+                const chip = CHIP_COLORS[denom];
                 const selected = selectedChip === denom;
 
                 return (

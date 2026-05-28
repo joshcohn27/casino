@@ -4,7 +4,8 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import type { ChipDenomination } from "./shared/money";
+import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { SlideBtn } from "./shared/SlideBtn";
 
 // ─── Types (preserved) ───────────────────────────────────────────────────────
 
@@ -97,21 +98,6 @@ const CARD_TRANSITION = (delay: number) => ({
     delay,
 });
 
-const BTN_NEUTRAL = "rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/16 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GOLD    = "rounded-xl border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-const BTN_GREEN   = "rounded-xl border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] px-4 py-2.5 text-sm font-extrabold text-slate-950 transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-
-const CHIP_COLORS: Record<ChipDenomination, { bg: string; border: string; text: string; label: string }> = {
-    1:    { bg: "#f1f5f9", border: "#94a3b8", text: "#1e293b", label: "$1"    },
-    2.5:  { bg: "#f9a8d4", border: "#be185d", text: "#500724", label: "$2.50" },
-    5:    { bg: "#dc2626", border: "#7f1d1d", text: "#fff",    label: "$5"    },
-    25:   { bg: "#16a34a", border: "#14532d", text: "#fff",    label: "$25"   },
-    100:  { bg: "#1e293b", border: "#0f172a", text: "#e2e8f0", label: "$100"  },
-    500:  { bg: "#7c3aed", border: "#4c1d95", text: "#fff",    label: "$500"  },
-    1000: { bg: "#b45309", border: "#78350f", text: "#fef3c7", label: "$1K"   },
-    5000: { bg: "#babbbd", border: "#6b7280", text: "#111827", label: "$5K"   },
-};
-
 const STACK_GAP = 9;
 
 // ─── Game pure functions (preserved) ─────────────────────────────────────────
@@ -168,14 +154,6 @@ function isSoft(cards: Card[]) {
 
 function isBlackjack(cards: Card[]) {
     return cards.length === 2 && total(cards) === 21;
-}
-
-function formatMoney(value: number) {
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
-    }).format(value);
 }
 
 function shouldShuffle(shoe: Card[]) {
@@ -326,17 +304,6 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
 }
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
-
-function buildChipStackFromAmount(amount: number): ChipDenomination[] {
-    const CHIP_VALUES: ChipDenomination[] = [5000, 1000, 500, 100, 25, 5, 2.5, 1];
-    let remaining = Math.round(amount * 100);
-    const stack: ChipDenomination[] = [];
-    for (const denom of CHIP_VALUES) {
-        const cents = Math.round(Number(denom) * 100);
-        while (remaining >= cents) { stack.push(denom); remaining -= cents; }
-    }
-    return stack;
-}
 
 function toShared(card: Card, faceUp: boolean): SharedCard {
     return {
@@ -663,20 +630,6 @@ function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, onCli
         </div>
     );
 }
-
-function SlideBtn({ children }: { children: React.ReactNode }) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.88 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-        >
-            {children}
-        </motion.div>
-    );
-}
-
 
 // ─── Rules modal ──────────────────────────────────────────────────────────────
 

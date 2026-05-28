@@ -4,8 +4,7 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import type { ChipDenomination } from "./shared/money";
-import { formatMoney } from "./shared/money";
+import { type ChipDenomination, formatMoney, CHIP_COLORS, BTN_GOLD, BTN_GREEN } from "./shared/money";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -204,17 +203,6 @@ const CARD_VARIANTS = { initial: { opacity: 0, y: -18, scale: 0.94 }, animate: {
 const CARD_TRANSITION = (delay: number) => ({ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay });
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
 
-function chipColor(chip: ChipDenomination): { bg: string; border: string } {
-    if (chip === 1) return { bg: "#f1f5f9", border: "#94a3b8" };
-    if (chip === 2.5) return { bg: "#ef4444", border: "#dc2626" };
-    if (chip === 5) return { bg: "#e11d48", border: "#be123c" };
-    if (chip === 25) return { bg: "#16a34a", border: "#15803d" };
-    if (chip === 100) return { bg: "#2563eb", border: "#1d4ed8" };
-    if (chip === 500) return { bg: "#7c3aed", border: "#6d28d9" };
-    if (chip === 1000) return { bg: "#ea580c", border: "#c2410c" };
-    return { bg: "#0f172a", border: "#1e293b" };
-}
-
 const DENOM_DESC = [5000, 1000, 500, 100, 25, 5, 2.5, 1] as const;
 
 function buildChipStack(amount: number): ChipDenomination[] {
@@ -323,7 +311,7 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
                             <>
                                 <div className="flex flex-col-reverse items-center">
                                     {chips.slice(0, 4).map((chip, i) => {
-                                        const c = chipColor(chip);
+                                        const c = CHIP_COLORS[chip];
                                         return <div key={i} className="rounded-full border" style={{ width: 22, height: 7, background: c.bg, borderColor: c.border, marginTop: i > 0 ? -3 : 0 }} />;
                                     })}
                                 </div>
@@ -534,10 +522,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const showSixCardView = stage === "roundOver" && sixCardBonus > 0;
 
     const btnBase = "min-w-[88px] rounded-full border px-5 py-2 text-sm font-extrabold shadow-lg transition disabled:opacity-45 active:translate-y-px";
-    const btnGold = `${btnBase} border-amber-200/80 bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 hover:brightness-105`;
     const btnGray = `${btnBase} border-slate-500/60 bg-gradient-to-b from-slate-500 to-slate-700 text-white hover:brightness-110`;
     const btnRed = `${btnBase} border-red-300/60 bg-gradient-to-b from-red-500 to-red-700 text-white hover:brightness-105`;
-    const btnGreen = `${btnBase} border-emerald-200/70 bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 hover:brightness-105`;
 
     return (
         <>
@@ -559,31 +545,31 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                                 {stage === "preflop" && (
                                     <motion.div key="preflop" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={() => void placePlayBet(4)} disabled={!canAct} className={btnGold}>Bet 4x</button>
-                                        <button onClick={() => void placePlayBet(3)} disabled={!canAct} className={btnGold}>Bet 3x</button>
+                                        <button onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
+                                        <button onClick={() => void placePlayBet(3)} disabled={!canAct} className={BTN_GOLD}>Bet 3x</button>
                                         <button onClick={() => void revealFlop()} disabled={!canAct} className={btnGray}>Check</button>
                                     </motion.div>
                                 )}
                                 {stage === "flop" && (
                                     <motion.div key="flop" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={() => void placePlayBet(2)} disabled={!canAct} className={btnGold}>Bet 2x</button>
+                                        <button onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
                                         <button onClick={() => void revealRiver()} disabled={!canAct} className={btnGray}>Check</button>
                                     </motion.div>
                                 )}
                                 {stage === "river" && (
                                     <motion.div key="river" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={() => void placePlayBet(1)} disabled={!canAct} className={btnGold}>Bet 1x</button>
+                                        <button onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
                                         <button onClick={foldHand} disabled={!canAct} className={btnRed}>Fold</button>
                                     </motion.div>
                                 )}
                                 {stage === "awaitingBonusReveal" && (
                                     <motion.div key="reveal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={revealSixCardBonus} disabled={!canAct} className={btnGold}>Reveal 6 Card Bonus</button>
+                                        <button onClick={revealSixCardBonus} disabled={!canAct} className={BTN_GOLD}>Reveal 6 Card Bonus</button>
                                     </motion.div>
                                 )}
                                 {stage === "roundOver" && (
                                     <motion.div key="next" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={resetForNextRound} disabled={!canAct} className={btnGreen}>Next Hand</button>
+                                        <button onClick={resetForNextRound} disabled={!canAct} className={BTN_GREEN}>Next Hand</button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
