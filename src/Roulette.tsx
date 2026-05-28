@@ -772,12 +772,21 @@ export default function Roulette({bankroll, setBankroll}: Props) {
             >
                 {/* Table label */}
                 <div className="mb-2 flex select-none flex-col items-center gap-1">
-                    <h1
-                        className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                        style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
-                    >
-                        Roulette
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <h1
+                            className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                            style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                        >
+                            Roulette
+                        </h1>
+                        <button
+                            onClick={() => setShowRules(true)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                            aria-label="Show rules"
+                        >
+                            i
+                        </button>
+                    </div>
                     <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
                         <span>AMERICAN WHEEL</span>
                         <span className="text-white/20">·</span>
@@ -788,12 +797,11 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                 </div>
 
                 {/* Message bar */}
-                <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-2.5">
+                <div className="mb-3 flex items-center justify-between gap-3 px-1">
                     <p className="text-sm font-semibold text-amber-50">{message}</p>
                     <div className="flex shrink-0 items-center gap-3 text-xs text-white/60">
                         <span>{activeBetCount} spot{activeBetCount!==1?"s":""}</span>
                         <span className="font-bold text-amber-200">{formatMoney(totalBet)}</span>
-                        <button onClick={()=>setShowRules(true)} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-[11px] font-extrabold text-amber-100">i</button>
                     </div>
                 </div>
 
@@ -802,7 +810,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                     {/* ── Left sidebar ─────────────────────────────────── */}
                     <div className="flex shrink-0 flex-col gap-3 lg:w-[272px]">
 
-                        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="flex justify-center">
                             <RouletteWheel result={lastResult} wheelRotation={wheelRotation} ballRotation={ballRotation} spinning={isSpinning}/>
                         </div>
 
