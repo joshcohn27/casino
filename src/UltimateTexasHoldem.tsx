@@ -260,18 +260,18 @@ function BetBar({ pendingBet, returned, net, showResult }: { pendingBet: number;
     return (
         <div className="flex items-center justify-center gap-6 py-1">
             <div className="text-center">
-                <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Bet</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Bet</div>
                 <div className="text-sm font-extrabold text-white">{formatMoney(pendingBet)}</div>
             </div>
             {showResult && (<>
                 <div className="h-6 w-px bg-white/10" />
                 <div className="text-center">
-                    <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Returned</div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Returned</div>
                     <div className="text-sm font-extrabold text-emerald-300">{formatMoney(returned)}</div>
                 </div>
                 <div className="h-6 w-px bg-white/10" />
                 <div className="text-center">
-                    <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
                     <div className={`text-sm font-extrabold ${netColor}`}>{net >= 0 ? "+" : ""}{formatMoney(net)}</div>
                 </div>
             </>)}
@@ -318,7 +318,7 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
                                 <span className="mt-1 text-[10px] font-extrabold text-white">{formatMoney(amount)}</span>
                             </>
                         ) : (
-                            <span className="text-[9px] text-white/30">{locked && amount > 0 ? formatMoney(amount) : "—"}</span>
+                            <span className="text-[10px] text-white/30">{locked && amount > 0 ? formatMoney(amount) : "—"}</span>
                         )}
                     </div>
                 </button>
@@ -327,7 +327,7 @@ function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip
                 )}
             </div>
             <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-white/55">{label}</span>
-            {sublabel && <span className="text-[8px] tracking-[0.08em] text-white/30">{sublabel}</span>}
+            {sublabel && <span className="text-[10px] tracking-[0.08em] text-white/30">{sublabel}</span>}
         </div>
     );
 }
@@ -521,7 +521,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const committedBet = isBetting ? totalMainWager : wagerAtDeal + play;
     const showSixCardView = stage === "roundOver" && sixCardBonus > 0;
 
-    const btnBase = "min-w-[88px] rounded-full border px-5 py-2 text-sm font-extrabold shadow-lg transition disabled:opacity-45 active:translate-y-px";
+    const btnBase = "min-w-[88px] rounded-full border px-5 py-3 text-sm font-extrabold shadow-lg transition disabled:opacity-45 active:translate-y-px";
     const btnGray = `${btnBase} border-slate-500/60 bg-gradient-to-b from-slate-500 to-slate-700 text-white hover:brightness-110`;
     const btnRed = `${btnBase} border-red-300/60 bg-gradient-to-b from-red-500 to-red-700 text-white hover:brightness-105`;
 
@@ -686,12 +686,12 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2">
                                 <div className="flex items-center gap-4 text-xs">
                                     <div className="text-center">
-                                        <div className="text-[9px] uppercase tracking-[0.12em] text-white/35">Player</div>
+                                        <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">Player</div>
                                         <div className="font-extrabold text-amber-100">{describeBestHand(resolvedHand.playerBest)}</div>
                                     </div>
                                     <div className="h-6 w-px bg-white/10" />
                                     <div className="text-center">
-                                        <div className="text-[9px] uppercase tracking-[0.12em] text-white/35">Dealer{!resolvedHand.dealerQualified ? " (no qualify)" : ""}</div>
+                                        <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">Dealer{!resolvedHand.dealerQualified ? " (no qualify)" : ""}</div>
                                         <div className="font-bold text-white/70">{describeBestHand(resolvedHand.dealerBest)}</div>
                                     </div>
                                 </div>
@@ -706,7 +706,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                         const isWin = result.startsWith("Win"), isLose = result === "Lose";
                                         return (
                                             <div key={name} className="rounded-xl border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
-                                                <div className="text-[9px] uppercase tracking-[0.1em] text-white/35">{name}</div>
+                                                <div className="text-[10px] uppercase tracking-[0.1em] text-white/35">{name}</div>
                                                 <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100/70"}`}>{result}</div>
                                             </div>
                                         );
@@ -721,7 +721,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         <AnimatePresence mode="wait">
                             {showSixCardView ? (
                                 <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">6 Card Bonus</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">6 Card Bonus</span>
                                     <div className="flex flex-wrap items-center justify-center gap-2">
                                         {round.player.map(card => <PlayingCard key={card.id} card={toShared(card, true)} className={CARD_CLS} />)}
                                         <span className="text-lg font-bold text-white/30">+</span>
@@ -737,7 +737,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
                                     {/* Dealer */}
                                     <div className="flex flex-col items-center gap-2">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
                                         <div className="flex gap-2">
                                             <AnimatePresence>
                                                 {round.dealer.map((card, i) => (
@@ -752,7 +752,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     </div>
                                     {/* Board */}
                                     <div className="flex flex-col items-center gap-2">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
                                         <div className="flex gap-2">
                                             <AnimatePresence>
                                                 {round.board.map((card, i) => (
@@ -779,7 +779,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                             {round.player.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
                                         </div>
                                         {playerHandText && <span className="text-xs font-semibold text-amber-100/70">{playerHandText}</span>}
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
                                     </div>
                                 </motion.div>
                             )}

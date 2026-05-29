@@ -1174,14 +1174,14 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         {/* Wager / Net bar */}
                         <div className="flex w-full items-center justify-center gap-4 rounded-xl border border-white/10 bg-black/30 px-4 py-2">
                             <div className="text-center">
-                                <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">On Table</div>
+                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">On Table</div>
                                 <div className="text-sm font-extrabold text-white">{displayWager > 0 ? formatMoney(displayWager) : "—"}</div>
                             </div>
                             {stage === "showdown" && net !== null && (
                                 <>
                                     <div className="h-5 w-px bg-white/10" />
                                     <div className="text-center">
-                                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
+                                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
                                         <div className={`text-sm font-extrabold ${net > 0 ? "text-emerald-300" : net < 0 ? "text-red-400" : "text-amber-100"}`}>
                                             {net >= 0 ? "+" : ""}{formatMoney(net)}
                                         </div>
@@ -1254,7 +1254,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         {/* Dealer section */}
                         {dealerCards.length > 0 && (
                             <div className="flex flex-col items-center gap-2">
-                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
                                 <div className="flex flex-wrap justify-center gap-1.5">
                                     <AnimatePresence initial={false}>
                                         {dealerCards.map((card, i) => (
@@ -1279,7 +1279,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         className="flex flex-col gap-3 sm:flex-row sm:gap-6"
                                     >
                                         <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer High</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer High</span>
                                             <div className="flex gap-1">
                                                 {dealerBestSplit.back.map((c) => (
                                                     <PlayingCard key={`db-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
@@ -1288,7 +1288,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             <span className="text-[11px] font-semibold text-amber-100/65">{dealerBestSplit.backEval.label}</span>
                                         </div>
                                         <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer Low</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer Low</span>
                                             <div className="flex gap-1">
                                                 {dealerBestSplit.front.map((c) => (
                                                     <PlayingCard key={`df-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
@@ -1309,7 +1309,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         {/* Player section */}
                         {playerCards.length > 0 && (
                             <div className="flex flex-col items-center gap-2">
-                                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
 
                                 {/* 7 clickable cards */}
                                 <div className="flex flex-wrap justify-center gap-1.5">
@@ -1345,7 +1345,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 {/* Player split display */}
                                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                                     <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">High (5)</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">High (5)</span>
                                         {!playerHasStartedSetting ? (
                                             <span className="text-[11px] italic text-white/20">Not set</span>
                                         ) : (
@@ -1362,7 +1362,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         )}
                                     </div>
                                     <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30">Low (2)</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Low (2)</span>
                                         {!playerHasStartedSetting ? (
                                             <span className="text-[11px] italic text-white/20">Pick 2 cards</span>
                                         ) : (
