@@ -312,7 +312,7 @@ function RouletteWheel({result, wheelRotation, ballRotation, spinning}: {
     const cx=150, cy=150, outer=138, inner=100;
     return (
         <div className="flex flex-col items-center">
-            <div className="text-[9px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80 mb-2">Wheel</div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80 mb-2">Wheel</div>
             <div className="relative flex h-[260px] w-[260px] items-center justify-center">
                 <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,231,170,0.2),rgba(111,53,9,0.35)_30%,rgba(42,21,6,0.75)_60%,rgba(10,5,2,0.95)_100%)] shadow-[0_16px_40px_rgba(0,0,0,0.5)]"/>
                 <motion.div
@@ -363,7 +363,7 @@ function RouletteWheel({result, wheelRotation, ballRotation, spinning}: {
                 </motion.div>
                 <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
                     <div className="rounded-full border border-white/15 bg-black/38 px-3 py-1.5 text-center backdrop-blur">
-                        <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-amber-200/90">Result</div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/90">Result</div>
                         <div className={`mt-0.5 text-xl font-extrabold ${
                             result==null ? "text-white"
                             : getNumberColor(result)==="red" ? "text-red-300"
@@ -861,7 +861,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
 
                         {/* Recent results */}
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                            <div className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Recent</div>
+                            <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Recent</div>
                             <div className="flex flex-wrap gap-1.5">
                                 {recentResults.length===0
                                     ? <span className="text-xs text-white/50">No spins yet.</span>
@@ -875,7 +875,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                         {/* Settlement */}
                         {spinSummary && (
                             <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                                <div className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Last Spin</div>
+                                <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Last Spin</div>
                                 <div className="mb-2 grid grid-cols-2 gap-2 text-xs">
                                     <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-center">
                                         <div className="text-white/55">Result</div>
@@ -905,7 +905,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
 
                         {/* Payout table */}
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                            <div className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Payouts</div>
+                            <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Payouts</div>
                             {[["Straight","35:1"],["Split","17:1"],["Street","11:1"],["Corner","8:1"],["Dozen / Column","2:1"],["Even money","1:1"]].map(([b,p])=>(
                                 <div key={b} className="flex justify-between border-b border-white/5 py-1 text-xs text-white/75">
                                     <span>{b}</span><span className="font-bold text-amber-100">{p}</span>

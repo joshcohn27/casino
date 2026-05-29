@@ -1562,7 +1562,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                             <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition-colors ${
                                 freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
                             }`}>
-                                <span className={`text-[9px] font-bold uppercase tracking-[0.18em] ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/30"}`}>
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.18em] ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/30"}`}>
                                     Tokens
                                 </span>
                                 <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/30"}`}>

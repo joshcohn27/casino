@@ -227,7 +227,7 @@ function BetCircle({
     const startIdx = chips.length - visible.length;
     return (
         <div className="flex flex-col items-center gap-1.5">
-            <div className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/40">{label}</div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">{label}</div>
             <div className="flex flex-col items-center">
                 <div
                     className="relative z-10 flex justify-center"
