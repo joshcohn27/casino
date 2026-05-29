@@ -427,6 +427,17 @@ function RouletteSVGBoard({bets, onBet, onRemove, canBet, selectedChip}: {
             onMouseLeave: () => setHover(null),
             onClick: () => { if (canBet) { onBet(id); } },
             style: {cursor: canBet ? "pointer" as const : "default" as const},
+            onTouchStart: (e: React.TouchEvent<SVGElement>) => {
+                e.preventDefault();
+                if (!canBet || !xy) return;
+                const spot = SPOT_MAP.get(id);
+                setHover({ spotId: id, label: spot?.label ?? id, hx, hy, hw, hh, chipX: xy.x, chipY: xy.y });
+            },
+            onTouchEnd: (e: React.TouchEvent<SVGElement>) => {
+                e.preventDefault();
+                if (canBet) onBet(id);
+                setHover(null);
+            },
         };
     }
 
@@ -489,7 +500,7 @@ function RouletteSVGBoard({bets, onBet, onRemove, canBet, selectedChip}: {
                 >{n}</text>
             )))}
 
-            {/* Grid overlay — single transparent rect handles all grid hover/click */}
+            {/* Grid overlay — single transparent rect handles all grid hover/click and touch */}
             <rect
                 x={ZW} y={0} width={GRID_W} height={GRID_H}
                 fill="transparent"
@@ -497,6 +508,40 @@ function RouletteSVGBoard({bets, onBet, onRemove, canBet, selectedChip}: {
                 onMouseMove={handleGridMove}
                 onMouseLeave={() => setHover(null)}
                 onClick={handleGridClick}
+                onTouchStart={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    if (!touch || !canBet) return;
+                    const svg = svgRef.current;
+                    if (!svg) return;
+                    const pt = svg.createSVGPoint();
+                    pt.x = touch.clientX;
+                    pt.y = touch.clientY;
+                    const m = svg.getScreenCTM();
+                    if (!m) return;
+                    const coords = pt.matrixTransform(m.inverse());
+                    setHover(inferGridBet(coords.x, coords.y));
+                }}
+                onTouchMove={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    if (!touch || !canBet) return;
+                    const svg = svgRef.current;
+                    if (!svg) return;
+                    const pt = svg.createSVGPoint();
+                    pt.x = touch.clientX;
+                    pt.y = touch.clientY;
+                    const m = svg.getScreenCTM();
+                    if (!m) return;
+                    const coords = pt.matrixTransform(m.inverse());
+                    setHover(inferGridBet(coords.x, coords.y));
+                }}
+                onTouchEnd={(e) => {
+                    e.preventDefault();
+                    if (hover && canBet) onBet(hover.spotId);
+                    setHover(null);
+                }}
+                onTouchCancel={() => setHover(null)}
             />
 
             {/* ── Street zones (bottom strip, one per grid column) ────── */}
@@ -808,7 +853,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
 
                     {/* ── Left sidebar ─────────────────────────────────── */}
-                    <div className="flex shrink-0 flex-col gap-3 lg:w-[272px]">
+                    <div className="order-last flex shrink-0 flex-col gap-3 lg:order-first lg:w-[272px]">
 
                         <div className="flex justify-center">
                             <RouletteWheel result={lastResult} wheelRotation={wheelRotation} ballRotation={ballRotation} spinning={isSpinning}/>
@@ -870,18 +915,20 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                     </div>
 
                     {/* ── Board ────────────────────────────────────────── */}
-                    <div className="min-w-0 flex-1">
-                        <div className="rounded-2xl border border-white/10 bg-black/15 p-3">
-                            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-[0.2em] text-amber-200/70">
+                    <div className="order-first min-w-0 flex-1 lg:order-last">
+                        <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-black/15 p-3">
+                            <div className="mb-2 text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-200/70">
                                 Click number · edge for split · corner for corner · chip to remove
                             </div>
-                            <RouletteSVGBoard
-                                bets={bets}
-                                onBet={placeBet}
-                                onRemove={removeBet}
-                                canBet={canBet}
-                                selectedChip={selectedChip}
-                            />
+                            <div style={{ minWidth: "560px" }}>
+                                <RouletteSVGBoard
+                                    bets={bets}
+                                    onBet={placeBet}
+                                    onRemove={removeBet}
+                                    canBet={canBet}
+                                    selectedChip={selectedChip}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

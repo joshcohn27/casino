@@ -98,8 +98,7 @@ export default function ActionBar({
 }: ActionBarProps) {
     return (
         <div
-            className="flex items-center justify-between gap-4
-                       border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl"
+            className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between"
         >
             {/* ── Left: chip selector ────────────────────────────────── */}
             <ChipTray
