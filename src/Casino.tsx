@@ -7,6 +7,7 @@ import Roulette from "./Roulette"
 import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
 import PaiGowPoker from "./PaiGow"
+import ThreeCardPoker from "./ThreeCardPoker"
 import Feedback from "./Feedback"
 
 type Game =
@@ -19,6 +20,7 @@ type Game =
     | "baccarat"
     | "videopoker"
     | "paigow"
+    | "threecardpoker"
     | "feedback"
 
 const DEFAULT_BANKROLL = 1000
@@ -43,6 +45,7 @@ function readStoredGame(): Game {
         raw === "baccarat" ||
         raw === "videopoker" ||
         raw === "paigow" ||
+        raw === "threecardpoker" ||
         raw === "feedback" ||
         raw === "home"
         ? raw
@@ -259,6 +262,10 @@ export default function Casino() {
             return <PaiGowPoker bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "threecardpoker") {
+            return <ThreeCardPoker bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         if (game === "feedback") {
             return <Feedback onBack={() => setGame("home")} />
         }
@@ -283,7 +290,7 @@ export default function Casino() {
                             Cohn Casino
                         </h1>
                         <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/50">
-                            Eight games · One bankroll
+                            Nine games · One bankroll
                         </p>
                         <p className="mx-auto mt-5 max-w-[60ch] text-base leading-7 text-white/65">
                             A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
@@ -349,6 +356,13 @@ export default function Casino() {
                             onClick={() => setGame("paigow")}
                             bankroll={bankrollDisplay}
                         />
+                        <GameCard
+                            title="Three Card Poker"
+                            subtitle="3-card hands · Trips beats straights · Dealer qualifies with Queen-high · Pair Plus side bet pays up to 40:1 · 6 Card Bonus uses best 5 of all 6 cards"
+                            feltColor="#0c4a6e"
+                            onClick={() => setGame("threecardpoker")}
+                            bankroll={bankrollDisplay}
+                        />
                     </div>
 
                     <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
@@ -402,7 +416,8 @@ export default function Casino() {
     const pokerActive =
         game === "uth" ||
         game === "videopoker" ||
-        game === "paigow"
+        game === "paigow" ||
+        game === "threecardpoker"
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -443,6 +458,9 @@ export default function Casino() {
                             </DropdownItem>
                             <DropdownItem active={game === "paigow"} onClick={() => navigate("paigow")}>
                                 Pai Gow Poker
+                            </DropdownItem>
+                            <DropdownItem active={game === "threecardpoker"} onClick={() => navigate("threecardpoker")}>
+                                Three Card Poker
                             </DropdownItem>
                         </NavDropdown>
 
@@ -577,6 +595,14 @@ export default function Casino() {
                                     : "text-white hover:bg-white/10"}`}
                             >
                                 Pai Gow Poker
+                            </button>
+                            <button
+                                onClick={() => navigate("threecardpoker")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "threecardpoker"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Three Card Poker
                             </button>
 
                             <div className="my-1 h-px bg-white/10"/>
