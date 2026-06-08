@@ -314,27 +314,6 @@ export default function Casino() {
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
-                            title="Ultimate Texas Hold'em"
-                            subtitle="Bet 4x or 3x preflop · 2x on the flop · 1x or fold on the river · Dealer qualifies with pair or better · Blind pays on straight or better · Trips and 6 Card Bonus side bets available"
-                            feltColor="#1a3a5c"
-                            onClick={() => setGame("uth")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Roulette"
-                            subtitle="American wheel with 38 pockets · Straight up pays 35:1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
-                            feltColor="#1b6b3a"
-                            onClick={() => setGame("roulette")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Baccarat"
-                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1:1 · Tie pays 8:1 · Dragon 7 side bet pays 40:1 · Panda 8 side bet pays 25:1 · 8-deck shoe"
-                            feltColor="#7f1d1d"
-                            onClick={() => setGame("baccarat")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
                             title="Double Down Madness"
                             subtitle="One-card blackjack with aggressive re-doubling · Push 22 side bet · Configurable blackjack pay · Insurance available"
                             feltColor="#18181b"
@@ -342,12 +321,11 @@ export default function Casino() {
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
-                            title="Jacks or Better"
-                            subtitle="Classic video poker · Hold and draw · Full pay table displayed · Retro machine aesthetic"
-                            feltColor="#0f172a"
-                            onClick={() => setGame("videopoker")}
+                            title="Ultimate Texas Hold'em"
+                            subtitle="Bet 4x or 3x preflop · 2x on the flop · 1x or fold on the river · Dealer qualifies with pair or better · Blind pays on straight or better · Trips and 6 Card Bonus side bets available"
+                            feltColor="#1a3a5c"
+                            onClick={() => setGame("uth")}
                             bankroll={bankrollDisplay}
-                            label="Video Poker"
                         />
                         <GameCard
                             title="Pai Gow Poker"
@@ -362,6 +340,28 @@ export default function Casino() {
                             feltColor="#0c4a6e"
                             onClick={() => setGame("threecardpoker")}
                             bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Baccarat"
+                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1:1 · Tie pays 8:1 · Dragon 7 side bet pays 40:1 · Panda 8 side bet pays 25:1 · 8-deck shoe"
+                            feltColor="#7f1d1d"
+                            onClick={() => setGame("baccarat")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Roulette"
+                            subtitle="American wheel with 38 pockets · Straight up pays 35:1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
+                            feltColor="#1b6b3a"
+                            onClick={() => setGame("roulette")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Video Poker"
+                            subtitle="Jacks or Better · Bonus Poker · Deuces Wild · Choose your game and variant from the bar-top machine"
+                            feltColor="#0f172a"
+                            onClick={() => setGame("videopoker")}
+                            bankroll={bankrollDisplay}
+                            label="Video Poker"
                         />
                     </div>
 
@@ -453,14 +453,14 @@ export default function Casino() {
                             <DropdownItem active={game === "uth"} onClick={() => navigate("uth")}>
                                 Ultimate Texas Hold'em
                             </DropdownItem>
-                            <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
-                                Jacks or Better
-                            </DropdownItem>
                             <DropdownItem active={game === "paigow"} onClick={() => navigate("paigow")}>
                                 Pai Gow Poker
                             </DropdownItem>
                             <DropdownItem active={game === "threecardpoker"} onClick={() => navigate("threecardpoker")}>
                                 Three Card Poker
+                            </DropdownItem>
+                            <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
+                                Video Poker
                             </DropdownItem>
                         </NavDropdown>
 
@@ -581,14 +581,6 @@ export default function Casino() {
                                 Ultimate Texas Hold'em
                             </button>
                             <button
-                                onClick={() => navigate("videopoker")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "videopoker"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Jacks or Better
-                            </button>
-                            <button
                                 onClick={() => navigate("paigow")}
                                 className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "paigow"
                                     ? "bg-amber-400 text-black"
@@ -603,6 +595,14 @@ export default function Casino() {
                                     : "text-white hover:bg-white/10"}`}
                             >
                                 Three Card Poker
+                            </button>
+                            <button
+                                onClick={() => navigate("videopoker")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "videopoker"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Video Poker
                             </button>
 
                             <div className="my-1 h-px bg-white/10"/>

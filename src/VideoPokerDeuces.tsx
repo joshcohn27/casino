@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from "react"
-import VideoPokerBonus from "./VideoPokerBonus"
-import VideoPokerDeuces from "./VideoPokerDeuces"
 
 type Props = {
     bankroll: number
@@ -32,17 +30,15 @@ type Card = {
 type Stage = "ready" | "dealt" | "drawn"
 
 type PayoutKey =
-    | "royalFlush"
+    | "naturalRoyal"
+    | "fiveKind"
+    | "wildRoyal"
     | "straightFlush"
-    | "fourAces"
-    | "four234"
-    | "four5k"
+    | "fourKind"
     | "fullHouse"
     | "flush"
     | "straight"
     | "threeKind"
-    | "twoPair"
-    | "jacksOrBetter"
 
 type EvalResult = {
     key: PayoutKey | null
@@ -56,17 +52,15 @@ const BET_COLUMNS = [1, 2, 3, 4, 5] as const
 const DENOM_VALUES = [1, 2, 5, 10, 25] as const
 
 const PAY_TABLE: { key: PayoutKey; label: string; pays: [number, number, number, number, number] }[] = [
-    { key: "royalFlush", label: "ROYAL FLUSH", pays: [250, 500, 750, 1000, 4000] },
-    { key: "straightFlush", label: "STRAIGHT FLUSH", pays: [50, 100, 150, 200, 250] },
-    { key: "fourAces", label: "4 ACES", pays: [80, 160, 240, 320, 400] },
-    { key: "four234", label: "4 2s, 3s, 4s", pays: [40, 80, 120, 160, 200] },
-    { key: "four5k", label: "4 5s THRU KINGS", pays: [25, 50, 75, 100, 125] },
-    { key: "fullHouse", label: "FULL HOUSE", pays: [7, 14, 21, 28, 35] },
-    { key: "flush", label: "FLUSH", pays: [5, 10, 15, 20, 25] },
-    { key: "straight", label: "STRAIGHT", pays: [4, 8, 12, 16, 20] },
-    { key: "threeKind", label: "3 OF A KIND", pays: [3, 6, 9, 12, 15] },
-    { key: "twoPair", label: "2 PAIR", pays: [2, 4, 6, 8, 10] },
-    { key: "jacksOrBetter", label: "JACKS OR BETTER", pays: [1, 2, 3, 4, 5] },
+    { key: "naturalRoyal", label: "NATURAL ROYAL FLUSH", pays: [250, 500, 750, 1000, 4000] },
+    { key: "fiveKind",     label: "FIVE OF A KIND",      pays: [15, 30, 45, 60, 75] },
+    { key: "wildRoyal",    label: "WILD ROYAL FLUSH",    pays: [25, 50, 75, 100, 125] },
+    { key: "straightFlush",label: "STRAIGHT FLUSH",      pays: [9, 18, 27, 36, 45] },
+    { key: "fourKind",     label: "FOUR OF A KIND",      pays: [5, 10, 15, 20, 25] },
+    { key: "fullHouse",    label: "FULL HOUSE",           pays: [3, 6, 9, 12, 15] },
+    { key: "flush",        label: "FLUSH",                pays: [2, 4, 6, 8, 10] },
+    { key: "straight",     label: "STRAIGHT",             pays: [2, 4, 6, 8, 10] },
+    { key: "threeKind",    label: "THREE OF A KIND",      pays: [1, 2, 3, 4, 5] },
 ]
 
 const CONTROL_SHADOW = {
@@ -114,104 +108,128 @@ function shuffleDeck(deck: Card[]) {
     return copy
 }
 
-function isStraight(values: number[]) {
-    const unique = Array.from(new Set(values)).sort((a, b) => a - b)
-    if (unique.length !== 5) return false
-    const wheel = [2, 3, 4, 5, 14]
-    if (unique.every((value, index) => value === wheel[index])) return true
-    for (let i = 1; i < unique.length; i += 1) {
-        if (unique[i] !== unique[i - 1] + 1) return false
+// Returns true if sorted-desc natural values + wild count can form a 5-card straight
+function canFormStraight(vals: number[], wilds: number): boolean {
+    if (new Set(vals).size !== vals.length) return false
+
+    for (let low = 1; low <= 10; low++) {
+        const allInWindow = vals.every(v => v >= low && v <= low + 4)
+        if (!allInWindow) continue
+        const gaps = 5 - vals.length
+        if (gaps <= wilds) return true
     }
-    return true
+
+    // Wheel A-2-3-4-5: treat A(14) as 1
+    if (vals.includes(14)) {
+        const wheelVals = vals.map(v => v === 14 ? 1 : v)
+        if (new Set(wheelVals).size === wheelVals.length) {
+            const allInWheel = wheelVals.every(v => v >= 1 && v <= 5)
+            if (allInWheel) {
+                const gaps = 5 - wheelVals.length
+                if (gaps <= wilds) return true
+            }
+        }
+    }
+
+    return false
 }
 
 function evaluateHand(hand: Card[], creditsBet: number, denom: number): EvalResult {
-    if (hand.length !== 5) {
-        return { key: null, label: "", payout: 0 }
+    if (hand.length !== 5) return { key: null, label: "", payout: 0 }
+
+    const payoutFor = (key: PayoutKey) =>
+        PAY_TABLE.find(r => r.key === key)!.pays[creditsBet - 1] * denom
+
+    // Step A
+    const deuces = hand.filter(c => c.rank === "2").length
+    const naturals = hand.filter(c => c.rank !== "2")
+    const natVals = naturals.map(c => rankValue(c.rank)).sort((a, b) => b - a)
+    const allSameSuit = naturals.length === 0 || naturals.every(c => c.suit === naturals[0].suit)
+
+    // Step B
+    const rankCounts = new Map<number, number>()
+    for (const v of natVals) rankCounts.set(v, (rankCounts.get(v) ?? 0) + 1)
+    const maxCount = Math.max(0, ...rankCounts.values())
+    const hasDuplicateNaturals = maxCount > 1
+
+    // 1. Natural Royal Flush (0 deuces only)
+    if (deuces === 0) {
+        if (
+            allSameSuit &&
+            natVals[0] === 14 && natVals[1] === 13 &&
+            natVals[2] === 12 && natVals[3] === 11 && natVals[4] === 10
+        ) {
+            return { key: "naturalRoyal", label: "NATURAL ROYAL FLUSH", payout: payoutFor("naturalRoyal") }
+        }
     }
 
-    const values = hand.map((card) => rankValue(card.rank)).sort((a, b) => a - b)
-    const suits = hand.map((card) => card.suit)
-    const flush = suits.every((suit) => suit === suits[0])
-    const straight = isStraight(values)
-
-    const counts = new Map<number, number>()
-    for (const value of values) {
-        counts.set(value, (counts.get(value) ?? 0) + 1)
+    // 2. Five of a Kind
+    if (deuces === 4) {
+        return { key: "fiveKind", label: "FIVE OF A KIND", payout: payoutFor("fiveKind") }
+    }
+    if (deuces >= 1 && maxCount === 5 - deuces) {
+        return { key: "fiveKind", label: "FIVE OF A KIND", payout: payoutFor("fiveKind") }
     }
 
-    const groups = Array.from(counts.entries()).sort((a, b) => {
-        if (b[1] !== a[1]) return b[1] - a[1]
-        return b[0] - a[0]
-    })
-
-    const countValues = groups.map(([, count]) => count)
-    const isFour = countValues[0] === 4
-    const isThree = countValues[0] === 3
-    const isPair = countValues[0] === 2
-    const isTwoPair = countValues[0] === 2 && countValues[1] === 2
-    const isFullHouse = countValues[0] === 3 && countValues[1] === 2
-
-    const payoutFor = (key: PayoutKey) => {
-        const row = PAY_TABLE.find((entry) => entry.key === key)!
-        return row.pays[creditsBet - 1] * denom
+    // 3. Wild Royal Flush (1+ deuces)
+    if (
+        deuces >= 1 &&
+        allSameSuit &&
+        naturals.every(c => rankValue(c.rank) >= 10) &&
+        new Set(natVals).size === naturals.length
+    ) {
+        return { key: "wildRoyal", label: "WILD ROYAL FLUSH", payout: payoutFor("wildRoyal") }
     }
 
-    const isRoyal =
-        flush &&
-        values[0] === 10 &&
-        values[1] === 11 &&
-        values[2] === 12 &&
-        values[3] === 13 &&
-        values[4] === 14
-
-    if (isRoyal) {
-        return { key: "royalFlush", label: "ROYAL FLUSH", payout: payoutFor("royalFlush") }
-    }
-
-    if (straight && flush) {
+    // 4. Straight Flush
+    if (allSameSuit && naturals.length > 0 && canFormStraight(natVals, deuces)) {
         return { key: "straightFlush", label: "STRAIGHT FLUSH", payout: payoutFor("straightFlush") }
     }
 
-    if (isFour) {
-        const fourRank = groups[0][0]
-
-        if (fourRank === 14) {
-            return { key: "fourAces", label: "4 ACES", payout: payoutFor("fourAces") }
-        }
-
-        if (fourRank === 2 || fourRank === 3 || fourRank === 4) {
-            return { key: "four234", label: "4 2s, 3s, 4s", payout: payoutFor("four234") }
-        }
-
-        return { key: "four5k", label: "4 5s THRU KINGS", payout: payoutFor("four5k") }
+    // 5. Four of a Kind
+    if (deuces === 0 && maxCount === 4) {
+        return { key: "fourKind", label: "FOUR OF A KIND", payout: payoutFor("fourKind") }
+    }
+    if (deuces >= 1 && maxCount >= 4 - deuces) {
+        return { key: "fourKind", label: "FOUR OF A KIND", payout: payoutFor("fourKind") }
+    }
+    if (deuces === 3) {
+        return { key: "fourKind", label: "FOUR OF A KIND", payout: payoutFor("fourKind") }
     }
 
-    if (isFullHouse) {
-        return { key: "fullHouse", label: "FULL HOUSE", payout: payoutFor("fullHouse") }
+    // 6. Full House
+    if (deuces === 0) {
+        const freqs = [...rankCounts.values()].sort((a, b) => b - a)
+        if (freqs[0] === 3 && freqs[1] === 2) {
+            return { key: "fullHouse", label: "FULL HOUSE", payout: payoutFor("fullHouse") }
+        }
+    }
+    if (deuces === 1) {
+        const pairs = [...rankCounts.values()].filter(c => c >= 2).length
+        if (pairs >= 2) {
+            return { key: "fullHouse", label: "FULL HOUSE", payout: payoutFor("fullHouse") }
+        }
     }
 
-    if (flush) {
+    // 7. Flush
+    if (allSameSuit && naturals.length > 0) {
         return { key: "flush", label: "FLUSH", payout: payoutFor("flush") }
     }
 
-    if (straight) {
+    // 8. Straight
+    if (!hasDuplicateNaturals && canFormStraight(natVals, deuces)) {
         return { key: "straight", label: "STRAIGHT", payout: payoutFor("straight") }
     }
 
-    if (isThree) {
-        return { key: "threeKind", label: "3 OF A KIND", payout: payoutFor("threeKind") }
+    // 9. Three of a Kind
+    if (deuces === 0 && maxCount === 3) {
+        return { key: "threeKind", label: "THREE OF A KIND", payout: payoutFor("threeKind") }
     }
-
-    if (isTwoPair) {
-        return { key: "twoPair", label: "2 PAIR", payout: payoutFor("twoPair") }
+    if (deuces === 1 && maxCount >= 2) {
+        return { key: "threeKind", label: "THREE OF A KIND", payout: payoutFor("threeKind") }
     }
-
-    if (isPair) {
-        const pairRank = groups[0][0]
-        if (pairRank >= 11 || pairRank === 14) {
-            return { key: "jacksOrBetter", label: "JACKS OR BETTER", payout: payoutFor("jacksOrBetter") }
-        }
+    if (deuces >= 2) {
+        return { key: "threeKind", label: "THREE OF A KIND", payout: payoutFor("threeKind") }
     }
 
     return { key: null, label: "NO WIN", payout: 0 }
@@ -229,6 +247,7 @@ function CardView({
     canHold: boolean
 }) {
     const red = card ? isRedSuit(card.suit) : false
+    const isWild = card?.rank === "2"
 
     return (
         <div className="flex flex-col items-center">
@@ -277,6 +296,15 @@ function CardView({
                         >
                             {card.suit}
                         </div>
+
+                        {isWild && (
+                            <div
+                                className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-emerald-400 py-[3px] text-[14px] font-black leading-none text-black"
+                                style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
+                            >
+                                WILD
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="flex h-full items-center justify-center text-4xl font-black text-slate-500">?</div>
@@ -355,8 +383,7 @@ function DenomBadge({
     )
 }
 
-export default function VideoPoker({ bankroll, setBankroll }: Props) {
-    const [game, setGame] = useState<"jacks" | "bonus" | "deuces">("jacks")
+export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("ready")
     const [bet, setBet] = useState(5)
     const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(1)
@@ -469,24 +496,20 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
 
     return (
         <div className="min-h-screen bg-[#020202] px-2 py-4 text-white md:px-4">
-            <div className="mx-auto mb-3 flex max-w-[980px] gap-2">
-                <RetroButton label="JACKS OR BETTER" onClick={() => setGame("jacks")} tone={game === "jacks" ? "yellow" : "white"} small />
-                <RetroButton label="BONUS POKER" onClick={() => setGame("bonus")} tone={game === "bonus" ? "yellow" : "white"} small />
-                <RetroButton label="DEUCES WILD" onClick={() => setGame("deuces")} tone={game === "deuces" ? "yellow" : "white"} small />
-            </div>
-            {game === "jacks" && (
             <div
                 className="mx-auto w-full max-w-[980px] overflow-hidden border-[4px] border-[#efe957] bg-[#0825b2]"
                 style={PANEL_SHADOW}
             >
+                {/* Game subtitle */}
                 <div className="border-b-[4px] border-[#efe957] bg-[#020202] py-1.5 text-center">
                     <div
                         className="text-[16px] font-black text-yellow-300 md:text-[20px]"
                         style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
                     >
-                        JACKS OR BETTER · 7/5 PAYTABLE
+                        DEUCES WILD · FULL PAY
                     </div>
                 </div>
+
                 <div id="video-poker-paytable" className="border-b-[4px] border-[#efe957]">
                     <div className="grid grid-cols-[1.9fr_repeat(5,1fr)]">
                         <div className="border-r-[3px] border-[#efe957] bg-[#0825b2]" />
@@ -631,27 +654,21 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
                                 className="font-black uppercase text-yellow-300"
                                 style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                             >
-                                How to play
+                                How to play — Deuces Wild
                             </div>
                             <div className="mt-2 leading-6 text-white/95">
-                                The paytable columns are your credit bet from 1 to 5.{" "}
+                                All four 2s are wild and can substitute for any card.{" "}
+                                Minimum paying hand is <span className="font-bold text-yellow-300">THREE OF A KIND</span>.{" "}
+                                2s are highlighted <span className="font-bold text-emerald-300">WILD</span> on the card.{" "}
                                 <span className="font-bold text-yellow-300">BET ONE</span> changes the active column and{" "}
                                 <span className="font-bold text-yellow-300">BET MAX</span> sets it to 5.{" "}
                                 <span className="font-bold text-yellow-300">DENOM</span> cycles the dollar value of each
-                                credit: 1, 2, 5, 10, 25. Your wager is credits bet times denom, and any payout shown on
-                                the paytable is multiplied by denom when paid.
+                                credit: 1, 2, 5, 10, 25.
                             </div>
                         </div>
                     ) : null}
                 </div>
             </div>
-            )}
-            {game === "bonus" && (
-                <VideoPokerBonus bankroll={bankroll} setBankroll={setBankroll} />
-            )}
-            {game === "deuces" && (
-                <VideoPokerDeuces bankroll={bankroll} setBankroll={setBankroll} />
-            )}
         </div>
     )
 }

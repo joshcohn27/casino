@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from "react"
-import VideoPokerBonus from "./VideoPokerBonus"
-import VideoPokerDeuces from "./VideoPokerDeuces"
 
 type Props = {
     bankroll: number
@@ -56,17 +54,17 @@ const BET_COLUMNS = [1, 2, 3, 4, 5] as const
 const DENOM_VALUES = [1, 2, 5, 10, 25] as const
 
 const PAY_TABLE: { key: PayoutKey; label: string; pays: [number, number, number, number, number] }[] = [
-    { key: "royalFlush", label: "ROYAL FLUSH", pays: [250, 500, 750, 1000, 4000] },
-    { key: "straightFlush", label: "STRAIGHT FLUSH", pays: [50, 100, 150, 200, 250] },
-    { key: "fourAces", label: "4 ACES", pays: [80, 160, 240, 320, 400] },
-    { key: "four234", label: "4 2s, 3s, 4s", pays: [40, 80, 120, 160, 200] },
-    { key: "four5k", label: "4 5s THRU KINGS", pays: [25, 50, 75, 100, 125] },
-    { key: "fullHouse", label: "FULL HOUSE", pays: [7, 14, 21, 28, 35] },
-    { key: "flush", label: "FLUSH", pays: [5, 10, 15, 20, 25] },
-    { key: "straight", label: "STRAIGHT", pays: [4, 8, 12, 16, 20] },
-    { key: "threeKind", label: "3 OF A KIND", pays: [3, 6, 9, 12, 15] },
-    { key: "twoPair", label: "2 PAIR", pays: [2, 4, 6, 8, 10] },
-    { key: "jacksOrBetter", label: "JACKS OR BETTER", pays: [1, 2, 3, 4, 5] },
+    { key: "royalFlush",    label: "ROYAL FLUSH",      pays: [250, 500, 750, 1000, 4000] },
+    { key: "straightFlush", label: "STRAIGHT FLUSH",   pays: [50, 100, 150, 200, 250] },
+    { key: "fourAces",      label: "4 ACES",            pays: [80, 160, 240, 320, 400] },
+    { key: "four234",       label: "4 2s, 3s, 4s",      pays: [40, 80, 120, 160, 200] },
+    { key: "four5k",        label: "4 5s THRU KINGS",   pays: [25, 50, 75, 100, 125] },
+    { key: "fullHouse",     label: "FULL HOUSE",         pays: [8, 16, 24, 32, 40] },
+    { key: "flush",         label: "FLUSH",              pays: [5, 10, 15, 20, 25] },
+    { key: "straight",      label: "STRAIGHT",           pays: [4, 8, 12, 16, 20] },
+    { key: "threeKind",     label: "3 OF A KIND",        pays: [3, 6, 9, 12, 15] },
+    { key: "twoPair",       label: "2 PAIR",             pays: [2, 4, 6, 8, 10] },
+    { key: "jacksOrBetter", label: "JACKS OR BETTER",   pays: [1, 2, 3, 4, 5] },
 ]
 
 const CONTROL_SHADOW = {
@@ -355,8 +353,7 @@ function DenomBadge({
     )
 }
 
-export default function VideoPoker({ bankroll, setBankroll }: Props) {
-    const [game, setGame] = useState<"jacks" | "bonus" | "deuces">("jacks")
+export default function VideoPokerBonus({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("ready")
     const [bet, setBet] = useState(5)
     const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(1)
@@ -469,24 +466,20 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
 
     return (
         <div className="min-h-screen bg-[#020202] px-2 py-4 text-white md:px-4">
-            <div className="mx-auto mb-3 flex max-w-[980px] gap-2">
-                <RetroButton label="JACKS OR BETTER" onClick={() => setGame("jacks")} tone={game === "jacks" ? "yellow" : "white"} small />
-                <RetroButton label="BONUS POKER" onClick={() => setGame("bonus")} tone={game === "bonus" ? "yellow" : "white"} small />
-                <RetroButton label="DEUCES WILD" onClick={() => setGame("deuces")} tone={game === "deuces" ? "yellow" : "white"} small />
-            </div>
-            {game === "jacks" && (
             <div
                 className="mx-auto w-full max-w-[980px] overflow-hidden border-[4px] border-[#efe957] bg-[#0825b2]"
                 style={PANEL_SHADOW}
             >
+                {/* Game subtitle */}
                 <div className="border-b-[4px] border-[#efe957] bg-[#020202] py-1.5 text-center">
                     <div
                         className="text-[16px] font-black text-yellow-300 md:text-[20px]"
                         style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
                     >
-                        JACKS OR BETTER · 7/5 PAYTABLE
+                        BONUS POKER · 8/5 PAYTABLE
                     </div>
                 </div>
+
                 <div id="video-poker-paytable" className="border-b-[4px] border-[#efe957]">
                     <div className="grid grid-cols-[1.9fr_repeat(5,1fr)]">
                         <div className="border-r-[3px] border-[#efe957] bg-[#0825b2]" />
@@ -631,27 +624,21 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
                                 className="font-black uppercase text-yellow-300"
                                 style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                             >
-                                How to play
+                                How to play — Bonus Poker
                             </div>
                             <div className="mt-2 leading-6 text-white/95">
-                                The paytable columns are your credit bet from 1 to 5.{" "}
+                                Bonus Poker pays enhanced amounts for four of a kind hands.{" "}
+                                Full House pays <span className="font-bold text-yellow-300">8:1</span> and Flush pays{" "}
+                                <span className="font-bold text-yellow-300">5:1</span> (8/5 paytable).{" "}
                                 <span className="font-bold text-yellow-300">BET ONE</span> changes the active column and{" "}
                                 <span className="font-bold text-yellow-300">BET MAX</span> sets it to 5.{" "}
                                 <span className="font-bold text-yellow-300">DENOM</span> cycles the dollar value of each
-                                credit: 1, 2, 5, 10, 25. Your wager is credits bet times denom, and any payout shown on
-                                the paytable is multiplied by denom when paid.
+                                credit: 1, 2, 5, 10, 25.
                             </div>
                         </div>
                     ) : null}
                 </div>
             </div>
-            )}
-            {game === "bonus" && (
-                <VideoPokerBonus bankroll={bankroll} setBankroll={setBankroll} />
-            )}
-            {game === "deuces" && (
-                <VideoPokerDeuces bankroll={bankroll} setBankroll={setBankroll} />
-            )}
         </div>
     )
 }
