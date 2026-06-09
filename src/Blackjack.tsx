@@ -737,6 +737,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const doubleAndDeal = () => {
         if (totalWagered === 0 || bankroll < totalWagered * 2) return;
         const doubled = totalWagered * 2;
+        setBet(doubled);
         setBaseBet(doubled);                 // store as new base bet
         setChipStack(buildChipStackFromAmount(doubled));
         dealBetRef.current = doubled;

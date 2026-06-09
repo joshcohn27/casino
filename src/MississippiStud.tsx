@@ -841,7 +841,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     }, [visibleCardsForSuggestion, stage, anteBet, thirdBet, fourthBet]);
 
     const netColor      = netResult !== null
-        ? netResult > 0 ? "text-emerald-300" : netResult < 0 ? "text-red-300" : "text-amber-100"
+        ? netResult > 0 ? "text-emerald-300" : netResult < 0 ? "text-red-300" : "text-yellow-300"
         : "text-white";
 
     // ─── Action bar ───────────────────────────────────────────────────────────
@@ -1141,7 +1141,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     exit={{ opacity: 0 }}
                                     className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
                                         suggestion === "max"
-                                            ? "border-sky-400/40 bg-sky-500/15 text-sky-300"
+                                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                             : suggestion === "3x"
                                             ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                             : suggestion === "1x"
