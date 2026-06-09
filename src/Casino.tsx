@@ -8,6 +8,7 @@ import BaccaratTable from "./Baccarat"
 import VideoPoker from "./VideoPoker"
 import PaiGowPoker from "./PaiGow"
 import ThreeCardPoker from "./ThreeCardPoker"
+import MississippiStud from "./MississippiStud"
 import Feedback from "./Feedback"
 
 type Game =
@@ -21,6 +22,7 @@ type Game =
     | "videopoker"
     | "paigow"
     | "threecardpoker"
+    | "mississippistud"
     | "feedback"
 
 const DEFAULT_BANKROLL = 1000
@@ -46,6 +48,7 @@ function readStoredGame(): Game {
         raw === "videopoker" ||
         raw === "paigow" ||
         raw === "threecardpoker" ||
+        raw === "mississippistud" ||
         raw === "feedback" ||
         raw === "home"
         ? raw
@@ -266,6 +269,10 @@ export default function Casino() {
             return <ThreeCardPoker bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "mississippistud") {
+            return <MississippiStud bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         if (game === "feedback") {
             return <Feedback onBack={() => setGame("home")} />
         }
@@ -290,7 +297,7 @@ export default function Casino() {
                             Cohn Casino
                         </h1>
                         <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/50">
-                            Nine games · One bankroll
+                            A collection of casino table games
                         </p>
                         <p className="mx-auto mt-5 max-w-[60ch] text-base leading-7 text-white/65">
                             A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
@@ -339,6 +346,13 @@ export default function Casino() {
                             subtitle="3-card hands · Trips beats straights · Dealer qualifies with Queen-high · Pair Plus side bet pays up to 40:1 · 6 Card Bonus uses best 5 of all 6 cards"
                             feltColor="#0c4a6e"
                             onClick={() => setGame("threecardpoker")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="Mississippi Stud"
+                            subtitle="No dealer hand · Pair of 6s or better pays · Bet 1× or 3× at each of 3 streets · 3 Card Bonus side bet"
+                            feltColor="#1a6b3a"
+                            onClick={() => setGame("mississippistud")}
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
@@ -417,7 +431,8 @@ export default function Casino() {
         game === "uth" ||
         game === "videopoker" ||
         game === "paigow" ||
-        game === "threecardpoker"
+        game === "threecardpoker" ||
+        game === "mississippistud"
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -458,6 +473,9 @@ export default function Casino() {
                             </DropdownItem>
                             <DropdownItem active={game === "threecardpoker"} onClick={() => navigate("threecardpoker")}>
                                 Three Card Poker
+                            </DropdownItem>
+                            <DropdownItem active={game === "mississippistud"} onClick={() => navigate("mississippistud")}>
+                                Mississippi Stud
                             </DropdownItem>
                             <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
                                 Video Poker
@@ -595,6 +613,14 @@ export default function Casino() {
                                     : "text-white hover:bg-white/10"}`}
                             >
                                 Three Card Poker
+                            </button>
+                            <button
+                                onClick={() => navigate("mississippistud")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "mississippistud"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Mississippi Stud
                             </button>
                             <button
                                 onClick={() => navigate("videopoker")}
