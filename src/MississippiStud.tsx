@@ -406,8 +406,22 @@ function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, isLoc
                : isSelected ? "bg-white/10"
                :              "bg-black/20";
     return (
-        <div className={`flex flex-col items-center ${diamond ? "mx-4 mb-4" : ""}`}>
-            {chips.length > 0 ? <ChipStack chips={chips} onClick={onRemove} /> : <div style={{ height: 0 }} />}
+        <div
+            className={`flex flex-col items-center ${diamond ? "mx-4 mb-4" : ""}`}
+            style={{ position: "relative" }}
+        >
+            <div style={{
+                position: "absolute",
+                bottom: dim - 10,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 10,
+                pointerEvents: chips.length > 0 ? "auto" : "none",
+            }}>
+                {chips.length > 0 && (
+                    <ChipStack chips={chips} onClick={onRemove} />
+                )}
+            </div>
             <button
                 onClick={onClick}
                 disabled={!canBet || !!isLocked}
@@ -426,15 +440,25 @@ function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, isLoc
     );
 }
 
-function StreetCircle({ label, bet }: { label: string; bet: number }) {
+function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; isCurrent?: boolean }) {
     const active = bet > 0;
+    const borderClass = isCurrent
+        ? "border-amber-400 border-solid"
+        : active
+        ? "border-amber-300/70 border-dashed"
+        : "border-white/20 border-dashed";
+    const bgClass = isCurrent
+        ? "bg-amber-400/10"
+        : active
+        ? "bg-amber-500/15"
+        : "bg-black/20";
     return (
         <div className="flex flex-col items-center">
             <div
-                className={`flex flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors ${active ? "border-amber-300/70 bg-amber-500/15" : "border-white/20 bg-black/20"}`}
+                className={`flex flex-col items-center justify-center rounded-full border-2 transition-colors ${borderClass} ${bgClass}`}
                 style={{ width: 70, height: 70 }}
             >
-                <span className={`text-[10px] font-extrabold uppercase tracking-[0.12em] ${active ? "text-amber-200" : "text-white/30"}`}>{label}</span>
+                <span className={`text-[10px] font-extrabold uppercase tracking-[0.12em] ${active || isCurrent ? "text-amber-200" : "text-white/30"}`}>{label}</span>
                 {active && <span className="mt-0.5 text-[10px] font-bold text-amber-300">{formatMoney(bet)}</span>}
             </div>
         </div>
@@ -710,8 +734,28 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         resolving.current = false;
     }
 
-    function handleNextHand() {
+    function handleChangeBet() {
         if (deck.length < 10) setDeck(createDeck());
+        setPlayerCards([]);
+        setCommunityCards([]);
+        setAnteBet(0);
+        setThirdBet(0);
+        setFourthBet(0);
+        setFifthBet(0);
+        setThreeCBBet(0);
+        setMainReturn(0);
+        setBonusReturn(0);
+        setResultLines([]);
+        setNetResult(null);
+        setFiveCardResult(null);
+        setThreeCardResult(null);
+        setSelectedZone("ante");
+        setStage("betting");
+    }
+
+    function handleClearAndReset() {
+        setAnteChips([]);
+        setBonusChips([]);
         setPlayerCards([]);
         setCommunityCards([]);
         setAnteBet(0);
@@ -847,8 +891,24 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                         </SlideBtn>
                     )}
                     {stage === "done" && (
-                        <SlideBtn key="next">
-                            <button className={BTN_GREEN} onClick={handleNextHand}>Next Hand</button>
+                        <SlideBtn key="clear-done">
+                            <button className={BTN_NEUTRAL} onClick={handleClearAndReset}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "done" && (
+                        <SlideBtn key="change">
+                            <button className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "done" && (
+                        <SlideBtn key="rebet">
+                            <button
+                                className={BTN_GOLD}
+                                onClick={handleDeal}
+                                disabled={pendingAnte < MIN_BET || bankroll < pendingAnte + pendingBonus}
+                            >
+                                Rebet & Deal
+                            </button>
                         </SlideBtn>
                     )}
                 </AnimatePresence>
@@ -1013,7 +1073,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                         </AnimatePresence>
 
                         {/* Bet circles — Ante and 3CB side by side */}
-                        <div className="flex items-end justify-center gap-6">
+                        <div className="flex items-end justify-center gap-6 mt-14">
                             <BetZone
                                 chips={stage === "betting" ? bonusChips : buildChipStackFromAmount(threeCBBet)}
                                 totalBet={stage === "betting" ? pendingBonus : threeCBBet}
@@ -1042,13 +1102,11 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                         </div>
 
                         {/* Street circles */}
-                        {stage !== "betting" && (
-                            <div className="flex gap-3">
-                                <StreetCircle label="3RD" bet={thirdBet} />
-                                <StreetCircle label="4TH" bet={fourthBet} />
-                                <StreetCircle label="5TH" bet={fifthBet} />
-                            </div>
-                        )}
+                        <div className="flex gap-3">
+                            <StreetCircle label="3RD" bet={thirdBet} isCurrent={stage === "third"} />
+                            <StreetCircle label="4TH" bet={fourthBet} isCurrent={stage === "fourth"} />
+                            <StreetCircle label="5TH" bet={fifthBet} isCurrent={stage === "fifth"} />
+                        </div>
 
                         {/* Street message */}
                         <AnimatePresence>
