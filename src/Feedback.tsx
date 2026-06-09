@@ -21,6 +21,7 @@ export default function Feedback({ onBack }: FeedbackProps) {
 
     const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState("");
+    const [emailTouched, setEmailTouched] = useState(false);
 
     function handleChange(
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,6 +66,7 @@ export default function Feedback({ onBack }: FeedbackProps) {
             );
 
             setStatus("success");
+            setEmailTouched(false);
             setFormData({
                 name: "",
                 email: "",
@@ -78,6 +80,8 @@ export default function Feedback({ onBack }: FeedbackProps) {
             setErrorMessage("Something went wrong sending your feedback.");
         }
     }
+
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
 
     return (
         <div
@@ -155,9 +159,13 @@ export default function Feedback({ onBack }: FeedbackProps) {
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
+                                        onBlur={() => setEmailTouched(true)}
                                         placeholder="Optional"
                                         className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/25 transition focus:border-amber-300/30"
                                     />
+                                    {emailTouched && formData.email && !emailValid && (
+                                        <span className="text-[11px] text-red-400/80">Please enter a valid email (e.g. name@example.com)</span>
+                                    )}
                                 </label>
                             </div>
 
@@ -191,10 +199,12 @@ export default function Feedback({ onBack }: FeedbackProps) {
                                         <option className="bg-zinc-950">Blackjack</option>
                                         <option className="bg-zinc-950">Free Bet Blackjack</option>
                                         <option className="bg-zinc-950">Double Down Madness</option>
-                                        <option className="bg-zinc-950">Roulette</option>
-                                        <option className="bg-zinc-950">Baccarat</option>
-                                        <option className="bg-zinc-950">Jacks or Better</option>
                                         <option className="bg-zinc-950">Pai Gow Poker</option>
+                                        <option className="bg-zinc-950">Three Card Poker</option>
+                                        <option className="bg-zinc-950">Mississippi Stud</option>
+                                        <option className="bg-zinc-950">Baccarat</option>
+                                        <option className="bg-zinc-950">Roulette</option>
+                                        <option className="bg-zinc-950">Video Poker</option>
                                         <option className="bg-zinc-950">Other</option>
                                     </select>
                                 </label>
@@ -212,16 +222,22 @@ export default function Feedback({ onBack }: FeedbackProps) {
                                 />
                             </label>
 
-                            <label className="flex items-center gap-3 text-sm text-white/65">
-                                <input
-                                    type="checkbox"
-                                    name="replyWanted"
-                                    checked={formData.replyWanted}
-                                    onChange={handleChange}
-                                    className="h-4 w-4"
-                                />
-                                I'd like a reply if I left my email
-                            </label>
+                            <div className="flex flex-col gap-1.5">
+                                <label className={`flex items-center gap-3 text-sm ${emailValid ? "text-white/65" : "cursor-not-allowed text-white/30"}`}>
+                                    <input
+                                        type="checkbox"
+                                        name="replyWanted"
+                                        checked={formData.replyWanted}
+                                        onChange={handleChange}
+                                        disabled={!emailValid}
+                                        className="h-4 w-4 disabled:cursor-not-allowed"
+                                    />
+                                    I'd like a reply if I left my email
+                                </label>
+                                {!emailValid && (
+                                    <p className="pl-7 text-[11px] text-white/35">Enter a valid email address above to enable this option.</p>
+                                )}
+                            </div>
 
                             {status === "error" ? (
                                 <div className="rounded-2xl border border-red-400/25 bg-red-500/8 px-4 py-3 text-sm text-red-300">
