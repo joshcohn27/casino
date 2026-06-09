@@ -879,12 +879,16 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             <button className={BTN_GOLD} onClick={() => handleBetStreet(3)} disabled={resolving.current}>Bet 3×</button>
                         </SlideBtn>
                     )}
-                    {(stage === "third" || stage === "fourth") && (
+                    {(stage === "third" || stage === "fourth" || stage === "fifth") && (
                         <SlideBtn key="max">
                             <button
                                 className={BTN_GREEN}
                                 onClick={handleMaxBet}
-                                disabled={resolving.current || bankroll < anteBet * 3 * (stage === "third" ? 3 : 2)}
+                                disabled={
+                                    stage === "fifth" ||
+                                    resolving.current ||
+                                    bankroll < anteBet * 3 * (stage === "third" ? 3 : 2)
+                                }
                             >
                                 Max Bet
                             </button>
