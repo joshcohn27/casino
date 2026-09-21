@@ -992,7 +992,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                                 Community Cards
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-row-reverse gap-2">
                                 {stage === "betting"
                                     ? [0, 1, 2].map(i => (
                                         <div
@@ -1018,7 +1018,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     ))
                                 }
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-row-reverse gap-2">
                                 {["3rd St", "4th St", "5th St"].map((lbl, i) => (
                                     <div key={lbl} className="w-[56px] text-center sm:w-[66px]">
                                         <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
