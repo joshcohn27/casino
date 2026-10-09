@@ -4,7 +4,8 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
 
 // ─── Types (preserved) ───────────────────────────────────────────────────────
@@ -98,7 +99,6 @@ const CARD_TRANSITION = (delay: number) => ({
     delay,
 });
 
-const STACK_GAP = 9;
 
 // ─── Game pure functions (preserved) ─────────────────────────────────────────
 
@@ -224,8 +224,8 @@ function getHandOutcomeLabel(
 ) {
     if (busted) return "Bust";
     if (dealerHas22) return "Push 22";
-    if (dealerBusted) return "Winner";
-    if (handTotal > dealerTotal) return "Winner";
+    if (dealerBusted) return "Win";
+    if (handTotal > dealerTotal) return "Win";
     if (handTotal < dealerTotal) return "Lose";
     return "Push";
 }
@@ -325,7 +325,7 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 const BADGE: Record<string, string> = {
-    Winner:    "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
+    Win:       "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
     Blackjack: "bg-emerald-500/20 border-emerald-400/40 text-emerald-200",
     "Push 22": "bg-amber-500/20  border-amber-400/40  text-amber-200",
     Push:      "bg-amber-500/20  border-amber-400/40  text-amber-200",
@@ -368,42 +368,6 @@ function TableLabel({ onShowRules }: { onShowRules: () => void }) {
                 <span className="text-white/20">·</span>
                 <span>DEALER 22 PUSHES</span>
             </div>
-        </div>
-    );
-}
-
-function BetBar({
-    displayBet,
-    returned,
-    net,
-    showResult,
-}: {
-    displayBet: number;
-    returned: number;
-    net: number;
-    showResult: boolean;
-}) {
-    return (
-        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
-            {[
-                { label: "Bet",      val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—",        color: "text-white" },
-                {
-                    label: "Net",
-                    val: showResult ? `${net > 0 ? "+" : ""}${formatMoney(net)}` : "—",
-                    color: showResult
-                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
-                        : "text-white",
-                },
-            ].map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
         </div>
     );
 }
@@ -504,129 +468,6 @@ function PayoutColumn({ title, entries, highlight }: {
                         </div>
                     );
                 })}
-        </div>
-    );
-}
-
-function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: number }) {
-    const visible  = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.88 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="flex flex-col items-center"
-        >
-            <div
-                className="relative z-10 flex justify-center"
-                style={{ width: 48, height: 48 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
-            >
-                <AnimatePresence>
-                    {visible.map((denom, i) => {
-                        const cfg = CHIP_COLORS[denom];
-                        return (
-                            <motion.div
-                                key={startIdx + i}
-                                className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                                style={{
-                                    bottom: i * STACK_GAP, zIndex: i + 1,
-                                    backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
-                                    boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                                }}
-                                initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                                animate={{ opacity: 1, y: 0,   scale: 1    }}
-                                exit={{    opacity: 0, y: 6,   scale: 0.8  }}
-                                transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                            >
-                                {cfg.label}
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
-            </div>
-            <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-2 border-dashed border-white/30 bg-black/20 backdrop-blur-sm">
-                {visible.length === 0 && totalBet === 0 && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">Bet</span>
-                )}
-                {visible.length === 0 && totalBet > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100/70">{formatMoney(totalBet)}</span>
-                )}
-                {visible.length > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
-function SideChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
-    const visible  = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    const stackH   = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
-    return (
-        <div
-            className="relative flex cursor-pointer justify-center"
-            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
-            onClick={onClick}
-        >
-            <AnimatePresence>
-                {visible.map((denom, i) => {
-                    const cfg = CHIP_COLORS[denom];
-                    return (
-                        <motion.div
-                            key={startIdx + i}
-                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                            style={{
-                                bottom: i * STACK_GAP, zIndex: i + 1,
-                                backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
-                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                            }}
-                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                            animate={{ opacity: 1, y: 0,   scale: 1    }}
-                            exit={{    opacity: 0, y: 6,   scale: 0.8  }}
-                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                        >
-                            {cfg.label}
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, onClick, onRemove, canBet }: {
-    chips: ChipDenomination[]; totalBet: number; label: string; sublabel: string;
-    isSelected: boolean; isWinner: boolean; onClick: () => void; onRemove: () => void; canBet: boolean;
-}) {
-    const dim  = 82;
-    const ring = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-               : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-               :               "border-white/30";
-    const bg   = isWinner   ? "bg-amber-300/10"
-               : isSelected ? "bg-white/10"
-               :               "bg-black/20";
-    return (
-        <div className="flex flex-col items-center">
-            {chips.length > 0 ? (
-                <SideChipStack chips={chips} onClick={onRemove} />
-            ) : (
-                <div style={{ height: 0 }} />
-            )}
-            <button
-                onClick={onClick}
-                disabled={!canBet}
-                className={`relative flex flex-col items-center justify-center rounded-full border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
-                style={{ width: dim, height: dim }}
-            >
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
-                <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>
-                {totalBet > 0 && (
-                    <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
-                )}
-            </button>
         </div>
     );
 }
@@ -755,7 +596,7 @@ function FreeBetBar({
     const isPlayer  = stage === "player";
     const isDealer  = stage === "dealer";
 
-    const canClear = isBetting && bet > 0;
+    const canClear = isBetting;
     const canDeal  = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= buyIn;
 
     return (
@@ -780,7 +621,7 @@ function FreeBetBar({
 
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling}>Clear</button>
+                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || buyIn <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
@@ -843,9 +684,15 @@ function FreeBetBar({
                         </SlideBtn>
                     )}
 
-                    {(isBetting || isDone) && (
+                    {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={isBetting ? !canDeal : !canDealFromDone}>Deal</button>
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                        </SlideBtn>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="rebet-deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -1394,6 +1241,21 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         }
     };
 
+    // Clicking the chips on a spot takes the last chip back
+    const removeLastChip = (zone: "push22" | "potOfGold" | null) => {
+        if (stage !== "betting") return;
+        if (zone === "push22") {
+            const next = popLastChip(push22Bet);
+            setPush22Bet(next); setPush22Stack(buildChipStackFromAmount(next));
+        } else if (zone === "potOfGold") {
+            const next = popLastChip(potOfGoldBet);
+            setPotOfGoldBet(next); setPotOfGoldStack(buildChipStackFromAmount(next));
+        } else {
+            const next = popLastChip(bet);
+            setBet(next); setChipStack(buildChipStackFromAmount(next));
+        }
+    };
+
     const clearAll = () => {
         setBet(0); setChipStack([]);
         setPush22Bet(0); setPush22Stack([]);
@@ -1512,7 +1374,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                             <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
 
                             <BetBar
-                                displayBet={displayBet}
+                                pendingBet={displayBet}
                                 returned={roundBreakdown.totalReturned}
                                 net={roundBreakdown.totalNet}
                                 showResult={showFinalNet}
@@ -1529,29 +1391,41 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                         transition={{ duration: 0.15 }}
                                         className="flex items-end justify-center gap-6"
                                     >
-                                        <BetZone
+                                        <BetSpot
+                                            testId="push22"
                                             chips={push22Stack}
                                             totalBet={push22Bet}
                                             label="PUSH 22"
                                             sublabel="11:1"
+                                            dim={82}
                                             isSelected={selectedZone === "push22"}
-                                            isWinner={false}
-                                            onClick={() => setSelectedZone(selectedZone === "push22" ? null : "push22")}
-                                            onRemove={() => { setPush22Bet(0); setPush22Stack([]); }}
+                                            onSelect={() => setSelectedZone("push22")}
+                                            onRemove={() => removeLastChip("push22")}
                                             canBet={!isShuffling}
                                         />
 
-                                        <BetCircle chips={chipStack} totalBet={bet} />
+                                        <BetSpot
+                                            testId="main"
+                                            chips={chipStack}
+                                            totalBet={bet}
+                                            emptyText="Bet"
+                                            dim={100}
+                                            isSelected={selectedZone === null}
+                                            onSelect={() => setSelectedZone(null)}
+                                            onRemove={() => removeLastChip(null)}
+                                            canBet={!isShuffling}
+                                        />
 
-                                        <BetZone
+                                        <BetSpot
+                                            testId="potOfGold"
                                             chips={potOfGoldStack}
                                             totalBet={potOfGoldBet}
                                             label="POT OF GOLD"
                                             sublabel="varies"
+                                            dim={82}
                                             isSelected={selectedZone === "potOfGold"}
-                                            isWinner={false}
-                                            onClick={() => setSelectedZone(selectedZone === "potOfGold" ? null : "potOfGold")}
-                                            onRemove={() => { setPotOfGoldBet(0); setPotOfGoldStack([]); }}
+                                            onSelect={() => setSelectedZone("potOfGold")}
+                                            onRemove={() => removeLastChip("potOfGold")}
                                             canBet={!isShuffling}
                                         />
                                     </motion.div>

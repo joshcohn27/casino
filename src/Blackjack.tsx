@@ -4,7 +4,8 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
@@ -150,91 +151,6 @@ function TableLabel() {
     );
 }
 
-function BetBar({ pendingBet, wagered, returned, net, stage }: {
-    pendingBet: number; wagered: number; returned: number; net: number; stage: Stage;
-}) {
-    const showResult = stage === "done";
-    const displayBet = wagered > 0 ? wagered : pendingBet;
-    return (
-        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
-            {[
-                { label: "Bet", val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—", color: "text-white" },
-                {
-                    label: "Net",
-                    val: showResult ? formatMoney(net) : "—",
-                    color: showResult
-                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
-                        : "text-white",
-                },
-            ].map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
-        </div>
-    );
-}
-
-const STACK_GAP = 9;
-
-function BetCircle({ chips, totalBet }: { chips: ChipDenomination[]; totalBet: number }) {
-    const visible = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.88 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="flex flex-col items-center"
-        >
-            <div
-                className="relative z-10 flex justify-center"
-                style={{ width: 48, height: 48 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
-            >
-                <AnimatePresence>
-                    {visible.map((denom, i) => {
-                        const cfg = CHIP_COLORS[denom];
-                        return (
-                            <motion.div
-                                key={startIdx + i}
-                                className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                                style={{
-                                    bottom: i * STACK_GAP, zIndex: i + 1,
-                                    backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
-                                    boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)',
-                                }}
-                                initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 6, scale: 0.8 }}
-                                transition={{ type: 'spring', stiffness: 420, damping: 22 }}
-                            >
-                                {cfg.label}
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
-            </div>
-            <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full border-2 border-dashed border-white/30 bg-black/20 backdrop-blur-sm">
-                {visible.length === 0 && totalBet === 0 && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">Bet</span>
-                )}
-                {visible.length === 0 && totalBet > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100/70">{formatMoney(totalBet)}</span>
-                )}
-                {visible.length > 0 && (
-                    <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
 function DealerLane({ cards, revealedCount, stage }: {
     cards: Card[]; revealedCount: number; stage: Stage;
 }) {
@@ -326,7 +242,7 @@ function BlackjackBar({
     const isDealer = stage === "dealer";
     const showChips = !isDealer; // hide chips only while dealer is playing
 
-    const canClear = (isBetting || isDone) && bet > 0;
+    const canClear = isBetting || isDone;
     const canDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet;
     const canDoubleDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet * 2;
 
@@ -353,7 +269,7 @@ function BlackjackBar({
                     {/* Betting + Done: Clear */}
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling}>Clear</button>
+                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || bet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
@@ -364,10 +280,17 @@ function BlackjackBar({
                         </SlideBtn>
                     )}
 
-                    {/* Betting + Done: Deal */}
-                    {(isBetting || isDone) && (
+                    {/* Betting: Deal */}
+                    {isBetting && (
                         <SlideBtn key="deal">
                             <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                        </SlideBtn>
+                    )}
+
+                    {/* Done: Rebet & Deal */}
+                    {isDone && (
+                        <SlideBtn key="rebet-deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -724,6 +647,14 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         }
     };
 
+    // Clicking the chips on the spot takes the last chip back
+    const removeLastChip = () => {
+        if (stage !== "betting") return;
+        const next = popLastChip(bet);
+        setBet(next); setBaseBet(next);
+        setChipStack(buildChipStackFromAmount(next));
+    };
+
     const clearBet = () => {
         if (stage === "done") { nextRound(true); return; }
         if (stage === "betting") { setBet(0); setChipStack([]); setBaseBet(0); }
@@ -797,18 +728,34 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                     <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
 
                     <BetBar
-                        pendingBet={bet}
-                        wagered={totalWagered}
+                        pendingBet={totalWagered > 0 ? totalWagered : bet}
                         returned={roundReturned}
                         net={roundNet}
-                        stage={stage}
+                        showResult={stage === "done"}
                     />
 
                     <p className="text-sm font-semibold text-amber-100/70">{message}</p>
 
                     <AnimatePresence>
                         {stage === "betting" && (
-                            <BetCircle chips={chipStack} totalBet={bet} />
+                            <motion.div
+                                key="bet-circle"
+                                initial={{ opacity: 0, scale: 0.88 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.88 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                            >
+                                <BetSpot
+                                    testId="main"
+                                    chips={chipStack}
+                                    totalBet={bet}
+                                    emptyText="Bet"
+                                    dim={100}
+                                    isSelected
+                                    canBet={!isShuffling}
+                                    onRemove={removeLastChip}
+                                />
+                            </motion.div>
                         )}
                     </AnimatePresence>
 

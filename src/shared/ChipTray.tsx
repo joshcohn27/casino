@@ -7,9 +7,10 @@ interface Props {
     disabled?: boolean;
 }
 
+// On phones the tray is hidden while it is disabled, to leave room for the table
 export default function ChipTray({ selectedChip, onSelect, disabled = false }: Props) {
     return (
-        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+        <div className={`${disabled ? "hidden sm:flex" : "flex"} flex-wrap items-center gap-2 sm:flex-nowrap`}>
             {CHIP_DENOMINATIONS.map((denom) => {
                 const chip = CHIP_COLORS[denom];
                 const selected = selectedChip === denom;

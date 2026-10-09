@@ -32,6 +32,13 @@ export function buildChipStackFromAmount(amount: number): ChipDenomination[] {
     return stack;
 }
 
+// Amount left after taking the top chip off a stack worth `amount`.
+export function popLastChip(amount: number, floor = 0): number {
+    const chips = buildChipStackFromAmount(amount);
+    if (chips.length === 0) return Math.max(floor, amount);
+    return Math.max(floor, amount - Number(chips[chips.length - 1]));
+}
+
 export const BTN_BASE = "rounded-xl px-4 py-3 text-sm font-extrabold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
 export const BTN_NEUTRAL = `${BTN_BASE} border border-white/20 bg-white/10 text-white hover:bg-white/16`;
 export const BTN_GOLD = `${BTN_BASE} border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] text-slate-950 hover:brightness-105`;
