@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
@@ -749,6 +749,15 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     // ── UI state ──────────────────────────────────────────────────────────────
 
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+
+    // Deal runs one at a time, so a double-click cannot take the bet twice. The lock is held
+    // a moment longer so a hand that ends instantly is not dealt over by the second click.
+    const dealLock = useRef(false);
+    const dealOnce = async () => {
+        if (dealLock.current) return;
+        dealLock.current = true;
+        try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
+    };
     const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
         if (typeof window === "undefined") return [];
         const raw = window.localStorage.getItem(BET_STORAGE_KEY);
@@ -1345,7 +1354,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                         onChipSelect={handleChipSelect}
                         onClear={clearAll}
                         onChangeBet={changeBet}
-                        onDeal={() => void deal()}
+                        onDeal={() => void dealOnce()}
                         onHit={() => void runAction(hit)}
                         onStay={() => void runAction(stay)}
                         onDouble={() => void runAction(doubleDown)}

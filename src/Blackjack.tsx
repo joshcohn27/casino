@@ -368,6 +368,15 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const [roundNet, setRoundNet] = useState(0);
 
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+
+    // Deal runs one at a time, so a double-click cannot take the bet twice. The lock is held
+    // a moment longer so a hand that ends instantly is not dealt over by the second click.
+    const dealLock = useRef(false);
+    const dealOnce = async () => {
+        if (dealLock.current) return;
+        dealLock.current = true;
+        try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
+    };
     const [chipStack, setChipStack] = useState<ChipDenomination[]>([]);
     const [baseBet, setBaseBet] = useState(0); // persists as default for next hand
     const dealBetRef = useRef<number | null>(null);
@@ -666,13 +675,14 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     };
 
     const doubleAndDeal = () => {
+        if (dealLock.current) return;
         if (totalWagered === 0 || bankroll < totalWagered * 2) return;
         const doubled = totalWagered * 2;
         setBet(doubled);
         setBaseBet(doubled);                 // store as new base bet
         setChipStack(buildChipStackFromAmount(doubled));
         dealBetRef.current = doubled;
-        void deal();
+        void dealOnce();
     };
 
     const canSplit =
@@ -712,7 +722,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                         onChipSelect={handleChipSelect}
                         onClear={clearBet}
                         onChangeBet={changeBet}
-                        onDeal={() => void deal()}
+                        onDeal={() => void dealOnce()}
                         onDoubleAndDeal={doubleAndDeal}
                         onHit={() => void hit()}
                         onStay={() => void stay()}

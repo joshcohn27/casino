@@ -505,6 +505,15 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [message,     setMessage]     = useState("Select a chip, click a betting zone, then press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
     const [showRules,   setShowRules]   = useState(false);
+
+    // Deal runs one at a time, so a double-click cannot take the bet twice. The lock is held
+    // a moment longer so a hand that ends instantly is not dealt over by the second click.
+    const dealLock = useRef(false);
+    const dealOnce = async () => {
+        if (dealLock.current) return;
+        dealLock.current = true;
+        try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
+    };
     const [winner,      setWinner]      = useState<Winner | null>(null);
     const [pandaHitResult,  setPandaHitResult]  = useState(false);
     const [dragonHitResult, setDragonHitResult] = useState(false);
@@ -832,7 +841,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             if (stage === "done") nextRound(true);
                             else clearAllBets();
                         }}
-                        onDeal={() => void deal()}
+                        onDeal={() => void dealOnce()}
                         onChangeBet={() => nextRound(false)}
                     />
                 }

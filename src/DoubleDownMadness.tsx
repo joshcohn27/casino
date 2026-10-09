@@ -883,10 +883,14 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     // One action at a time: a second click is ignored while the first is still resolving,
     // so a double-click cannot settle (and pay) a hand twice.
     const actionLock = useRef(false);
-    const runAction = async (action: () => Promise<void>) => {
+    const runAction = async (action: () => Promise<void>, holdMs = 0) => {
         if (actionLock.current) return;
         actionLock.current = true;
-        try { await action(); } finally { actionLock.current = false; }
+        try { await action(); } finally {
+            // Deal holds the lock a moment longer so a hand that ends instantly is not dealt over
+            if (holdMs > 0) window.setTimeout(() => { actionLock.current = false; }, holdMs);
+            else actionLock.current = false;
+        }
     };
 
     const canDealFromDone =
@@ -981,7 +985,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearBets}
-                        onDeal={() => void runAction(deal)}
+                        onDeal={() => void runAction(deal, 300)}
                         onChangeBet={handleChangeBet}
                         onTakeInsurance={() => void runAction(takeInsurance)}
                         onNoInsurance={() => void runAction(declineInsurance)}

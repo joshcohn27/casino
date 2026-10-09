@@ -765,22 +765,22 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="fold">
+                        <SlideBtn key={`fold-${stage}`}>
                             <button className={BTN_NEUTRAL} onClick={handleFold} disabled={resolving.current}>Fold</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="one">
+                        <SlideBtn key={`one-${stage}`}>
                             <button className={BTN_NEUTRAL} onClick={() => handleBetStreet(1)} disabled={resolving.current}>Bet 1×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="three">
+                        <SlideBtn key={`three-${stage}`}>
                             <button className={BTN_GOLD} onClick={() => handleBetStreet(3)} disabled={resolving.current}>Bet 3×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="max">
+                        <SlideBtn key={`max-${stage}`}>
                             <button
                                 className={BTN_GREEN}
                                 onClick={handleMaxBet}
