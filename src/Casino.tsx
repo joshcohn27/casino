@@ -9,6 +9,8 @@ import VideoPoker from "./VideoPoker"
 import PaiGowPoker from "./PaiGow"
 import ThreeCardPoker from "./ThreeCardPoker"
 import MississippiStud from "./MississippiStud"
+import ILuvSuits from "./ILuvSuits"
+import DJWild from "./DJWild"
 import Feedback from "./Feedback"
 
 type Game =
@@ -23,6 +25,8 @@ type Game =
     | "paigow"
     | "threecardpoker"
     | "mississippistud"
+    | "iluvsuits"
+    | "djwild"
     | "feedback"
 
 const DEFAULT_BANKROLL = 1000
@@ -49,6 +53,8 @@ function readStoredGame(): Game {
         raw === "paigow" ||
         raw === "threecardpoker" ||
         raw === "mississippistud" ||
+        raw === "iluvsuits" ||
+        raw === "djwild" ||
         raw === "feedback" ||
         raw === "home"
         ? raw
@@ -273,6 +279,14 @@ export default function Casino() {
             return <MississippiStud bankroll={bankroll} setBankroll={setBankroll} />
         }
 
+        if (game === "iluvsuits") {
+            return <ILuvSuits bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
+        if (game === "djwild") {
+            return <DJWild bankroll={bankroll} setBankroll={setBankroll} />
+        }
+
         if (game === "feedback") {
             return <Feedback onBack={() => setGame("home")} />
         }
@@ -356,6 +370,20 @@ export default function Casino() {
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
+                            title="I Luv Suits"
+                            subtitle="7 cards · Longest flush wins · Play up to 3x with a 6-card flush · Dealer qualifies with a 3-card flush, 9 high · Flush Rush and Super Flush Rush side bets"
+                            feltColor="#6b1d3a"
+                            onClick={() => setGame("iluvsuits")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
+                            title="DJ Wild"
+                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always plays · Blind pays up to 1,000:1 · Trips pays more on natural hands"
+                            feltColor="#3b1a6b"
+                            onClick={() => setGame("djwild")}
+                            bankroll={bankrollDisplay}
+                        />
+                        <GameCard
                             title="Baccarat"
                             subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1:1 · Tie pays 8:1 · Dragon 7 side bet pays 40:1 · Panda 8 side bet pays 25:1 · 8-deck shoe"
                             feltColor="#7f1d1d"
@@ -432,7 +460,9 @@ export default function Casino() {
         game === "videopoker" ||
         game === "paigow" ||
         game === "threecardpoker" ||
-        game === "mississippistud"
+        game === "mississippistud" ||
+        game === "iluvsuits" ||
+        game === "djwild"
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -476,6 +506,12 @@ export default function Casino() {
                             </DropdownItem>
                             <DropdownItem active={game === "mississippistud"} onClick={() => navigate("mississippistud")}>
                                 Mississippi Stud
+                            </DropdownItem>
+                            <DropdownItem active={game === "iluvsuits"} onClick={() => navigate("iluvsuits")}>
+                                I Luv Suits
+                            </DropdownItem>
+                            <DropdownItem active={game === "djwild"} onClick={() => navigate("djwild")}>
+                                DJ Wild
                             </DropdownItem>
                             <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
                                 Video Poker
@@ -621,6 +657,22 @@ export default function Casino() {
                                     : "text-white hover:bg-white/10"}`}
                             >
                                 Mississippi Stud
+                            </button>
+                            <button
+                                onClick={() => navigate("iluvsuits")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "iluvsuits"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                I Luv Suits
+                            </button>
+                            <button
+                                onClick={() => navigate("djwild")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "djwild"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                DJ Wild
                             </button>
                             <button
                                 onClick={() => navigate("videopoker")}
