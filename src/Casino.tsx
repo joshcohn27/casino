@@ -13,6 +13,8 @@ import ILuvSuits from "./ILuvSuits"
 import DJWild from "./DJWild"
 import Feedback from "./Feedback"
 import Settings from "./Settings"
+import WhatsNew from "./WhatsNew"
+import { VERSION } from "./changelog"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
 
 type Game =
@@ -31,6 +33,7 @@ type Game =
     | "djwild"
     | "feedback"
     | "settings"
+    | "changelog"
 
 const DEFAULT_BANKROLL = 1000
 const STORAGE_BANKROLL_KEY = "casino-bankroll"
@@ -60,6 +63,7 @@ function readStoredGame(): Game {
         raw === "djwild" ||
         raw === "feedback" ||
         raw === "settings" ||
+        raw === "changelog" ||
         raw === "home"
         ? raw
         : "home"
@@ -223,7 +227,7 @@ export default function Casino() {
     useEffect(() => {
         const wagered = lastBankroll.current - bankroll
         lastBankroll.current = bankroll
-        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback" && game !== "settings") feedMeterFromWager(wagered)
+        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback" && game !== "settings" && game !== "changelog") feedMeterFromWager(wagered)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bankroll])
 
@@ -310,6 +314,10 @@ export default function Casino() {
 
         if (game === "settings") {
             return <Settings onBack={() => setGame("home")} />
+        }
+
+        if (game === "changelog") {
+            return <WhatsNew onBack={() => setGame("home")} />
         }
 
         return (
@@ -743,12 +751,36 @@ export default function Casino() {
                                 Settings
                             </button>
 
+                            <button
+                                onClick={() => navigate("changelog")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "changelog"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                What&apos;s New
+                            </button>
+
                         </div>
                     </div>
                 )}
             </div>
 
             {renderScreen()}
+
+            {(game === "home" || game === "settings" || game === "feedback" || game === "changelog") && (
+                <footer className="border-t border-white/10 bg-black px-4 py-4 text-center text-[11px] font-semibold tracking-[0.08em] text-white/40" data-testid="site-footer">
+                    <span>Cohn Casino</span>
+                    <span className="mx-2 text-white/20">·</span>
+                    <span data-testid="site-version">v{VERSION}</span>
+                    <span className="mx-2 text-white/20">·</span>
+                    <button
+                        onClick={() => navigate("changelog")}
+                        className="font-bold text-amber-200/80 underline decoration-amber-200/30 underline-offset-2 transition hover:text-amber-100"
+                    >
+                        What&apos;s New
+                    </button>
+                </footer>
+            )}
         </div>
     )
 }
