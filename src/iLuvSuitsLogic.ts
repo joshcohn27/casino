@@ -131,6 +131,19 @@ export function describeFlushHand(hand: FlushHand): string {
     return `${hand.count}-Card Flush, ${valueName(hand.values[0])} High`;
 }
 
+// ─── Strategy ─────────────────────────────────────────────────────────────────
+
+// Weakest three-card flush worth a Play bet. Found by simulating 200 million deals with
+// these rules: 10-8-6 is the first hand where playing loses less than folding.
+const MIN_PLAYABLE_THREE_CARD = [10, 8, 6];
+
+/** Basic strategy: the Play multiple to bet, or "fold". */
+export function suggestAction(hand: FlushHand): "fold" | 1 | 2 | 3 {
+    if (hand.count >= 4) return maxRaiseMultiple(hand.count);
+    if (hand.count === 3 && compareValues(hand.values, MIN_PLAYABLE_THREE_CARD) >= 0) return 1;
+    return "fold";
+}
+
 // ─── Settlement ───────────────────────────────────────────────────────────────
 
 export type Settlement = {

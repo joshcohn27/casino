@@ -10,7 +10,7 @@ import { SlideBtn } from "./shared/SlideBtn";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE,
-    createDeck, shuffle, evaluateFlushHand, describeFlushHand, maxRaiseMultiple, settle,
+    createDeck, shuffle, evaluateFlushHand, describeFlushHand, maxRaiseMultiple, suggestAction, settle,
 } from "./iLuvSuitsLogic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +36,12 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• With a flush of 4 cards or fewer, the Play bet is 1x the Ante.",
         "• With a 5-card flush you may bet up to 2x the Ante.",
         "• With a 6 or 7-card flush you may bet up to 3x the Ante.",
+    ]],
+    ["Strategy", [
+        "• Fold any hand with a flush of two cards or fewer.",
+        "• With a three-card flush, play 10-8-6 or better and fold anything weaker.",
+        "• With four cards or more, always play, and bet the most you are allowed.",
+        "• The Suggest indicator follows this strategy once your cards are turned over.",
     ]],
     ["Dealer and Payouts", [
         "• The dealer needs at least a 3-card flush, nine-high, to qualify.",
@@ -320,6 +326,8 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
 
     const flushRushHit = playerReady && playerHand && FLUSH_RUSH_PAYTABLE[playerHand.count] ? playerHand.count : null;
     const superFlushHit = done && result && result.superFlushMultiplier > 0 ? result.superFlushCount : null;
+    // Strategy suggestion, once the player's cards are all showing
+    const suggestion = stage === "dealt" && playerSorted && playerHand ? suggestAction(playerHand) : null;
     const netColor = !result ? "" : result.net > 0 ? "text-emerald-300" : result.net < 0 ? "text-red-300" : "text-amber-100";
 
     return (
@@ -544,6 +552,27 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 {playerReady && playerHand ? describeFlushHand(playerHand) : ""}
                             </span>
                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <div className="flex min-h-[28px] items-center">
+                                <AnimatePresence>
+                                    {suggestion && (
+                                        <motion.div
+                                            key="suggestion"
+                                            initial={{ opacity: 0, y: 4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            data-testid="suggestion"
+                                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                                suggestion !== "fold"
+                                                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                                                    : "border-red-400/30 bg-red-500/10 text-red-300"
+                                            }`}
+                                        >
+                                            <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                            <span>{suggestion === "fold" ? "Fold" : `Play ${suggestion}x`}</span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
 
                         <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>

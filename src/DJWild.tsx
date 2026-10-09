@@ -25,6 +25,8 @@ type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateActio
 const FELT_COLOR = "#3b1a6b";
 const CARD_FLIP_MS = 160;
 const SORT_DELAY_MS = 520;
+// Cards the player left face down are turned slowly, after the dealer has shown
+const BLIND_FLIP_MS = 520;
 
 const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
     ["How the Hand Works", [
@@ -39,7 +41,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
     ]],
     ["Your Decision", [
         "• After looking at your cards, fold and lose the Ante and Blind, or make a Play bet of 2x the Ante.",
-        "• You do not have to look first: you can play blind, or after turning over only some of your cards.",
+        "• You do not have to look first: you can play blind, or after turning over only some of your cards. The dealer then shows first and your face-down cards are turned last.",
         "• The dealer always qualifies. There is no minimum dealer hand.",
     ]],
     ["Strategy", [
@@ -229,7 +231,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         return () => window.clearTimeout(id);
     }, [stage, allPeeled, playerSorted]);
 
-    const playerReady = stage !== "betting" && (playerSorted || stage === "showdown" || stage === "done");
+    const playerReady = stage !== "betting" && playerSorted;
     const playerHand = playerCards.length === HAND_SIZE ? evaluateHand(playerCards) : null;
     const dealerHand = dealerCards.length === HAND_SIZE ? evaluateHand(dealerCards) : null;
 
@@ -245,14 +247,6 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         busy.current = true;
         try {
             if (play > 0) { setBankroll((b) => b - play); setPlayBet(play); }
-            // Playing blind: turn over whatever is still face down before the dealer reveals
-            if (peeled.length < HAND_SIZE) {
-                setMessage(folded ? "You fold." : "You play.");
-                setPeeled(playerCards.map((c) => c.id));
-                await wait(SORT_DELAY_MS + 250);
-                setPlayerSorted(true);
-                await wait(450);
-            }
             setStage("showdown");
             setMessage(folded ? "You fold. Dealer reveals." : "Dealer reveals.");
             for (let n = 1; n <= HAND_SIZE; n++) {
@@ -262,6 +256,18 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
             await wait(SORT_DELAY_MS);
             setDealerSorted(true);
             await wait(500);
+            // Playing blind: the dealer shows first, then the player's face-down cards turn one at a time
+            const hidden = playerCards.filter((c) => !peeled.includes(c.id));
+            if (hidden.length > 0) {
+                setMessage("Your cards.");
+                for (const c of hidden) {
+                    await wait(BLIND_FLIP_MS);
+                    peelCard(c.id);
+                }
+                await wait(SORT_DELAY_MS);
+            }
+            setPlayerSorted(true);
+            await wait(hidden.length > 0 ? 500 : 0);
             const settled = settle({ player: playerCards, dealer: dealerCards, ante: anteBet, play, trips: tripsBet, folded });
             setBankroll((b) => b + settled.totalReturn);
             setResult(settled);
@@ -304,7 +310,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const displayBet = isBetting ? pendingTotal : anteBet * 2 + tripsBet + playBet;
     const done = stage === "done" && result !== null;
 
-    const playerOrder = playerSorted || stage === "showdown" || stage === "done" ? sortedIds(playerCards) : undefined;
+    const playerOrder = playerSorted ? sortedIds(playerCards) : undefined;
     const dealerOrder = dealerSorted ? sortedIds(dealerCards) : undefined;
 
     // What each spot shows once the hand has settled: losing chips leave, winning stacks grow
@@ -525,7 +531,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                     size="md"
                                     cards={playerCards.map(toRowCard)}
                                     order={playerOrder}
-                                    isFaceUp={(id) => peeled.includes(id) || stage === "showdown" || stage === "done"}
+                                    isFaceUp={(id) => peeled.includes(id) || stage === "done"}
                                     onCardClick={peelCard}
                                     canClick={(id) => stage === "dealt" && !peeled.includes(id)}
                                     cardLabel={(id) => (peeled.includes(id) ? "Card" : "Turn card over")}
