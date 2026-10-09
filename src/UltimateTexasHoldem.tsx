@@ -6,6 +6,7 @@ import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -280,10 +281,10 @@ function PayoutColumn({ title, entries, highlight }: { title: string; entries: R
 
 export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
-    const [ante, setAnte] = useState(25);
+    const [ante, setAnte] = useState(() => defaultBet("uth", "ante"));
     const blind = ante;
-    const [trips, setTrips] = useState(10);
-    const [sixCardBonus, setSixCardBonus] = useState(5);
+    const [trips, setTrips] = useState(() => defaultBet("uth", "trips"));
+    const [sixCardBonus, setSixCardBonus] = useState(() => defaultBet("uth", "six"));
     const [play, setPlay] = useState(0);
     const [wagerAtDeal, setWagerAtDeal] = useState(0);
     const [pendingSixCardReturn, setPendingSixCardReturn] = useState(0);

@@ -7,6 +7,7 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -472,26 +473,11 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [bankerCards, setBankerCards] = useState<BacCard[]>([]);
     const [_roadHistory, setRoadHistory] = useState<HandHistoryEntry[]>([]);
 
-    const [playerBet, setPlayerBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(PLAYER_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [bankerBet, setBankerBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(BANKER_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [tieBet, setTieBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(TIE_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [pandaBet, setPandaBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(PANDA_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [dragonBet, setDragonBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(DRAGON_BET_STORAGE_KEY) ?? "0"));
-    });
+    const [playerBet, setPlayerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "player")));
+    const [bankerBet, setBankerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "banker")));
+    const [tieBet, setTieBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "tie")));
+    const [pandaBet, setPandaBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "panda")));
+    const [dragonBet, setDragonBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "dragon")));
 
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(() => {
         if (typeof window === "undefined") return 25;

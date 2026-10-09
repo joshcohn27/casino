@@ -12,6 +12,7 @@ import {
     BTN_NEUTRAL,
 } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -426,9 +427,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
 
-    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(ANTE_KEY, 0)));
-    const [ppChips, setPpChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(PP_KEY, 0)));
-    const [scChips, setScChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(SC_KEY, 0)));
+    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "ante")));
+    const [ppChips, setPpChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "pairplus")));
+    const [scChips, setScChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "sixcard")));
 
     const [anteBet, setAnteBet]         = useState(0);
     const [pairPlusBet, setPairPlusBet] = useState(0);

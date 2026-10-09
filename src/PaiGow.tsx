@@ -8,6 +8,7 @@ import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTR
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import { sortByPower, type SortMode } from "./shared/handSort";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
 
@@ -851,9 +852,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your wagers and press Deal.");
 
-    const [mainBet, setMainBet] = useState(25);
-    const [fortuneBet, setFortuneBet] = useState(5);
-    const [aceHighBet, setAceHighBet] = useState(5);
+    const [mainBet, setMainBet] = useState(() => defaultBet("paigow", "main"));
+    const [fortuneBet, setFortuneBet] = useState(() => defaultBet("paigow", "fortune"));
+    const [aceHighBet, setAceHighBet] = useState(() => defaultBet("paigow", "aceHigh"));
 
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
@@ -868,9 +869,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [showRules, setShowRules] = useState(false);
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
     const [selectedSpot, setSelectedSpot] = useState<BetSpotId>("main");
-    const [mainChips, setMainChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(25));
-    const [fortuneChips, setFortuneChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
-    const [aceHighChips, setAceHighChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
+    const [mainChips, setMainChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "main")));
+    const [fortuneChips, setFortuneChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "fortune")));
+    const [aceHighChips, setAceHighChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "aceHigh")));
 
     // Rebuild chip stacks whenever we return to betting (e.g. after Next Hand)
     useEffect(() => {

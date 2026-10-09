@@ -7,6 +7,7 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 // ─── Types (preserved) ───────────────────────────────────────────────────────
 
@@ -719,24 +720,9 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     const [hands, setHands] = useState<HandState[]>([]);
     const [active, setActive] = useState(0);
     const [dealerRevealedCount, setDealerRevealedCount] = useState(1);
-    const [bet, setBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 10;
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        return Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-    });
-    const [push22Bet, setPush22Bet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) ? parsed : 0;
-    });
-    const [potOfGoldBet, setPotOfGoldBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        const raw = window.localStorage.getItem(POT_OF_GOLD_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) ? parsed : 0;
-    });
+    const [bet, setBet] = useState<number>(() => defaultBet("freebetblackjack", "main"));
+    const [push22Bet, setPush22Bet] = useState<number>(() => defaultBet("freebetblackjack", "push22"));
+    const [potOfGoldBet, setPotOfGoldBet] = useState<number>(() => defaultBet("freebetblackjack", "potOfGold"));
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your bets and press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
@@ -758,25 +744,9 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         dealLock.current = true;
         try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
     };
-    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return [];
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        const amount = Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-        return buildChipStackFromAmount(amount);
-    });
-    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return [];
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) && parsed > 0 ? buildChipStackFromAmount(parsed) : [];
-    });
-    const [potOfGoldStack, setPotOfGoldStack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return [];
-        const raw = window.localStorage.getItem(POT_OF_GOLD_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) && parsed > 0 ? buildChipStackFromAmount(parsed) : [];
-    });
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("freebetblackjack", "main")));
+    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("freebetblackjack", "push22")));
+    const [potOfGoldStack, setPotOfGoldStack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("freebetblackjack", "potOfGold")));
     const [selectedZone, setSelectedZone] = useState<"push22" | "potOfGold" | null>(null);
     const [isResolvingAction, setIsResolvingAction] = useState(false);
     const [showRules, setShowRules] = useState(false);

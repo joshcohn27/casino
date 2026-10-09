@@ -13,6 +13,7 @@ import {
     BTN_NEUTRAL,
 } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -117,12 +118,6 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
         rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
         faceUp,
     };
-}
-
-function readStored(key: string, fallback: number): number {
-    if (typeof window === "undefined") return fallback;
-    const v = Number(window.localStorage.getItem(key));
-    return Number.isFinite(v) && v >= 0 ? v : fallback;
 }
 
 function revealedCount(stage: Stage): number {
@@ -506,8 +501,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     const [fiveCardResult, setFiveCardResult]   = useState<{ key: MainPayKey | null; label: string } | null>(null);
     const [threeCardResult, setThreeCardResult] = useState<{ key: ThreeCardKey | null; label: string } | null>(null);
 
-    const [anteChips, setAnteChips]   = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(ANTE_KEY, 0)));
-    const [bonusChips, setBonusChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(BONUS_KEY, 0)));
+    const [anteChips, setAnteChips]   = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("mississippistud", "ante")));
+    const [bonusChips, setBonusChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("mississippistud", "bonus")));
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(5);
     const [selectedZone, setSelectedZone] = useState<"ante" | "bonus">("ante");
     const [showRules, setShowRules] = useState(false);

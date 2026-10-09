@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react"
+import { defaultBet } from "./shared/settings"
 
 type Props = {
     bankroll: number
@@ -385,13 +386,13 @@ function DenomBadge({
 
 export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("ready")
-    const [bet, setBet] = useState(5)
-    const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(1)
+    const [bet, setBet] = useState(() => defaultBet("videopoker", "credits"))
+    const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(() => defaultBet("videopoker", "denom") as (typeof DENOM_VALUES)[number])
     const [hand, setHand] = useState<Card[]>([])
     const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
     const [deck, setDeck] = useState<Card[]>([])
     const [lastWin, setLastWin] = useState(0)
-    const [message, setMessage] = useState("BET 5")
+    const [message, setMessage] = useState(() => `BET ${defaultBet("videopoker", "credits")}`)
     const [activeRow, setActiveRow] = useState<PayoutKey | null>(null)
     const [helpOpen, setHelpOpen] = useState(false)
 

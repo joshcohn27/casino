@@ -12,6 +12,7 @@ import MississippiStud from "./MississippiStud"
 import ILuvSuits from "./ILuvSuits"
 import DJWild from "./DJWild"
 import Feedback from "./Feedback"
+import Settings from "./Settings"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
 
 type Game =
@@ -29,6 +30,7 @@ type Game =
     | "iluvsuits"
     | "djwild"
     | "feedback"
+    | "settings"
 
 const DEFAULT_BANKROLL = 1000
 const STORAGE_BANKROLL_KEY = "casino-bankroll"
@@ -57,6 +59,7 @@ function readStoredGame(): Game {
         raw === "iluvsuits" ||
         raw === "djwild" ||
         raw === "feedback" ||
+        raw === "settings" ||
         raw === "home"
         ? raw
         : "home"
@@ -220,7 +223,7 @@ export default function Casino() {
     useEffect(() => {
         const wagered = lastBankroll.current - bankroll
         lastBankroll.current = bankroll
-        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback") feedMeterFromWager(wagered)
+        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback" && game !== "settings") feedMeterFromWager(wagered)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bankroll])
 
@@ -303,6 +306,10 @@ export default function Casino() {
 
         if (game === "feedback") {
             return <Feedback onBack={() => setGame("home")} />
+        }
+
+        if (game === "settings") {
+            return <Settings onBack={() => setGame("home")} />
         }
 
         return (
@@ -544,6 +551,8 @@ export default function Casino() {
                         >
                             Give Feedback
                         </button>
+
+                        <NavButton active={game === "settings"} onClick={() => navigate("settings")}>Settings</NavButton>
                     </div>
 
                     {/* Bankroll controls — hidden on mobile, shown sm: and above */}
@@ -723,6 +732,15 @@ export default function Casino() {
                                 className="rounded-xl border border-amber-200/40 bg-amber-300/12 px-3 py-2.5 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
                             >
                                 Give Feedback
+                            </button>
+
+                            <button
+                                onClick={() => navigate("settings")}
+                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "settings"
+                                    ? "bg-amber-400 text-black"
+                                    : "text-white hover:bg-white/10"}`}
+                            >
+                                Settings
                             </button>
 
                         </div>

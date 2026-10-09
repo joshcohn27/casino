@@ -7,6 +7,7 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank =
@@ -450,19 +451,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
     const [stage, setStage] = useState<Stage>("betting");
 
-    const [bet, setBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 10;
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        return Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-    });
+    const [bet, setBet] = useState<number>(() => defaultBet("doubledownmadness", "main"));
 
-    const [push22Bet, setPush22Bet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) ? parsed : 0;
-    });
+    const [push22Bet, setPush22Bet] = useState<number>(() => defaultBet("doubledownmadness", "push22"));
 
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
@@ -483,20 +474,8 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
     // UI-only state
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
-    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return buildChipStackFromAmount(10);
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        const v = Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-        return buildChipStackFromAmount(v);
-    });
-    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return [];
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        const v = Number.isFinite(parsed) ? parsed : 0;
-        return buildChipStackFromAmount(v);
-    });
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("doubledownmadness", "main")));
+    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("doubledownmadness", "push22")));
 
     useEffect(() => {
         window.localStorage.setItem(BET_STORAGE_KEY, String(clampMainBet(bet)));

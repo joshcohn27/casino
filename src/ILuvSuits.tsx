@@ -7,6 +7,7 @@ import BetSpot, { BetBar } from "./shared/BetSpot";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE,
@@ -146,9 +147,9 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
     // Chips on the table while betting
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
     const [selectedZone, setSelectedZone] = useState<ZoneId>("ante");
-    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(25));
-    const [flushRushChips, setFlushRushChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
-    const [superFlushChips, setSuperFlushChips] = useState<ChipDenomination[]>([]);
+    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("iluvsuits", "ante")));
+    const [flushRushChips, setFlushRushChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("iluvsuits", "flushRush")));
+    const [superFlushChips, setSuperFlushChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("iluvsuits", "superFlush")));
 
     // Bets locked in for the hand in play
     const [anteBet, setAnteBet] = useState(0);

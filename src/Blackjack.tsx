@@ -7,6 +7,7 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
@@ -359,7 +360,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const [bets, setBets] = useState<number[]>([]);
     const [active, setActive] = useState(0);
     const [dealerRevealedCount, setDealerRevealedCount] = useState(1);
-    const [bet, setBet] = useState(0);
+    const [bet, setBet] = useState(() => defaultBet("blackjack", "main"));
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Place chips and press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
@@ -377,8 +378,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         dealLock.current = true;
         try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
     };
-    const [chipStack, setChipStack] = useState<ChipDenomination[]>([]);
-    const [baseBet, setBaseBet] = useState(0); // persists as default for next hand
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("blackjack", "main")));
+    const [baseBet, setBaseBet] = useState(() => defaultBet("blackjack", "main")); // persists as default for next hand
     const dealBetRef = useRef<number | null>(null);
 
     useEffect(() => {

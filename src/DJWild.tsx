@@ -7,6 +7,7 @@ import BetSpot, { BetBar } from "./shared/BetSpot";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet, defaultToggle } from "./shared/settings";
 import { sortByPower } from "./shared/handSort";
 import { readMeter, writeMeter, ambientTick } from "./shared/progressiveMeter";
 import {
@@ -180,11 +181,11 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     // Chips on the table while betting
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
     const [selectedZone, setSelectedZone] = useState<ZoneId>("ante");
-    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(25));
-    const [tripsChips, setTripsChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
-    const [badBeatChips, setBadBeatChips] = useState<ChipDenomination[]>([]);
+    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "ante")));
+    const [tripsChips, setTripsChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "trips")));
+    const [badBeatChips, setBadBeatChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "badBeat")));
     // Progressive: a fixed $1 bet switched on with the red light, and a jackpot meter that is remembered
-    const [progressiveOn, setProgressiveOn] = useState(false);
+    const [progressiveOn, setProgressiveOn] = useState(() => defaultToggle("djwild", "progressive"));
     const [meter, setMeter] = useState<number>(readMeter);
     const meterRef = useRef(meter);
     useEffect(() => { meterRef.current = meter; writeMeter(meter); }, [meter]);
