@@ -1,5 +1,58 @@
 @import "tailwindcss";
 
+/* ─── Palette and type ─────────────────────────────────────────────────────────
+   The site's existing colors, named once and reused everywhere. Flat fills and
+   1px borders do the separating: no gradients, glows or frosted glass.
+
+   page / ink / line are the navy and slate the site already used for its page
+   backgrounds. The golds, green, teal-blue and red are the same accent hues as
+   before (Tailwind amber 200/400/500, emerald 400, sky 400, red 600). */
+@theme {
+  --color-page: #0b1220;        /* page background */
+  --color-ink: #040816;         /* nav bar, footer, deepest surfaces */
+  --color-panel: #121b2e;       /* cards: one step lighter than the page */
+  --color-panel-2: #1a2640;     /* hover and raised surfaces */
+  --color-line: #243042;        /* slate border */
+  --color-line-gold: #8a6d1b;   /* muted gold border */
+  --color-gold: #fbbf24;
+  --color-gold-deep: #f59e0b;
+  --color-gold-soft: #fde68a;
+  --color-text: #f1f5f9;        /* body text, near white */
+  --color-text-muted: #b4c0d4;  /* secondary text, still AA on page and panel */
+  --color-good: #34d399;
+  --color-info: #38bdf8;
+  --color-bad: #dc2626;
+
+  /* Two fonts: a slab serif for headings and version numbers, a sans for everything else */
+  --font-heading: "Zilla Slab", Georgia, "Times New Roman", serif;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html { background: var(--color-page); }
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+h1, h2, h3 { font-family: var(--font-heading); font-weight: 700; letter-spacing: 0; }
+
+/* A small rectangular tag: a colored word with a colored left edge */
+.tag {
+  display: inline-block;
+  border-left: 3px solid currentColor;
+  border-radius: 2px;
+  padding: 1px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  background: var(--color-panel-2);
+}
+
+
 button {
   cursor: pointer;
 }

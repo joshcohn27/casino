@@ -90,10 +90,7 @@ function NavButton({
     return (
         <button
             onClick={onClick}
-            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                : "border-white/15 bg-white/8 text-white hover:bg-white/14"
-                }`}
+            className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-gold text-gold-soft" : "border-transparent text-text-muted hover:text-text"}`}
         >
             {children}
         </button>
@@ -115,26 +112,20 @@ function NavDropdown({
         <div className="group relative">
             <button
                 onClick={() => setOpen((prev) => !prev)}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                    ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                    : "border-white/15 bg-white/8 text-white hover:bg-white/14"
-                    }`}
+                className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-gold text-gold-soft" : "border-transparent text-text-muted hover:text-text"}`}
             >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5">
                     {label}
-                    <span className="text-[10px]">▼</span>
+                    <span className="text-[11px]">▾</span>
                 </span>
             </button>
 
             <div
-                className={`absolute left-0 top-full z-50 mt-2 min-w-[240px] rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur transition-all
-                ${open
-                        ? "visible translate-y-0 opacity-100"
-                        : "invisible translate-y-1 opacity-0"
-                    }
-                group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}
+                className={`absolute left-0 top-full z-50 min-w-[240px] rounded-[4px] border border-line bg-ink p-1
+                ${open ? "visible" : "invisible"}
+                group-hover:visible`}
             >
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col">
                     {children}
                 </div>
             </div>
@@ -154,9 +145,9 @@ function DropdownItem({
     return (
         <button
             onClick={onClick}
-            className={`rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${active
-                ? "bg-amber-400 text-black"
-                : "text-white hover:bg-white/10"
+            className={`border-l-2 px-3 py-2 text-left text-[15px] transition-colors ${active
+                ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                : "border-transparent text-text hover:bg-panel-2"
                 }`}
         >
             {children}
@@ -182,28 +173,26 @@ function GameCard({
     return (
         <button
             onClick={onClick}
-            className="group relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/30 p-6 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-white/22 hover:bg-black/38"
+            className="group relative overflow-hidden rounded-[4px] border border-line bg-panel p-6 pl-7 text-left transition-colors hover:border-line-gold hover:bg-panel-2 active:bg-ink"
+            data-testid="game-card"
         >
-            <div className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: feltColor }} />
+            <div className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: feltColor }} />
 
-            <div className="relative flex h-full flex-col justify-between gap-8">
+            <div className="relative flex h-full flex-col justify-between gap-6">
                 <div>
-                    <div className="mb-3 inline-flex rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-100/90">
-                        {label}
-                    </div>
-
-                    <div className="text-3xl font-extrabold tracking-[0.02em] text-white">{title}</div>
-                    <div className="mt-3 max-w-[48ch] text-sm leading-6 text-white/72">{subtitle}</div>
+                    <h2 className="text-2xl text-text">{title}</h2>
+                    <div className="mt-1 text-sm font-semibold text-gold-soft">{label}</div>
+                    <div className="mt-4 max-w-[52ch] text-base leading-6 text-text-muted">{subtitle}</div>
                 </div>
 
                 <div className="flex items-end justify-between gap-4">
                     <div>
-                        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200/90">Shared bankroll</div>
-                        <div className="mt-1 text-xl font-extrabold text-amber-100">{bankroll}</div>
+                        <div className="text-sm text-text-muted">Shared bankroll</div>
+                        <div className="text-lg font-bold text-text">{bankroll}</div>
                     </div>
 
-                    <div className="rounded-full border border-amber-200/20 bg-amber-300/12 px-4 py-2 text-sm font-bold text-amber-100 transition group-hover:bg-amber-300/20">
-                        Enter →
+                    <div className="rounded-[4px] border border-gold-deep bg-gold px-4 py-2 text-sm font-bold text-ink transition-colors group-hover:bg-gold-deep">
+                        Play
                     </div>
                 </div>
             </div>
@@ -322,27 +311,17 @@ export default function Casino() {
 
         return (
             <div
-                className="min-h-screen text-white"
-                style={{ background: "radial-gradient(circle at top, #0f1a0f, #050d05 50%, #020502 100%)" }}
+                className="min-h-screen bg-page text-text"
             >
-                <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-12">
-                    <div className="mb-14 text-center">
-                        <h1
-                            className="text-6xl font-bold md:text-7xl"
-                            style={{
-                                fontFamily: "Georgia, serif",
-                                background: "linear-gradient(135deg, #f59e0b, #fbbf24, #d97706)",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                backgroundClip: "text",
-                            }}
-                        >
+                <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
+                    <div className="mb-8 border-b border-line pb-6">
+                        <h1 className="text-5xl text-gold md:text-6xl">
                             Cohn Casino
                         </h1>
-                        <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/50">
+                        <p className="mt-2 text-lg font-semibold text-gold-soft">
                             A collection of casino table games
                         </p>
-                        <p className="mx-auto mt-5 max-w-[60ch] text-base leading-7 text-white/65">
+                        <p className="mt-4 max-w-[62ch] text-base leading-6 text-text-muted">
                             A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
                             with a shared bankroll that carries across every table. No real money, no ads, no accounts.
                         </p>
@@ -436,13 +415,13 @@ export default function Casino() {
                         />
                     </div>
 
-                    <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+                    <div className="mt-8 rounded-[4px] border border-line-gold bg-panel p-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200">
+                                <div className="text-sm text-text-muted">
                                     Bankroll
                                 </div>
-                                <div className="mt-1 text-3xl font-extrabold text-amber-100">{bankrollDisplay}</div>
+                                <div className="font-heading text-3xl font-bold text-gold-soft">{bankrollDisplay}</div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <input
@@ -451,17 +430,17 @@ export default function Casino() {
                                     step={5}
                                     value={bankrollInput}
                                     onChange={(e) => setBankrollInput(e.target.value)}
-                                    className="w-[140px] rounded-full border border-white/15 bg-white/8 px-4 py-2 text-white outline-none"
+                                    className="h-11 w-[140px] rounded-[4px] border border-line bg-ink px-3 text-base text-text outline-none focus:border-gold"
                                 />
                                 <button
                                     onClick={applyBankroll}
-                                    className="rounded-full border border-emerald-200 bg-emerald-400 px-5 py-2 text-sm font-bold text-black shadow-lg transition hover:scale-[1.02]"
+                                    className="h-11 rounded-[4px] border border-emerald-500 bg-emerald-400 px-5 text-sm font-bold text-ink transition-colors hover:bg-emerald-500 active:bg-emerald-600"
                                 >
                                     Set
                                 </button>
                                 <button
                                     onClick={resetBankroll}
-                                    className="rounded-full border border-red-300/40 bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]"
+                                    className="h-11 rounded-[4px] border border-red-700 bg-red-600 px-5 text-sm font-bold text-white transition-colors hover:bg-red-700 active:bg-red-800"
                                 >
                                     Reset to $1,000
                                 </button>
@@ -469,8 +448,8 @@ export default function Casino() {
                         </div>
                     </div>
 
-                    <div className="mt-8 text-center">
-                        <p className="text-xs text-white/35">
+                    <div className="mt-8">
+                        <p className="text-sm text-text-muted">
                             Purely for entertainment · No real money · Bankroll saves locally in your browser
                         </p>
                     </div>
@@ -494,21 +473,20 @@ export default function Casino() {
         game === "djwild"
 
     return (
-        <div className="min-h-screen bg-black text-white">
-            <div className="sticky top-0 z-50 border-b border-amber-300/15 bg-black/70 px-4 py-3 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
+        <div className="min-h-screen bg-page text-text">
+            <div className="sticky top-0 z-50 border-b border-line bg-ink px-4 sm:px-6" data-testid="site-nav">
+                <div className="mx-auto flex min-h-[56px] max-w-[1600px] flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2">
 
                     {/* Mobile-only site title — acts as Home link */}
                     <button
                         onClick={() => navigate("home")}
-                        className="text-sm font-extrabold text-amber-200 sm:hidden"
-                        style={{ fontFamily: "Georgia, serif" }}
+                        className="font-heading text-lg font-bold text-gold sm:hidden"
                     >
                         Cohn Casino
                     </button>
 
                     {/* Nav links — hidden on mobile, shown sm: and above */}
-                    <div className="hidden sm:flex flex-wrap items-center gap-2">
+                    <div className="hidden sm:flex flex-wrap items-center gap-x-5 gap-y-1">
                         <NavButton active={game === "home"} onClick={() => navigate("home")}>Home</NavButton>
 
                         <NavDropdown label="Blackjack" active={blackjackActive}>
@@ -550,24 +528,16 @@ export default function Casino() {
                         <NavButton active={game === "roulette"} onClick={() => navigate("roulette")}>Roulette</NavButton>
                         <NavButton active={game === "baccarat"} onClick={() => navigate("baccarat")}>Baccarat</NavButton>
 
-                        <button
-                            onClick={() => navigate("feedback")}
-                            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${game === "feedback"
-                                ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                                : "border-amber-200/40 bg-amber-300/12 text-amber-100 hover:bg-amber-300/20"
-                                }`}
-                        >
-                            Give Feedback
-                        </button>
+                        <NavButton active={game === "feedback"} onClick={() => navigate("feedback")}>Give Feedback</NavButton>
 
                         <NavButton active={game === "settings"} onClick={() => navigate("settings")}>Settings</NavButton>
                     </div>
 
                     {/* Bankroll controls — hidden on mobile, shown sm: and above */}
                     <div className="hidden sm:flex flex-wrap items-center gap-2">
-                        <div className="rounded-full border border-amber-300/18 bg-black/35 px-4 py-2">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-200">Bankroll</div>
-                            <div className="text-lg font-extrabold text-white">{bankrollDisplay}</div>
+                        <div className="mr-2 flex items-baseline gap-2">
+                            <span className="text-sm text-text-muted">Bankroll</span>
+                            <span className="font-heading text-xl font-bold text-gold-soft" data-testid="nav-bankroll">{bankrollDisplay}</span>
                         </div>
 
                         <input
@@ -576,19 +546,19 @@ export default function Casino() {
                             step={5}
                             value={bankrollInput}
                             onChange={(e) => setBankrollInput(e.target.value)}
-                            className="w-[120px] rounded-full border border-white/15 bg-white/8 px-3 py-2 text-white outline-none"
+                            className="h-9 w-[110px] rounded-[4px] border border-line bg-page px-3 text-[15px] text-text outline-none focus:border-gold"
                         />
 
                         <button
                             onClick={applyBankroll}
-                            className="rounded-full border border-emerald-200 bg-emerald-400 px-4 py-2 text-sm font-bold text-black shadow-lg"
+                            className="h-9 rounded-[4px] border border-emerald-500 bg-emerald-400 px-4 text-sm font-bold text-ink transition-colors hover:bg-emerald-500 active:bg-emerald-600"
                         >
                             Set
                         </button>
 
                         <button
                             onClick={resetBankroll}
-                            className="rounded-full border border-red-300/40 bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg"
+                            className="h-9 rounded-[4px] border border-red-700 bg-red-600 px-4 text-sm font-bold text-white transition-colors hover:bg-red-700 active:bg-red-800"
                         >
                             Reset
                         </button>
@@ -596,7 +566,7 @@ export default function Casino() {
 
                     {/* Hamburger button — mobile only */}
                     <button
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white sm:hidden"
+                        className="flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-page text-text sm:hidden"
                         onClick={() => setMobileMenuOpen(o => !o)}
                         aria-label="Toggle menu"
                     >
@@ -604,9 +574,9 @@ export default function Casino() {
                             <span className="text-lg font-bold">×</span>
                         ) : (
                             <span className="flex flex-col gap-[5px] items-center justify-center">
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
+                                <span className="block h-[2px] w-5 bg-text"/>
+                                <span className="block h-[2px] w-5 bg-text"/>
+                                <span className="block h-[2px] w-5 bg-text"/>
                             </span>
                         )}
                     </button>
@@ -614,148 +584,148 @@ export default function Casino() {
 
                 {/* Mobile dropdown menu — hidden on sm: and above */}
                 {mobileMenuOpen && (
-                    <div className="border-t border-white/10 bg-black/90 backdrop-blur-xl sm:hidden">
-                        <div className="mx-auto flex max-w-[1600px] flex-col gap-1 px-4 py-3">
+                    <div className="-mx-4 border-t border-line bg-ink sm:hidden">
+                        <div className="mx-auto flex max-w-[1600px] flex-col px-4 py-2">
 
                             <button
                                 onClick={() => navigate("home")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "home"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "home"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Home
                             </button>
 
-                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                            <div className="px-3 pt-1 text-sm font-semibold text-text-muted">
                                 Blackjack
                             </div>
                             <button
                                 onClick={() => navigate("blackjack")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "blackjack"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "blackjack"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Classic Blackjack
                             </button>
                             <button
                                 onClick={() => navigate("freebetblackjack")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "freebetblackjack"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "freebetblackjack"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Free Bet Blackjack
                             </button>
                             <button
                                 onClick={() => navigate("doubledownmadness")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "doubledownmadness"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "doubledownmadness"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Double Down Madness
                             </button>
 
-                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
+                            <div className="px-3 pt-1 text-sm font-semibold text-text-muted">
                                 Poker
                             </div>
                             <button
                                 onClick={() => navigate("uth")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "uth"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "uth"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Ultimate Texas Hold'em
                             </button>
                             <button
                                 onClick={() => navigate("paigow")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "paigow"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "paigow"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Pai Gow Poker
                             </button>
                             <button
                                 onClick={() => navigate("threecardpoker")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "threecardpoker"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "threecardpoker"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Three Card Poker
                             </button>
                             <button
                                 onClick={() => navigate("mississippistud")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "mississippistud"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "mississippistud"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Mississippi Stud
                             </button>
                             <button
                                 onClick={() => navigate("iluvsuits")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "iluvsuits"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "iluvsuits"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 I Luv Suits
                             </button>
                             <button
                                 onClick={() => navigate("djwild")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "djwild"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "djwild"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 DJ Wild
                             </button>
                             <button
                                 onClick={() => navigate("videopoker")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "videopoker"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "videopoker"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Video Poker
                             </button>
 
-                            <div className="my-1 h-px bg-white/10"/>
+                            <div className="my-1 h-px bg-line"/>
 
                             <button
                                 onClick={() => navigate("roulette")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "roulette"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "roulette"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Roulette
                             </button>
                             <button
                                 onClick={() => navigate("baccarat")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "baccarat"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "baccarat"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Baccarat
                             </button>
 
-                            <div className="my-1 h-px bg-white/10"/>
+                            <div className="my-1 h-px bg-line"/>
 
                             <button
                                 onClick={() => navigate("feedback")}
-                                className="rounded-xl border border-amber-200/40 bg-amber-300/12 px-3 py-2.5 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "feedback" ? "border-gold bg-panel-2 font-semibold text-gold-soft" : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Give Feedback
                             </button>
 
                             <button
                                 onClick={() => navigate("settings")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "settings"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "settings"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 Settings
                             </button>
 
                             <button
                                 onClick={() => navigate("changelog")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "changelog"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "changelog"
+                                    ? "border-gold bg-panel-2 font-semibold text-gold-soft"
+                                    : "border-transparent text-text hover:bg-panel-2"}`}
                             >
                                 What&apos;s New
                             </button>
@@ -768,17 +738,17 @@ export default function Casino() {
             {renderScreen()}
 
             {(game === "home" || game === "settings" || game === "feedback" || game === "changelog") && (
-                <footer className="border-t border-white/10 bg-black px-4 py-4 text-center text-[11px] font-semibold tracking-[0.08em] text-white/40" data-testid="site-footer">
+                <footer className="border-t border-line bg-ink px-4 py-4 text-sm text-text-muted sm:px-6" data-testid="site-footer">
+                    <div className="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span>Cohn Casino</span>
-                    <span className="mx-2 text-white/20">·</span>
-                    <span data-testid="site-version">v{VERSION}</span>
-                    <span className="mx-2 text-white/20">·</span>
+                    <span className="font-heading text-base font-bold text-gold-soft" data-testid="site-version">v{VERSION}</span>
                     <button
                         onClick={() => navigate("changelog")}
-                        className="font-bold text-amber-200/80 underline decoration-amber-200/30 underline-offset-2 transition hover:text-amber-100"
+                        className="border-b-2 border-transparent font-semibold text-text transition-colors hover:border-gold"
                     >
                         What&apos;s New
                     </button>
+                    </div>
                 </footer>
             )}
         </div>

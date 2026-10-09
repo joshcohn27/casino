@@ -27,18 +27,11 @@ export interface TableShellProps {
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 /**
- * Builds a radial felt gradient from a single hex color.
- * The color blooms from the top-center and fades to near-black.
- * Assumes a 6-digit hex (#rrggbb) so we can append an alpha byte.
+ * The felt is one flat color: the game's own felt color, deepened so white table print
+ * stays easy to read on it.
  */
 function feltGradient(hex: string): string {
-    return [
-        `radial-gradient(ellipse at 50% -10%,`,
-        `  ${hex} 0%,`,
-        `  ${hex}99 28%,`,   // ~60 % opacity mid
-        `  ${hex}33 55%,`,   // ~20 % opacity far
-        `  #040606 82%)`,    // near-black at edge
-    ].join('\n');
+    return `color-mix(in srgb, ${hex} 62%, #000)`;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
