@@ -90,10 +90,10 @@ export default function Feedback({ onBack }: FeedbackProps) {
             <div className="mx-auto w-full max-w-[760px] px-4 pb-16 pt-8 sm:px-6">
                 {/* Page header */}
                 <div className="mb-6 border-b border-room-line pb-4">
-                    <h1 className="text-room-accent">
+                    <h1 className="text-room-text">
                         Feedback
                     </h1>
-                    <p className="mt-2 text-base font-semibold text-room-accent">
+                    <p className="mt-2 text-base font-semibold text-room-text">
                         Bugs, suggestions and new games
                     </p>
                     <p className="mt-2 max-w-[56ch] text-base leading-6 text-room-muted">
@@ -112,7 +112,7 @@ export default function Feedback({ onBack }: FeedbackProps) {
                 {/* Form card */}
                 <div className="rounded-[4px] border border-room-line bg-room-panel p-6">
                     {status === "success" ? (
-                        <div className="rounded-[4px] border border-emerald-400/25 bg-emerald-500/8 p-6">
+                        <div className="rounded-[4px] border border-room-line bg-room-deep p-6">
                             <h2 className="text-room-text">Feedback sent</h2>
                             <p className="mt-3 max-w-[56ch] text-room-muted">
                                 Thanks — I got it. This helps improve the site.

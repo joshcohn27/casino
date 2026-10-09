@@ -23,17 +23,18 @@
   --color-info: #38bdf8;
   --color-bad: #dc2626;
 
-  /* Green felt palette for the nav, footer, Home, Settings and Feedback.
-     Taken from the Blackjack and Roulette felt. No blue and no yellow or gold.
+  /* Neutral palette for the nav, footer, Home, Settings and Feedback: near-black
+     and gray, with casino red as the one color. No blue, yellow, gold or green.
      The game tables and What's New keep the colors above. */
-  --color-room: #114224;           /* page background */
-  --color-room-panel: #0b2c18;     /* panels, nav, footer */
-  --color-room-deep: #061a0e;      /* form fields and plain buttons */
-  --color-room-raised: #16542e;    /* hover */
-  --color-room-line: #4f8f69;      /* borders */
-  --color-room-text: #f4efe4;
-  --color-room-muted: #c9d6cc;     /* descriptions and captions */
-  --color-room-accent: #34d399;    /* headings, key numbers, active and focus */
+  --color-room: #141414;           /* page background */
+  --color-room-panel: #1f1f1f;     /* cards, panels, nav, footer */
+  --color-room-deep: #0c0c0c;      /* form fields and plain buttons */
+  --color-room-raised: #2a2a2a;    /* hover on buttons and menu rows */
+  --color-room-line: #3a3a3a;      /* borders */
+  --color-room-line-hover: #6a6a6a; /* card border on hover */
+  --color-room-text: #f2f2f2;
+  --color-room-muted: #a8a8a8;     /* descriptions and captions */
+  --color-room-accent: #d63343;    /* active underline and focus: a red light enough to show as a thin line */
   --color-room-red: #9b1c26;       /* primary buttons */
   --color-room-red-hover: #b3212d;
   --color-room-red-pressed: #7d151e;

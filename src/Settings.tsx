@@ -9,7 +9,7 @@ import { formatMoney, BTN_BASE } from "./shared/money";
 type Props = { onBack: () => void };
 
 const BTN_PLAIN = `${BTN_BASE} border-room-line bg-room-deep text-room-text hover:bg-room-raised active:bg-room-panel`;
-const FIELD = "h-11 shrink-0 rounded-[4px] border border-room-line bg-room-deep text-right text-base font-bold text-room-accent outline-none transition-colors focus:border-room-accent";
+const FIELD = "h-11 shrink-0 rounded-[4px] border border-room-line bg-room-deep text-right text-base font-bold text-room-text outline-none transition-colors focus:border-room-accent";
 
 // ─── Money field ──────────────────────────────────────────────────────────────
 
@@ -88,7 +88,7 @@ function Toggle({ id, label, hint, on, onChange }: {
                 className={`flex h-11 w-[84px] shrink-0 overflow-hidden rounded-[4px] border-2 text-sm font-bold transition-colors ${on ? "border-room-accent" : "border-room-line"}`}
             >
                 <span className={`flex flex-1 items-center justify-center ${on ? "bg-room-deep text-room-muted" : "bg-room-raised text-room-text"}`}>Off</span>
-                <span className={`flex flex-1 items-center justify-center ${on ? "bg-room-accent text-room-deep" : "bg-room-deep text-room-muted"}`}>On</span>
+                <span className={`flex flex-1 items-center justify-center ${on ? "bg-room-red text-room-text" : "bg-room-deep text-room-muted"}`}>On</span>
             </button>
         </div>
     );
@@ -125,14 +125,14 @@ export default function Settings({ onBack }: Props) {
             <div className="mx-auto max-w-5xl">
                 <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-room-line pb-4">
                     <div>
-                        <h1 className="text-room-accent">Settings</h1>
+                        <h1 className="text-room-text">Settings</h1>
                         <p className="mt-2 max-w-[62ch] text-base leading-6 text-room-muted">
                             Text size, and the chips each table starts with when you sit down. Changes save as you make them.
                             You can still change or clear your bets at the table.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className={`mr-2 text-sm font-bold text-room-accent transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
+                        <span className={`mr-2 text-sm font-bold text-room-text transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
                             Saved
                         </span>
                         <button className={BTN_PLAIN} onClick={resetAll}>Reset to defaults</button>
@@ -142,7 +142,7 @@ export default function Settings({ onBack }: Props) {
 
                 {/* Display sits apart from the bet cards: a gold edge marks it as the site-wide setting */}
                 <section className="mb-4 rounded-[4px] border border-room-line border-l-4 border-l-room-accent bg-room-panel p-4" data-settings-game="display">
-                    <h2 className="mb-4 text-room-accent">Display</h2>
+                    <h2 className="mb-4 text-room-text">Display</h2>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="min-w-0">
                             <div className="text-base font-semibold text-room-text">Text size</div>
@@ -155,7 +155,7 @@ export default function Settings({ onBack }: Props) {
                                     onClick={() => chooseFont(size)}
                                     aria-pressed={fontSize === size}
                                     data-setting={`display.font.${size}`}
-                                    className={`h-11 px-5 text-sm font-bold capitalize transition-colors ${fontSize === size ? "bg-room-accent text-room-deep" : "bg-room-deep text-room-text hover:bg-room-raised"}`}
+                                    className={`h-11 px-5 text-sm font-bold capitalize transition-colors ${fontSize === size ? "bg-room-red text-room-text" : "bg-room-deep text-room-text hover:bg-room-raised"}`}
                                 >
                                     {size}
                                 </button>
@@ -167,7 +167,7 @@ export default function Settings({ onBack }: Props) {
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {GAME_SETTINGS.map((game) => (
                         <section key={game.id} className="rounded-[4px] border border-room-line bg-room-panel p-4" data-settings-game={game.id}>
-                            <h2 className="mb-4 text-room-accent">{game.name}</h2>
+                            <h2 className="mb-4 text-room-text">{game.name}</h2>
                             <div className="space-y-4">
                                 {game.bets.map((field) => (
                                     <BetInput

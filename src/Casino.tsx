@@ -90,7 +90,7 @@ function NavButton({
     return (
         <button
             onClick={onClick}
-            className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-accent" : "border-transparent text-room-muted hover:text-room-text"}`}
+            className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-text" : "border-transparent text-room-muted hover:text-room-text"}`}
         >
             {children}
         </button>
@@ -112,7 +112,7 @@ function NavDropdown({
         <div className="group relative">
             <button
                 onClick={() => setOpen((prev) => !prev)}
-                className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-accent" : "border-transparent text-room-muted hover:text-room-text"}`}
+                className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-text" : "border-transparent text-room-muted hover:text-room-text"}`}
             >
                 <span className="flex items-center gap-1.5">
                     {label}
@@ -146,7 +146,7 @@ function DropdownItem({
         <button
             onClick={onClick}
             className={`border-l-2 px-3 py-2 text-left text-[15px] transition-colors ${active
-                ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                ? "border-room-accent bg-room-raised font-semibold text-room-text"
                 : "border-transparent text-room-text hover:bg-room-raised"
                 }`}
         >
@@ -172,13 +172,13 @@ function GameCard({
     return (
         <button
             onClick={onClick}
-            className="group relative overflow-hidden rounded-[4px] border border-room-line bg-room-panel p-6 pl-7 text-left transition-colors hover:border-room-accent hover:bg-room-raised active:bg-room-deep"
+            className="group relative overflow-hidden rounded-[4px] border border-room-line bg-room-panel p-6 pl-7 text-left transition-colors hover:border-room-line-hover"
             data-testid="game-card"
         >
             <div className="relative flex h-full flex-col justify-between gap-6">
                 <div>
                     <h3 className="text-room-text">{title}</h3>
-                    <div className="mt-1 text-sm font-semibold text-room-accent">{label}</div>
+                    <div className="mt-1 text-sm font-semibold text-room-text">{label}</div>
                     <div className="mt-4 max-w-[52ch] text-base leading-6 text-room-muted">{subtitle}</div>
                 </div>
 
@@ -312,10 +312,10 @@ export default function Casino() {
             >
                 <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
                     <div className="mb-8 border-b border-room-line pb-6">
-                        <h1 className="text-room-accent">
+                        <h1 className="text-room-text">
                             Cohn Casino
                         </h1>
-                        <p className="mt-2 text-lg font-semibold text-room-accent">
+                        <p className="mt-2 text-lg font-semibold text-room-text">
                             A collection of casino table games
                         </p>
                         <p className="mt-4 max-w-[62ch] text-base leading-6 text-room-muted">
@@ -418,7 +418,7 @@ export default function Casino() {
                                 <div className="text-sm text-room-muted">
                                     Bankroll
                                 </div>
-                                <div className="text-3xl font-bold text-room-accent">{bankrollDisplay}</div>
+                                <div className="text-3xl font-bold text-room-text">{bankrollDisplay}</div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <input
@@ -431,7 +431,7 @@ export default function Casino() {
                                 />
                                 <button
                                     onClick={applyBankroll}
-                                    className="h-11 rounded-[4px] border px-5 text-sm font-bold transition-colors border-room-line bg-room-deep text-room-text hover:bg-room-raised active:bg-room-panel"
+                                    className="h-11 rounded-[4px] border px-5 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
                                 >
                                     Set
                                 </button>
@@ -477,7 +477,7 @@ export default function Casino() {
                     {/* Mobile-only site title — acts as Home link */}
                     <button
                         onClick={() => navigate("home")}
-                        className="text-lg font-bold text-room-accent sm:hidden"
+                        className="text-lg font-bold text-room-text sm:hidden"
                     >
                         Cohn Casino
                     </button>
@@ -534,7 +534,7 @@ export default function Casino() {
                     <div className="hidden sm:flex flex-wrap items-center gap-2">
                         <div className="mr-2 flex items-baseline gap-2">
                             <span className="text-sm text-room-muted">Bankroll</span>
-                            <span className="text-xl font-bold text-room-accent" data-testid="nav-bankroll">{bankrollDisplay}</span>
+                            <span className="text-xl font-bold text-room-text" data-testid="nav-bankroll">{bankrollDisplay}</span>
                         </div>
 
                         <input
@@ -548,7 +548,7 @@ export default function Casino() {
 
                         <button
                             onClick={applyBankroll}
-                            className="h-9 rounded-[4px] border px-4 text-sm font-bold transition-colors border-room-line bg-room-deep text-room-text hover:bg-room-raised active:bg-room-panel"
+                            className="h-9 rounded-[4px] border px-4 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
                         >
                             Set
                         </button>
@@ -587,7 +587,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("home")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "home"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Home
@@ -599,7 +599,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("blackjack")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "blackjack"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Classic Blackjack
@@ -607,7 +607,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("freebetblackjack")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "freebetblackjack"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Free Bet Blackjack
@@ -615,7 +615,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("doubledownmadness")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "doubledownmadness"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Double Down Madness
@@ -627,7 +627,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("uth")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "uth"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Ultimate Texas Hold'em
@@ -635,7 +635,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("paigow")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "paigow"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Pai Gow Poker
@@ -643,7 +643,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("threecardpoker")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "threecardpoker"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Three Card Poker
@@ -651,7 +651,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("mississippistud")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "mississippistud"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Mississippi Stud
@@ -659,7 +659,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("iluvsuits")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "iluvsuits"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 I Luv Suits
@@ -667,7 +667,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("djwild")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "djwild"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 DJ Wild
@@ -675,7 +675,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("videopoker")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "videopoker"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Video Poker
@@ -686,7 +686,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("roulette")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "roulette"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Roulette
@@ -694,7 +694,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("baccarat")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "baccarat"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Baccarat
@@ -704,7 +704,7 @@ export default function Casino() {
 
                             <button
                                 onClick={() => navigate("feedback")}
-                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "feedback" ? "border-room-accent bg-room-raised font-semibold text-room-accent" : "border-transparent text-room-text hover:bg-room-raised"}`}
+                                className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "feedback" ? "border-room-accent bg-room-raised font-semibold text-room-text" : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Give Feedback
                             </button>
@@ -712,7 +712,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("settings")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "settings"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 Settings
@@ -721,7 +721,7 @@ export default function Casino() {
                             <button
                                 onClick={() => navigate("changelog")}
                                 className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${game === "changelog"
-                                    ? "border-room-accent bg-room-raised font-semibold text-room-accent"
+                                    ? "border-room-accent bg-room-raised font-semibold text-room-text"
                                     : "border-transparent text-room-text hover:bg-room-raised"}`}
                             >
                                 What&apos;s New
@@ -738,7 +738,7 @@ export default function Casino() {
                 <footer className="border-t border-room-line bg-room-panel px-4 py-4 text-sm text-room-muted sm:px-6" data-testid="site-footer">
                     <div className="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span>Cohn Casino</span>
-                    <span className="text-base font-bold text-room-accent" data-testid="site-version">v{VERSION}</span>
+                    <span className="text-base font-bold text-room-text" data-testid="site-version">v{VERSION}</span>
                     <button
                         onClick={() => navigate("changelog")}
                         className="border-b-2 border-transparent font-semibold text-room-text transition-colors hover:border-room-accent"
