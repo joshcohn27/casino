@@ -5,24 +5,33 @@ import ChipTray from "./shared/ChipTray";
 import HandRow from "./shared/HandRow";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, buildChipStackFromAmount, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
+import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { sortByPower } from "./shared/handSort";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, PLAY_MULTIPLE,
-    BLIND_PAYTABLE, TRIPS_NATURAL_PAYTABLE, TRIPS_WILD_PAYTABLE,
+    BLIND_PAYTABLE, TRIPS_NATURAL_PAYTABLE, TRIPS_WILD_PAYTABLE, BAD_BEAT_PAYTABLE,
+    PROGRESSIVE_BET, PROGRESSIVE_SEED, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_FIXED_PAYTABLE,
     createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
 } from "./djWildLogic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Stage = "betting" | "dealt" | "showdown" | "done";
-type ZoneId = "ante" | "trips";
+type ZoneId = "ante" | "trips" | "badBeat";
 type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateAction<number>> };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FELT_COLOR = "#3b1a6b";
+const METER_STORAGE_KEY = "djwild-progressive-meter";
+
+function readStoredMeter(): number {
+    if (typeof window === "undefined") return PROGRESSIVE_SEED;
+    const raw = Number(window.localStorage.getItem(METER_STORAGE_KEY));
+    return Number.isFinite(raw) && raw >= PROGRESSIVE_SEED * 0.5 ? raw : PROGRESSIVE_SEED;
+}
 const CARD_FLIP_MS = 160;
 const SORT_DELAY_MS = 520;
 // Cards the player left face down are turned slowly, after the dealer has shown
@@ -55,6 +64,17 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Dealer wins: Ante, Blind and Play lose.",
         "• Tie: Ante, Blind and Play push.",
     ]],
+    ["Two-Way Bad Beat", [
+        "• Optional side bet. It wins when a Three of a Kind or better loses, whether that hand is yours or the dealer's.",
+        "• Pays by the hand that was beaten: Three of a Kind 15 to 1, Straight 50, Flush 100, Full House 200, Four of a Kind 300, Straight Flush or better 500.",
+        "• A tie is not a beat.",
+    ]],
+    ["Five Card Progressive", [
+        "• Optional $1 bet. Tap the red light to switch it on.",
+        "• Pays on your own hand, natural hands only: a wild card cannot make a progressive hand.",
+        "• Royal Flush wins the whole meter. Straight Flush wins 10% of it.",
+        "• Four of a Kind 300 for 1, Full House 50, Flush 40, Straight 30, Three of a Kind 9.",
+    ]],
     ["Trips", [
         "• Pays on your own hand with Three of a Kind or better, win or lose, even if you fold.",
         "• A natural hand, made without using any wild card as wild, pays much more than a wild hand.",
@@ -70,10 +90,15 @@ function toRowCard(card: Card): Pick<SharedCard, "id" | "rank" | "suit"> {
 
 function wait(ms: number) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }
 
-// Display order once a hand is face up: wild cards first, then high card to low
+// Display order once a hand is face up: by power. The cards that make the hand come first
+// (with the wild cards that complete it), then the rest by rank.
 function sortedIds(cards: Card[]): string[] {
-    const key = (c: Card) => (c.rank === "JOKER" ? 100 : isWild(c) ? 50 : c.value);
-    return [...cards].sort((a, b) => key(b) - key(a)).map((c) => c.id);
+    if (cards.length !== HAND_SIZE) return cards.map((c) => c.id);
+    const category = evaluateHand(cards).category;
+    const mode = category === "Flush" || category === "Straight Flush" || category === "Royal Flush" ? "flush"
+        : category === "Straight" ? "straight"
+        : "groups";
+    return sortByPower(cards.map((c) => ({ id: c.id, value: c.value, suit: c.suit, wild: isWild(c) ? "full" as const : undefined })), mode);
 }
 
 // ─── Rules modal ──────────────────────────────────────────────────────────────
@@ -117,18 +142,30 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 // ─── Payout column ────────────────────────────────────────────────────────────
 
-function PayoutColumn({ title, entries, highlight }: {
+function PayoutColumn({ title, entries, highlight, unit = ":1", extra }: {
     title: string; entries: Partial<Record<string, number>>; highlight?: string | null;
+    unit?: string;
+    /** Rows shown above the numeric ones, e.g. shares of the jackpot */
+    extra?: ReadonlyArray<readonly [string, string]>;
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
             <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">{title}</div>
+            {(extra ?? []).map(([hand, text]) => {
+                const hit = highlight === hand;
+                return (
+                    <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
+                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{text}</span>
+                    </div>
+                );
+            })}
             {Object.entries(entries).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0)).map(([hand, mult]) => {
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
                         <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{(mult ?? 0).toLocaleString()}:1</span>
+                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{(mult ?? 0).toLocaleString()}{unit}</span>
                     </div>
                 );
             })}
@@ -148,10 +185,17 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const [selectedZone, setSelectedZone] = useState<ZoneId>("ante");
     const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(25));
     const [tripsChips, setTripsChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
+    const [badBeatChips, setBadBeatChips] = useState<ChipDenomination[]>([]);
+    // Progressive: a fixed $1 bet switched on with the red light, and a jackpot meter that is remembered
+    const [progressiveOn, setProgressiveOn] = useState(false);
+    const [meter, setMeter] = useState<number>(readStoredMeter);
+    useEffect(() => { window.localStorage.setItem(METER_STORAGE_KEY, String(meter)); }, [meter]);
 
     // Bets locked in for the hand in play
     const [anteBet, setAnteBet] = useState(0);
     const [tripsBet, setTripsBet] = useState(0);
+    const [badBeatBet, setBadBeatBet] = useState(0);
+    const [progressiveBet, setProgressiveBet] = useState(0);
     const [playBet, setPlayBet] = useState(0);
 
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
@@ -170,8 +214,10 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const sum = (chips: ChipDenomination[]) => chips.reduce((s, d) => s + Number(d), 0);
     const pendingAnte = sum(anteChips);
     const pendingTrips = sum(tripsChips);
+    const pendingBadBeat = sum(badBeatChips);
+    const pendingProgressive = progressiveOn ? PROGRESSIVE_BET : 0;
     // the Blind always matches the Ante
-    const pendingTotal = pendingAnte * 2 + pendingTrips;
+    const pendingTotal = pendingAnte * 2 + pendingTrips + pendingBadBeat + pendingProgressive;
     const isBetting = stage === "betting";
 
     // ── Chip handlers ─────────────────────────────────────────────────────────
@@ -181,21 +227,23 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         setSelectedChip(chip);
         if (!isBetting) return;
         if (selectedZone === "ante") setAnteChips((prev) => [...prev, chip]);
-        else setTripsChips((prev) => [...prev, chip]);
+        else if (selectedZone === "trips") setTripsChips((prev) => [...prev, chip]);
+        else setBadBeatChips((prev) => [...prev, chip]);
     };
 
     // Clicking the chips on a spot takes the last chip back
     const removeLastChip = (zone: ZoneId) => {
         if (!isBetting) return;
         if (zone === "ante") setAnteChips((prev) => prev.slice(0, -1));
-        else setTripsChips((prev) => prev.slice(0, -1));
+        else if (zone === "trips") setTripsChips((prev) => prev.slice(0, -1));
+        else setBadBeatChips((prev) => prev.slice(0, -1));
     };
 
     // ── Round flow ────────────────────────────────────────────────────────────
 
     const resetRound = () => {
         setPlayerCards([]); setDealerCards([]); setResult(null);
-        setAnteBet(0); setTripsBet(0); setPlayBet(0);
+        setAnteBet(0); setTripsBet(0); setBadBeatBet(0); setProgressiveBet(0); setPlayBet(0);
         setPeeled([]); setPlayerSorted(false); setDealerShown(0); setDealerSorted(false);
     };
 
@@ -206,7 +254,9 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         if (bankroll < pendingTotal + pendingAnte * PLAY_MULTIPLE) { setMessage("Not enough bankroll to cover the bets and a Play bet."); return; }
         const deck = shuffle(createDeck());
         resetRound();
-        setAnteBet(pendingAnte); setTripsBet(pendingTrips);
+        setAnteBet(pendingAnte); setTripsBet(pendingTrips); setBadBeatBet(pendingBadBeat); setProgressiveBet(pendingProgressive);
+        // every progressive bet feeds the jackpot
+        if (progressiveOn) setMeter((m) => Math.round((m + PROGRESSIVE_CONTRIBUTION) * 100) / 100);
         setBankroll((b) => b - pendingTotal);
         setPlayerCards(deck.slice(0, HAND_SIZE));
         setDealerCards(deck.slice(HAND_SIZE, HAND_SIZE * 2));
@@ -268,7 +318,11 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
             }
             setPlayerSorted(true);
             await wait(hidden.length > 0 ? 500 : 0);
-            const settled = settle({ player: playerCards, dealer: dealerCards, ante: anteBet, play, trips: tripsBet, folded });
+            const settled = settle({
+                player: playerCards, dealer: dealerCards, ante: anteBet, play, trips: tripsBet, folded,
+                badBeat: badBeatBet, progressive: progressiveBet > 0, meter,
+            });
+            if (progressiveBet > 0) setMeter(settled.meterAfter);
             setBankroll((b) => b + settled.totalReturn);
             setResult(settled);
             setStage("done");
@@ -298,7 +352,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const handleClear = () => {
         if (busy.current) return;
         resetRound();
-        setAnteChips([]); setTripsChips([]);
+        setAnteChips([]); setTripsChips([]); setBadBeatChips([]); setProgressiveOn(false);
         setSelectedZone("ante");
         setStage("betting");
         setMessage("Set your bets and press Deal.");
@@ -307,7 +361,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     // ── Derived render values ─────────────────────────────────────────────────
 
     const canDeal = pendingAnte >= MIN_ANTE && bankroll >= pendingTotal + pendingAnte * PLAY_MULTIPLE;
-    const displayBet = isBetting ? pendingTotal : anteBet * 2 + tripsBet + playBet;
+    const displayBet = isBetting ? pendingTotal : anteBet * 2 + tripsBet + badBeatBet + progressiveBet + playBet;
     const done = stage === "done" && result !== null;
 
     const playerOrder = playerSorted ? sortedIds(playerCards) : undefined;
@@ -322,6 +376,13 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const anteView = spotView(anteChips, anteBet, result?.anteReturn ?? 0);
     const blindView = spotView(anteChips, anteBet, result?.blindReturn ?? 0);
     const tripsView = spotView(tripsChips, tripsBet, result?.tripsReturn ?? 0);
+    const badBeatView = spotView(badBeatChips, badBeatBet, result?.badBeatReturn ?? 0);
+    const progressiveLit = isBetting ? progressiveOn : progressiveBet > 0;
+    const progressiveWon = done && (result?.progressiveReturn ?? 0) > 0;
+    const progressiveHit = playerReady && progressiveLit && playerHand && playerHand.natural ? playerHand.category : null;
+    const badBeatHit = done && result && result.badBeatMultiplier > 0
+        ? (result.compare > 0 ? result.dealerHand.category : result.playerHand.category)
+        : null;
     const playView = spotView([], playBet, result?.playReturn ?? 0);
 
     const blindHit = done && result && result.blindMultiplier > 0 ? result.playerHand.category : null;
@@ -435,17 +496,65 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             showResult={done}
                         />
 
-                        <BetSpot
-                            testId="trips"
-                            label="Trips" sublabel="optional"
-                            chips={tripsView.chips} totalBet={tripsView.total}
-                            dim={82}
-                            canBet={isBetting}
-                            isSelected={selectedZone === "trips"}
-                            isWinner={tripsView.win}
-                            onSelect={() => setSelectedZone("trips")}
-                            onRemove={() => removeLastChip("trips")}
-                        />
+                        {/* Progressive: jackpot meter and the red light that switches the $1 bet on */}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setProgressiveOn((on) => !on)}
+                                disabled={!isBetting}
+                                aria-pressed={progressiveLit}
+                                aria-label={`Progressive bet, ${formatMoney(PROGRESSIVE_BET)}`}
+                                data-testid="progressive-light"
+                                data-lit={progressiveLit ? "true" : "false"}
+                                className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition ${isBetting ? "cursor-pointer" : "cursor-default"} ${
+                                    progressiveLit ? "border-red-300/70" : "border-white/20 hover:border-white/40"
+                                }`}
+                                style={{
+                                    background: progressiveLit
+                                        ? "radial-gradient(circle at 50% 45%, #ffb4b4 0%, #ff2a2a 38%, #b00000 72%, #5a0000 100%)"
+                                        : "radial-gradient(circle at 50% 45%, #4a1414 0%, #2a0a0a 60%, #140505 100%)",
+                                    boxShadow: progressiveLit
+                                        ? `0 0 18px 4px rgba(255,40,40,0.55), inset 0 0 8px rgba(255,255,255,0.35)${progressiveWon ? ", 0 0 30px 10px rgba(251,191,36,0.55)" : ""}`
+                                        : "inset 0 2px 6px rgba(0,0,0,0.7)",
+                                }}
+                            >
+                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/30"}`}>$1</span>
+                            </button>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/45">Progressive</span>
+                                <span
+                                    className="rounded-md border border-red-500/25 bg-black/60 px-2 py-0.5 font-mono text-sm font-bold tabular-nums text-red-400"
+                                    style={{ textShadow: "0 0 8px rgba(255,60,60,0.6)" }}
+                                    data-testid="progressive-meter"
+                                >
+                                    {formatMoney(meter)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-end gap-6">
+                            <BetSpot
+                                testId="trips"
+                                label="Trips" sublabel="optional"
+                                chips={tripsView.chips} totalBet={tripsView.total}
+                                dim={82}
+                                canBet={isBetting}
+                                isSelected={selectedZone === "trips"}
+                                isWinner={tripsView.win}
+                                onSelect={() => setSelectedZone("trips")}
+                                onRemove={() => removeLastChip("trips")}
+                            />
+                            <BetSpot
+                                testId="badBeat"
+                                label="Bad Beat" sublabel="optional"
+                                chips={badBeatView.chips} totalBet={badBeatView.total}
+                                dim={82}
+                                canBet={isBetting}
+                                isSelected={selectedZone === "badBeat"}
+                                isWinner={badBeatView.win}
+                                onSelect={() => setSelectedZone("badBeat")}
+                                onRemove={() => removeLastChip("badBeat")}
+                            />
+                        </div>
 
                         <div className="flex items-end gap-3">
                             <BetSpot
@@ -577,9 +686,21 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 <div className="mt-3">
                                     <PayoutColumn title="Trips Natural" entries={TRIPS_NATURAL_PAYTABLE} highlight={tripsNaturalHit} />
                                 </div>
+                                <div className="mt-3">
+                                    <PayoutColumn
+                                        title="Progressive"
+                                        unit=" for 1"
+                                        extra={[["Royal Flush", "100%"], ["Straight Flush", "10%"]]}
+                                        entries={PROGRESSIVE_FIXED_PAYTABLE}
+                                        highlight={progressiveHit}
+                                    />
+                                </div>
                             </div>
                             <div className="flex-1">
                                 <PayoutColumn title="Trips Wild" entries={TRIPS_WILD_PAYTABLE} highlight={tripsWildHit} />
+                                <div className="mt-3">
+                                    <PayoutColumn title="Bad Beat" entries={BAD_BEAT_PAYTABLE} highlight={badBeatHit} />
+                                </div>
                             </div>
                         </div>
                     </div>

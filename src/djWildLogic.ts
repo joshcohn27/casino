@@ -41,6 +41,24 @@ export const TRIPS_WILD_PAYTABLE: Partial<Record<Category, number>> = {
     "Four of a Kind": 6, "Full House": 5, Flush: 4, Straight: 3, "Three of a Kind": 1,
 };
 
+// Two-Way Bad Beat: pays when a Three of a Kind or better loses, by the hand that was beaten
+export const BAD_BEAT_PAYTABLE: Partial<Record<Category, number>> = {
+    "Royal Flush": 500, "Five of a Kind": 500, "Straight Flush": 500, "Four of a Kind": 300,
+    "Full House": 200, Flush: 100, Straight: 50, "Three of a Kind": 15,
+};
+
+// Five Card Progressive: a fixed $1 bet on the player's hand. Paid "for 1" (the amount
+// shown is what comes back, the $1 included). Only natural hands count, so a wild card
+// cannot make a jackpot hand.
+export const PROGRESSIVE_BET = 1;
+export const PROGRESSIVE_SEED = 10000;
+/** Added to the jackpot meter by each progressive bet */
+export const PROGRESSIVE_CONTRIBUTION = 0.25;
+export const PROGRESSIVE_METER_SHARE: Partial<Record<Category, number>> = { "Royal Flush": 1, "Straight Flush": 0.1 };
+export const PROGRESSIVE_FIXED_PAYTABLE: Partial<Record<Category, number>> = {
+    "Four of a Kind": 300, "Full House": 50, Flush: 40, Straight: 30, "Three of a Kind": 9,
+};
+
 export function isWild(card: Card): boolean { return card.rank === "2" || card.rank === "JOKER"; }
 
 export function createDeck(): Card[] {
@@ -191,6 +209,29 @@ export function tripsMultiplier(hand: HandEval): number {
 /** Blind multiplier ("to 1") when the player wins; 0 means the Blind pushes. */
 export function blindMultiplier(hand: HandEval): number { return BLIND_PAYTABLE[hand.category] ?? 0; }
 
+// ─── Side bets ────────────────────────────────────────────────────────────────
+
+/** Two-Way Bad Beat: the hand that lost, and what it pays ("to 1", 0 if it does not qualify). */
+export function badBeat(player: HandEval, dealer: HandEval): { multiplier: number; beaten: HandEval | null; beatenIs: "player" | "dealer" | null } {
+    const cmp = compareHands(player, dealer);
+    if (cmp === 0) return { multiplier: 0, beaten: null, beatenIs: null };
+    const beaten = cmp > 0 ? dealer : player;
+    return { multiplier: BAD_BEAT_PAYTABLE[beaten.category] ?? 0, beaten, beatenIs: cmp > 0 ? "dealer" : "player" };
+}
+
+/** Five Card Progressive: amount returned for a $1 bet, and the meter afterwards. */
+export function progressivePayout(hand: HandEval, meter: number): { payout: number; meterAfter: number } {
+    if (!hand.natural) return { payout: 0, meterAfter: meter };
+    const share = PROGRESSIVE_METER_SHARE[hand.category];
+    if (share !== undefined) {
+        const payout = Math.round(meter * share * 100) / 100;
+        const left = Math.round((meter - payout) * 100) / 100;
+        // the whole meter going out resets it to the seed
+        return { payout, meterAfter: share >= 1 ? PROGRESSIVE_SEED : left };
+    }
+    return { payout: PROGRESSIVE_FIXED_PAYTABLE[hand.category] ?? 0, meterAfter: meter };
+}
+
 // ─── Strategy ─────────────────────────────────────────────────────────────────
 
 /**
@@ -233,6 +274,11 @@ export type Settlement = {
     blindReturn: number;
     playReturn: number;
     tripsReturn: number;
+    badBeatReturn: number;
+    progressiveReturn: number;
+    /** Jackpot meter after this hand's progressive result */
+    meterAfter: number;
+    badBeatMultiplier: number;
     totalReturn: number;
     totalWagered: number;
     net: number;
@@ -245,8 +291,15 @@ export function settle(params: {
     player: Card[]; dealer: Card[];
     ante: number; play: number; trips: number;
     folded: boolean;
+    badBeat?: number;
+    /** true when the $1 progressive bet was made */
+    progressive?: boolean;
+    meter?: number;
 }): Settlement {
     const { player, dealer, ante, play, trips, folded } = params;
+    const badBeatBet = params.badBeat ?? 0;
+    const progressive = params.progressive ?? false;
+    const meter = params.meter ?? PROGRESSIVE_SEED;
     const blind = ante;
     const playerHand = evaluateHand(player);
     const dealerHand = evaluateHand(dealer);
@@ -280,11 +333,29 @@ export function settle(params: {
             : "Trips: No win");
     }
 
-    const totalReturn = anteReturn + blindReturn + playReturn + tripsReturn;
-    const totalWagered = ante + blind + play + trips;
+    // Two-Way Bad Beat compares the two five-card hands, whoever folded
+    const beat = badBeat(playerHand, dealerHand);
+    const badBeatReturn = badBeatBet > 0 && beat.multiplier > 0 ? badBeatBet + badBeatBet * beat.multiplier : 0;
+    if (badBeatBet > 0) {
+        lines.push(beat.multiplier > 0 && beat.beaten
+            ? `Bad Beat: ${beat.beatenIs === "dealer" ? "dealer's" : "your"} ${beat.beaten.category} beaten - ${beat.multiplier}:1`
+            : "Bad Beat: No win");
+    }
+
+    // Progressive pays on the player's own natural hand
+    const prog = progressive ? progressivePayout(playerHand, meter) : { payout: 0, meterAfter: meter };
+    if (progressive) {
+        lines.push(prog.payout > 0
+            ? `Progressive: Natural ${playerHand.category} pays $${prog.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : "Progressive: No win");
+    }
+
+    const totalReturn = anteReturn + blindReturn + playReturn + tripsReturn + badBeatReturn + prog.payout;
+    const totalWagered = ante + blind + play + trips + badBeatBet + (progressive ? PROGRESSIVE_BET : 0);
     return {
         folded, compare, playerHand, dealerHand,
         anteReturn, blindReturn, playReturn, tripsReturn,
+        badBeatReturn, progressiveReturn: prog.payout, meterAfter: prog.meterAfter, badBeatMultiplier: beat.multiplier,
         totalReturn, totalWagered, net: totalReturn - totalWagered,
         blindMultiplier: blindMult, tripsMultiplier: tripsMult, lines,
     };
