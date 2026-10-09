@@ -6,6 +6,7 @@ import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
+import { sortByPower, type SortMode } from "./shared/handSort";
 import { SlideBtn } from "./shared/SlideBtn";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
@@ -1167,15 +1168,24 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const dealerIsSet = revealStep >= DEALER_SET && dealerBestSplit !== null;
 
     // Player stack: Low hand on top (nearer the dealer), the rest below
-    // each hand is shown in rank order, high card first
-    const byRank = (a: Card, b: Card) => valueOf(b) - valueOf(a);
-    const lowIds = playerReady
-        ? playerCards.filter((c) => selectedFrontIds.includes(c.id)).sort(byRank).map((c) => c.id)
-        : [];
-    const dealerHighIds = dealerBestSplit ? [...dealerBestSplit.back].sort(byRank).map((c) => c.id) : [];
-    const dealerLowIds = dealerBestSplit ? [...dealerBestSplit.front].sort(byRank).map((c) => c.id) : [];
-    const playerRowCards = (playerReady ? [...playerCards].sort((a, b) => valueOf(b) - valueOf(a)) : playerCards)
-        .filter((c) => !lowIds.includes(c.id));
+    // Every hand is shown by power: the cards that make the hand first, then the rest by rank
+    const powerOrder = (cards: Card[], mode: SortMode = "auto") => sortByPower(
+        cards.map((c) => ({ id: c.id, value: isJoker(c) ? 14 : valueOf(c), suit: c.suit, wild: isJoker(c) ? "semi" as const : undefined })),
+        mode,
+    );
+    const modeFor = (category: string): SortMode =>
+        category === "Flush" || category === "Straight Flush" || category === "Royal Flush" ? "flush"
+        : category === "Straight" ? "straight"
+        : "groups";
+    const lowIds = playerReady ? powerOrder(playerCards.filter((c) => selectedFrontIds.includes(c.id)), "groups") : [];
+    const dealerHighIds = dealerBestSplit ? powerOrder(dealerBestSplit.back, modeFor(dealerBestSplit.backEval.category)) : [];
+    const dealerLowIds = dealerBestSplit ? powerOrder(dealerBestSplit.front, "groups") : [];
+    // the player's remaining cards: as a set five-card hand once two are picked, otherwise all of them together
+    const playerRest = playerCards.filter((c) => !lowIds.includes(c.id));
+    const playerRestOrder = !playerReady ? playerRest.map((c) => c.id)
+        : playerRest.length === 5 && currentBackEval ? powerOrder(playerRest, modeFor(currentBackEval.category))
+        : powerOrder(playerRest);
+    const playerRowCards = playerRestOrder.map((id) => playerRest.find((c) => c.id === id)!);
     const playerHasStartedSetting = selectedFrontIds.length > 0;
 
     const displayMessage =

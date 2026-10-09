@@ -67,12 +67,13 @@ function toRowCard(card: Card): Pick<SharedCard, "id" | "rank" | "suit"> {
 
 function wait(ms: number) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }
 
-// Display order once a hand is face up: the best flush first, then the other suits, high card first
+// Display order once a hand is face up: by power. The flush comes first in rank order,
+// then the other cards by rank.
 function sortedIds(cards: Card[]): string[] {
     if (cards.length === 0) return [];
     const best = evaluateFlushHand(cards);
-    const suitRank = (c: Card) => (c.suit === best.suit ? -1 : SUITS.indexOf(c.suit));
-    return [...cards].sort((a, b) => suitRank(a) - suitRank(b) || b.value - a.value).map((c) => c.id);
+    const inFlush = (c: Card) => (c.suit === best.suit ? 0 : 1);
+    return [...cards].sort((a, b) => inFlush(a) - inFlush(b) || b.value - a.value || SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit)).map((c) => c.id);
 }
 
 // ─── Rules modal ──────────────────────────────────────────────────────────────
