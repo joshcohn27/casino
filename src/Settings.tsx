@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
     GAME_SETTINGS, type BetField, type Settings as SettingsData,
     factorySettings, loadSettings, saveSettings, sanitizeBet,
+    type FontSize, loadFontSize, saveFontSize,
 } from "./shared/settings";
 import { formatMoney, BTN_NEUTRAL } from "./shared/money";
 
@@ -94,6 +95,8 @@ function Toggle({ id, label, hint, on, onChange }: {
 export default function Settings({ onBack }: Props) {
     const [settings, setSettings] = useState<SettingsData>(loadSettings);
     const [saved, setSaved] = useState(false);
+    const [fontSize, setFontSize] = useState<FontSize>(loadFontSize);
+    const chooseFont = (size: FontSize) => { saveFontSize(size); setFontSize(size); setSaved(true); };
 
     const update = (gameId: string, key: string, value: number | boolean) => {
         setSettings((prev) => {
@@ -108,6 +111,8 @@ export default function Settings({ onBack }: Props) {
         const fresh = factorySettings();
         saveSettings(fresh);
         setSettings(fresh);
+        saveFontSize("normal");
+        setFontSize("normal");
         setSaved(true);
     };
 
@@ -118,10 +123,10 @@ export default function Settings({ onBack }: Props) {
                     <div>
                         <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90">Settings</div>
                         <h1 className="mt-1 text-2xl font-extrabold text-amber-50 sm:text-3xl" style={{ fontFamily: "Georgia, serif" }}>
-                            Default Bets
+                            Display and Default Bets
                         </h1>
                         <p className="mt-2 max-w-[60ch] text-sm leading-6 text-white/55">
-                            The chips each table starts with when you sit down. Changes save as you make them.
+                            Text size, and the chips each table starts with when you sit down. Changes save as you make them.
                             You can still change or clear your bets at the table.
                         </p>
                     </div>
@@ -133,6 +138,29 @@ export default function Settings({ onBack }: Props) {
                         <button className={BTN_NEUTRAL} onClick={onBack}>Back</button>
                     </div>
                 </div>
+
+                <section className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4" data-settings-game="display">
+                    <h2 className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">Display</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="text-sm font-bold text-white/90">Text size</div>
+                            <div className="text-[11px] text-white/40">Large makes labels, pay tables and messages bigger on every page</div>
+                        </div>
+                        <div className="flex shrink-0 overflow-hidden rounded-xl border border-white/15" role="group" aria-label="Text size">
+                            {(["normal", "large"] as const).map((size) => (
+                                <button
+                                    key={size}
+                                    onClick={() => chooseFont(size)}
+                                    aria-pressed={fontSize === size}
+                                    data-setting={`display.font.${size}`}
+                                    className={`h-11 px-5 text-sm font-extrabold capitalize transition ${fontSize === size ? "bg-amber-400 text-black" : "bg-black/40 text-white/70 hover:bg-white/10"}`}
+                                >
+                                    {size}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </section>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {GAME_SETTINGS.map((game) => (

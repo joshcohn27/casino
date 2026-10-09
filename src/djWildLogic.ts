@@ -48,9 +48,10 @@ export const TRIPS_TABLE_ROWS: Category[] = [
 ];
 
 // Two-Way Bad Beat: pays when a Three of a Kind or better loses, by the hand that was beaten
+// (as printed on the table felt)
 export const BAD_BEAT_PAYTABLE: Partial<Record<Category, number>> = {
-    "Royal Flush": 500, "Five of a Kind": 500, "Straight Flush": 500, "Four of a Kind": 300,
-    "Full House": 200, Flush: 100, Straight: 50, "Three of a Kind": 15,
+    "Royal Flush": 500, "Five of a Kind": 500, "Straight Flush": 500, "Four of a Kind": 500,
+    "Full House": 400, Flush: 300, Straight: 100, "Three of a Kind": 9,
 };
 
 // Progressive: a fixed $5 bet on the player's hand, with wild cards counting as they do in
@@ -361,8 +362,8 @@ export function settle(params: {
     const badBeatReturn = badBeatBet > 0 && beat.multiplier > 0 ? badBeatBet + badBeatBet * beat.multiplier : 0;
     if (badBeatBet > 0) {
         lines.push(beat.multiplier > 0 && beat.beaten
-            ? `Bad Beat: ${beat.beatenIs === "dealer" ? "dealer's" : "your"} ${beat.beaten.category} beaten - ${beat.multiplier} to 1`
-            : "Bad Beat: No win");
+            ? `Two-Way Bad Beat: ${beat.beatenIs === "dealer" ? "dealer's" : "your"} ${beat.beaten.category} beaten - ${beat.multiplier} to 1`
+            : "Two-Way Bad Beat: No win");
     }
 
     // Progressive pays on the player's own hand

@@ -871,7 +871,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 chips={scChips}
                                 totalBet={stage === "betting" ? pendingSc : sixCardBet}
                                 label="6 Card"
-                                sublabel="optional, best 5 of 6 cards"
+                                sublabel="optional"
                                 dim={82}
                                 isSelected={selectedZone === "sixcard"}
                                 isWinner={!!(resultInfo && resultInfo.sixCardReturn > 0)}

@@ -111,6 +111,30 @@ export function defaultBet(gameId: string, key: string): number {
     return typeof v === "number" ? v : 0;
 }
 
+// ─── Display ──────────────────────────────────────────────────────────────────
+
+const FONT_KEY = "casino-font-size";
+export type FontSize = "normal" | "large";
+
+export function loadFontSize(): FontSize {
+    if (typeof window === "undefined") return "normal";
+    return window.localStorage.getItem(FONT_KEY) === "large" ? "large" : "normal";
+}
+
+/** Put the chosen text size on the page. The stylesheet does the rest. */
+export function applyFontSize(size: FontSize): void {
+    if (typeof document === "undefined") return;
+    document.documentElement.dataset.font = size;
+}
+
+export function saveFontSize(size: FontSize): void {
+    if (typeof window !== "undefined") window.localStorage.setItem(FONT_KEY, size);
+    applyFontSize(size);
+}
+
+// applied as soon as the app loads, so every page opens at the chosen size
+applyFontSize(loadFontSize());
+
 /** An on/off setting for a game. */
 export function defaultToggle(gameId: string, key: string): boolean {
     return loadSettings()[gameId]?.[key] === true;

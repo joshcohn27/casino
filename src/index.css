@@ -3,3 +3,39 @@
 button {
   cursor: pointer;
 }
+
+/* Large text (Settings > Display). Enlarges the type itself and leaves the layout alone:
+   every small and medium text size steps up about two pixels. Card faces and the big
+   Video Poker read-outs are already large and stay as they are. */
+html[data-font="large"] .text-\[9px\] { font-size: 11px; }
+html[data-font="large"] .text-\[10px\] { font-size: 12px; }
+html[data-font="large"] .text-\[11px\] { font-size: 13px; }
+html[data-font="large"] .text-\[12px\] { font-size: 14px; }
+html[data-font="large"] .text-\[13px\] { font-size: 15px; }
+html[data-font="large"] .text-\[14px\] { font-size: 16px; }
+html[data-font="large"] .text-\[16px\] { font-size: 18px; }
+html[data-font="large"] .text-\[18px\] { font-size: 20px; }
+html[data-font="large"] .text-xs { font-size: 0.875rem; }
+html[data-font="large"] .text-sm { font-size: 1rem; }
+html[data-font="large"] .text-base { font-size: 1.125rem; }
+html[data-font="large"] .text-lg { font-size: 1.25rem; }
+html[data-font="large"] .text-xl { font-size: 1.375rem; }
+html[data-font="large"] .text-2xl { font-size: 1.625rem; }
+@media (min-width: 40rem) {
+  html[data-font="large"] .sm\:text-\[11px\] { font-size: 13px; }
+  html[data-font="large"] .sm\:text-base { font-size: 1.125rem; }
+  html[data-font="large"] .sm\:text-xl { font-size: 1.375rem; }
+  html[data-font="large"] .sm\:text-2xl { font-size: 1.625rem; }
+  html[data-font="large"] .sm\:text-3xl { font-size: 1.875rem; }
+}
+@media (min-width: 48rem) {
+  html[data-font="large"] .md\:text-\[13px\] { font-size: 15px; }
+  html[data-font="large"] .md\:text-\[16px\] { font-size: 18px; }
+  html[data-font="large"] .md\:text-\[20px\] { font-size: 22px; }
+  html[data-font="large"] .md\:text-\[21px\] { font-size: 22px; }
+  html[data-font="large"] .md\:text-\[24px\] { font-size: 25px; }
+  html[data-font="large"] .md\:text-\[34px\] { font-size: 34px; }
+  html[data-font="large"] .md\:text-\[48px\] { font-size: 48px; }
+}
+/* Bet spots are fixed-size circles, so their labels tighten up instead of spilling out */
+html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; line-height: 1.1; }

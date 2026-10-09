@@ -67,8 +67,8 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
     ]],
     ["Two-Way Bad Beat", [
         "• Optional side bet. It wins when a Three of a Kind or better loses, whether that hand is yours or the dealer's.",
-        "• Pays by the hand that was beaten: Three of a Kind 15 to 1, Straight 50, Flush 100, Full House 200, Four of a Kind 300, Straight Flush or better 500.",
-        "• A tie is not a beat.",
+        "• Pays by the hand that was beaten: Three of a Kind 9 to 1, Straight 100, Flush 300, Full House 400, Four of a Kind or better 500.",
+        "• Ties lose. The odds for the lesser of the two hands (dealer or player) will be paid.",
     ]],
     ["Progressive", [
         "• Optional $5 bet. Tap the red light to switch it on.",
@@ -146,15 +146,25 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 // ─── Payout column ────────────────────────────────────────────────────────────
 
-function PayoutColumn({ title, entries, highlight, unit = " to 1", extra }: {
+function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, headers }: {
     title: string; entries: Partial<Record<string, number>>; highlight?: string | null;
     unit?: string;
+    /** Small print under the table */
+    note?: string;
+    /** Column headings, as on the felt */
+    headers?: readonly [string, string];
     /** Rows shown above the numeric ones, e.g. shares of the jackpot */
     extra?: ReadonlyArray<readonly [string, string]>;
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
             <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">{title}</div>
+            {headers && (
+                <div className="flex items-center justify-between gap-2 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/30">
+                    <span>{headers[0]}</span>
+                    <span>{headers[1]}</span>
+                </div>
+            )}
             {(extra ?? []).map(([hand, text]) => {
                 const hit = highlight === hand;
                 return (
@@ -173,6 +183,7 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra }: {
                     </div>
                 );
             })}
+            {note && <p className="mt-1 px-1.5 text-[10px] leading-snug text-white/40" data-testid="payout-note">{note}</p>}
         </div>
     );
 }
@@ -633,7 +644,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 testId="trips"
                                 label="Trips" sublabel="optional"
                                 chips={tripsView.chips} totalBet={tripsView.total}
-                                dim={82}
+                                dim={94}
                                 canBet={isBetting}
                                 isSelected={selectedZone === "trips"}
                                 isWinner={tripsView.win}
@@ -642,9 +653,9 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             />
                             <BetSpot
                                 testId="badBeat"
-                                label="Bad Beat" sublabel="optional"
+                                label="Two-Way Bad Beat"
                                 chips={badBeatView.chips} totalBet={badBeatView.total}
-                                dim={82}
+                                dim={94}
                                 canBet={isBetting}
                                 isSelected={selectedZone === "badBeat"}
                                 isWinner={badBeatView.win}
@@ -776,8 +787,9 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Right column - payout tables, desktop only */}
-                    <div className="order-3 hidden lg:flex lg:w-[24rem] lg:shrink-0 lg:flex-col lg:justify-center">
-                        <div className="grid grid-cols-[1fr_1.55fr] gap-3">
+                    <div className="order-3 hidden lg:flex lg:w-[24rem] lg:shrink-0 lg:flex-col lg:overflow-y-auto">
+                        {/* centred when it fits, scrolls when it does not (short screens, Large text) */}
+                        <div className="my-auto grid grid-cols-[1fr_1.55fr] gap-3 py-2">
                             <div>
                                 <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHit} />
                                 <div className="mt-3">
@@ -792,7 +804,13 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             <div>
                                 <TripsTable hitHand={tripsHit} hitNatural={tripsHitNatural} />
                                 <div className="mt-3">
-                                    <PayoutColumn title="Bad Beat" entries={BAD_BEAT_PAYTABLE} highlight={badBeatHit} />
+                                    <PayoutColumn
+                                        title="Two-Way Bad Beat"
+                                        headers={["Hand Beaten", "Payout"]}
+                                        entries={BAD_BEAT_PAYTABLE}
+                                        highlight={badBeatHit}
+                                        note="Ties Lose. The odds for the lesser of the two hands (dealer or player) will be paid."
+                                    />
                                 </div>
                             </div>
                         </div>

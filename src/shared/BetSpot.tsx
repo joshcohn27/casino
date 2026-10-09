@@ -103,7 +103,7 @@ export default function BetSpot({
 
     const inner: React.ReactNode = label ? (
         <>
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
+            <span className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
             {sublabel && <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>}
             {totalBet > 0 && (
                 <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
