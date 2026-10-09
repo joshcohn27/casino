@@ -49,7 +49,7 @@ function Pip({ rank, color, flip = false }: {
 }) {
     return (
         <div style={{ color, transform: flip ? 'rotate(180deg)' : 'none' }}>
-            <span className="text-[18.5px] leading-none" style={RANK_FONT}>{rank}</span>
+            <span className="text-[20px] leading-none" style={RANK_FONT}>{rank}</span>
         </div>
     );
 }
