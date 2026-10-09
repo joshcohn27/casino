@@ -11,7 +11,7 @@ import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, PLAY_MULTIPLE,
     BLIND_PAYTABLE, TRIPS_NATURAL_PAYTABLE, TRIPS_WILD_PAYTABLE,
-    createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, settle,
+    createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
 } from "./djWildLogic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,7 +39,14 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
     ]],
     ["Your Decision", [
         "• After looking at your cards, fold and lose the Ante and Blind, or make a Play bet of 2x the Ante.",
-        "• The dealer always plays. There is no qualifying hand.",
+        "• You do not have to look first: you can play blind, or after turning over only some of your cards.",
+        "• The dealer always qualifies. There is no minimum dealer hand.",
+    ]],
+    ["Strategy", [
+        "• Play with a pair of fours or better. Otherwise fold.",
+        "• One exception: fold two fours if your other cards include a three.",
+        "• Any deuce or the Joker means you always play.",
+        "• The Suggest indicator follows this strategy using only the cards you have turned over.",
     ]],
     ["Payouts", [
         "• You win: Ante and Play pay 1 to 1, and the Blind pays from its table on a Straight or better. Otherwise the Blind pushes.",
@@ -202,7 +209,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         setPlayerCards(deck.slice(0, HAND_SIZE));
         setDealerCards(deck.slice(HAND_SIZE, HAND_SIZE * 2));
         setStage("dealt");
-        setMessage("Tap your cards to turn them over, or press Reveal Cards.");
+        setMessage("Turn your cards over, or play blind.");
     };
 
     const peelCard = (cardId: string) => {
@@ -227,7 +234,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const dealerHand = dealerCards.length === HAND_SIZE ? evaluateHand(dealerCards) : null;
 
     useEffect(() => {
-        if (stage !== "dealt" || !playerSorted || !playerHand) return;
+        if (stage !== "dealt" || !playerSorted || !playerHand || busy.current) return;
         setMessage(`${playerHand.label}. Play ${PLAY_MULTIPLE}x, or fold.`);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stage, playerSorted]);
@@ -238,6 +245,14 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         busy.current = true;
         try {
             if (play > 0) { setBankroll((b) => b - play); setPlayBet(play); }
+            // Playing blind: turn over whatever is still face down before the dealer reveals
+            if (peeled.length < HAND_SIZE) {
+                setMessage(folded ? "You fold." : "You play.");
+                setPeeled(playerCards.map((c) => c.id));
+                await wait(SORT_DELAY_MS + 250);
+                setPlayerSorted(true);
+                await wait(450);
+            }
             setStage("showdown");
             setMessage(folded ? "You fold. Dealer reveals." : "Dealer reveals.");
             for (let n = 1; n <= HAND_SIZE; n++) {
@@ -258,13 +273,13 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     };
 
     const handlePlay = () => {
-        if (stage !== "dealt" || !playerSorted) return;
+        if (stage !== "dealt") return;
         const play = anteBet * PLAY_MULTIPLE;
         if (bankroll < play) { setMessage("Not enough bankroll for the Play bet."); return; }
         void finishHand(play, false);
     };
     const handleFold = () => {
-        if (stage !== "dealt" || !playerSorted) return;
+        if (stage !== "dealt") return;
         void finishHand(0, true);
     };
 
@@ -307,6 +322,8 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const tripsPays = playerReady && playerHand && tripsMultiplier(playerHand) > 0;
     const tripsNaturalHit = tripsPays && playerHand.natural ? playerHand.category : null;
     const tripsWildHit = tripsPays && !playerHand.natural ? playerHand.category : null;
+    // Strategy suggestion, from the cards the player has actually turned over
+    const suggestion = stage === "dealt" ? suggestAction(playerCards.filter((c) => peeled.includes(c.id))) : null;
     const netColor = !result ? "" : result.net > 0 ? "text-emerald-300" : result.net < 0 ? "text-red-300" : "text-amber-100";
 
     return (
@@ -332,17 +349,17 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                         <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
                                     </SlideBtn>
                                 )}
-                                {stage === "dealt" && !playerSorted && (
+                                {stage === "dealt" && !allPeeled && (
                                     <SlideBtn key="reveal">
-                                        <button className={BTN_GOLD} onClick={revealAll} disabled={allPeeled}>Reveal Cards</button>
+                                        <button className={BTN_NEUTRAL} onClick={revealAll}>Reveal Cards</button>
                                     </SlideBtn>
                                 )}
-                                {stage === "dealt" && playerSorted && (
+                                {stage === "dealt" && (
                                     <SlideBtn key="fold">
                                         <button className={BTN_NEUTRAL} onClick={handleFold}>Fold</button>
                                     </SlideBtn>
                                 )}
-                                {stage === "dealt" && playerSorted && (
+                                {stage === "dealt" && (
                                     <SlideBtn key="play">
                                         <button className={BTN_GOLD} onClick={handlePlay} disabled={bankroll < anteBet * PLAY_MULTIPLE}>Play {PLAY_MULTIPLE}x</button>
                                     </SlideBtn>
@@ -395,7 +412,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
                         <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
                         <span className="text-white/15">·</span>
-                        <span>DEALER ALWAYS PLAYS</span>
+                        <span>DEALER ALWAYS QUALIFIES</span>
                     </div>
                 </div>
 
@@ -520,6 +537,27 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 {playerReady && playerHand ? playerHand.label : ""}
                             </span>
                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <div className="flex min-h-[28px] items-center">
+                                <AnimatePresence>
+                                    {suggestion && (
+                                        <motion.div
+                                            key="suggestion"
+                                            initial={{ opacity: 0, y: 4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            data-testid="suggestion"
+                                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                                suggestion === "play"
+                                                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                                                    : "border-red-400/30 bg-red-500/10 text-red-300"
+                                            }`}
+                                        >
+                                            <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                            <span>{suggestion === "play" ? "Play" : "Fold"}</span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
 
                         <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>

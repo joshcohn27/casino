@@ -673,8 +673,8 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Dealer wins all ties on both hands.",
         "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
     ]],
-    ["Auto Set Best", [
-        "• Pressing Auto Set Best calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
+    ["Ask Dealer for Help", [
+        "• Pressing Ask Dealer for Help calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
         "• The outcome check indicator shows whether your current split matches, beats, or falls short of that optimal outcome.",
     ]],
     ["Fortune Bonus", [
@@ -805,7 +805,7 @@ function PaiGowBar({
                     )}
                     {stage === "setting" && playerReady && (
                         <SlideBtn key="auto">
-                            <button className={BTN_NEUTRAL} onClick={onAutoSetBest}>Auto Set Best</button>
+                            <button className={BTN_NEUTRAL} onClick={onAutoSetBest}>Ask Dealer for Help</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && playerReady && (
@@ -1005,7 +1005,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     function autoSetBest() {
         if (!bestPlayerSplitAgainstDealer) return;
         setSelectedFrontIds(bestPlayerSplitAgainstDealer.best.front.map((c) => c.id));
-        setMessage("Best high/low hand set against dealer selected.");
+        setMessage("The dealer set your best high and low hands against theirs.");
     }
 
     function dealHand() {
@@ -1033,7 +1033,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setRoundReturned(0);
         setMessage(getHighPaiGowInfo(d).aceHigh
             ? "Dealer has Ace-high pai gow. Main bet pushes. Set your hand to finish."
-            : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Auto Set Best.");
+            : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
     }
 
     function setHandAndResolve() {
@@ -1167,7 +1167,13 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const dealerIsSet = revealStep >= DEALER_SET && dealerBestSplit !== null;
 
     // Player stack: Low hand on top (nearer the dealer), the rest below
-    const lowIds = playerReady ? selectedFrontIds : [];
+    // each hand is shown in rank order, high card first
+    const byRank = (a: Card, b: Card) => valueOf(b) - valueOf(a);
+    const lowIds = playerReady
+        ? playerCards.filter((c) => selectedFrontIds.includes(c.id)).sort(byRank).map((c) => c.id)
+        : [];
+    const dealerHighIds = dealerBestSplit ? [...dealerBestSplit.back].sort(byRank).map((c) => c.id) : [];
+    const dealerLowIds = dealerBestSplit ? [...dealerBestSplit.front].sort(byRank).map((c) => c.id) : [];
     const playerRowCards = (playerReady ? [...playerCards].sort((a, b) => valueOf(b) - valueOf(a)) : playerCards)
         .filter((c) => !lowIds.includes(c.id));
     const playerHasStartedSetting = selectedFrontIds.length > 0;
@@ -1332,8 +1338,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     data-testid="dealer-cards"
                                 >
                                     {dealerCards.map((card, i) => {
-                                        const lowCol = dealerIsSet && dealerBestSplit ? dealerBestSplit.front.findIndex((c) => c.id === card.id) : -1;
-                                        const highCol = dealerIsSet && dealerBestSplit ? dealerBestSplit.back.findIndex((c) => c.id === card.id) : -1;
+                                        const lowCol = dealerIsSet ? dealerLowIds.indexOf(card.id) : -1;
+                                        const highCol = dealerIsSet ? dealerHighIds.indexOf(card.id) : -1;
                                         const style = lowCol >= 0 ? slotStyle(1, lowCol, 2, DEALER_ROW_STEP, 20 + lowCol)
                                             : highCol >= 0 ? slotStyle(0, highCol, 5, DEALER_ROW_STEP, 10 + highCol)
                                             : slotStyle(0, i, 7, DEALER_ROW_STEP, 10 + i);

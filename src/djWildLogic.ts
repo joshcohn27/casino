@@ -191,6 +191,36 @@ export function tripsMultiplier(hand: HandEval): number {
 /** Blind multiplier ("to 1") when the player wins; 0 means the Blind pushes. */
 export function blindMultiplier(hand: HandEval): number { return BLIND_PAYTABLE[hand.category] ?? 0; }
 
+// ─── Strategy ─────────────────────────────────────────────────────────────────
+
+/**
+ * Basic strategy: Play with a pair of fours or better, except two fours with a three
+ * alongside; otherwise fold.
+ *
+ * Works on the cards the player has turned over so far. Returns null when those cards
+ * do not settle the question yet.
+ */
+export function suggestAction(visible: Card[]): "play" | "fold" | null {
+    // Any wild card guarantees at least a pair of the highest other card, which is always enough
+    if (visible.some(isWild)) return "play";
+
+    if (visible.length === HAND_SIZE) {
+        const hand = evaluateHand(visible);
+        if (hand.category === "High Card") return "fold";
+        if (hand.category !== "Pair") return "play";
+        const pairValue = hand.score[1];
+        if (pairValue > 4) return "play";
+        if (pairValue < 4) return "fold";
+        return visible.some((c) => c.value === 3) ? "fold" : "play";
+    }
+
+    // Part of the hand is still face down: a pair of fives or better already showing is enough
+    const counts = new Map<number, number>();
+    for (const c of visible) counts.set(c.value, (counts.get(c.value) ?? 0) + 1);
+    for (const [value, n] of counts) if (n >= 2 && value > 4) return "play";
+    return null;
+}
+
 // ─── Settlement ───────────────────────────────────────────────────────────────
 
 export type Settlement = {

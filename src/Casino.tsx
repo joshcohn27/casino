@@ -378,7 +378,7 @@ export default function Casino() {
                         />
                         <GameCard
                             title="DJ Wild"
-                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always plays · Blind pays up to 1,000:1 · Trips pays more on natural hands"
+                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always qualifies · Blind pays up to 1,000:1 · Trips pays more on natural hands"
                             feltColor="#3b1a6b"
                             onClick={() => setGame("djwild")}
                             bankroll={bankrollDisplay}
