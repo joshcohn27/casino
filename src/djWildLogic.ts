@@ -48,13 +48,16 @@ export const BAD_BEAT_PAYTABLE: Partial<Record<Category, number>> = {
 };
 
 // Five Card Progressive: a fixed $1 bet on the player's hand. Paid "for 1" (the amount
-// shown is what comes back, the $1 included). Only natural hands count, so a wild card
-// cannot make a jackpot hand.
+// shown is what comes back, the $1 included). Wild and natural hands pay alike.
+// Five Wilds takes the whole meter (as at Canterbury Park). Five of a Kind is not on any
+// published table found, so it is set level with a Straight Flush.
 export const PROGRESSIVE_BET = 1;
 export const PROGRESSIVE_SEED = 10000;
 /** Added to the jackpot meter by each progressive bet */
 export const PROGRESSIVE_CONTRIBUTION = 0.25;
-export const PROGRESSIVE_METER_SHARE: Partial<Record<Category, number>> = { "Royal Flush": 1, "Straight Flush": 0.1 };
+export const PROGRESSIVE_METER_SHARE: Partial<Record<Category, number>> = {
+    "Five Wilds": 1, "Royal Flush": 1, "Five of a Kind": 0.1, "Straight Flush": 0.1,
+};
 export const PROGRESSIVE_FIXED_PAYTABLE: Partial<Record<Category, number>> = {
     "Four of a Kind": 300, "Full House": 50, Flush: 40, Straight: 30, "Three of a Kind": 9,
 };
@@ -221,7 +224,6 @@ export function badBeat(player: HandEval, dealer: HandEval): { multiplier: numbe
 
 /** Five Card Progressive: amount returned for a $1 bet, and the meter afterwards. */
 export function progressivePayout(hand: HandEval, meter: number): { payout: number; meterAfter: number } {
-    if (!hand.natural) return { payout: 0, meterAfter: meter };
     const share = PROGRESSIVE_METER_SHARE[hand.category];
     if (share !== undefined) {
         const payout = Math.round(meter * share * 100) / 100;
@@ -342,11 +344,11 @@ export function settle(params: {
             : "Bad Beat: No win");
     }
 
-    // Progressive pays on the player's own natural hand
+    // Progressive pays on the player's own hand
     const prog = progressive ? progressivePayout(playerHand, meter) : { payout: 0, meterAfter: meter };
     if (progressive) {
         lines.push(prog.payout > 0
-            ? `Progressive: Natural ${playerHand.category} pays $${prog.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            ? `Progressive: ${playerHand.category} pays $${prog.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             : "Progressive: No win");
     }
 

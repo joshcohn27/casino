@@ -8,11 +8,12 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
 import { sortByPower } from "./shared/handSort";
+import { readMeter, writeMeter, ambientTick } from "./shared/progressiveMeter";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, PLAY_MULTIPLE,
     BLIND_PAYTABLE, TRIPS_NATURAL_PAYTABLE, TRIPS_WILD_PAYTABLE, BAD_BEAT_PAYTABLE,
-    PROGRESSIVE_BET, PROGRESSIVE_SEED, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_FIXED_PAYTABLE,
+    PROGRESSIVE_BET, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_FIXED_PAYTABLE,
     createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
 } from "./djWildLogic";
 
@@ -25,13 +26,8 @@ type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateActio
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FELT_COLOR = "#3b1a6b";
-const METER_STORAGE_KEY = "djwild-progressive-meter";
-
-function readStoredMeter(): number {
-    if (typeof window === "undefined") return PROGRESSIVE_SEED;
-    const raw = Number(window.localStorage.getItem(METER_STORAGE_KEY));
-    return Number.isFinite(raw) && raw >= PROGRESSIVE_SEED * 0.5 ? raw : PROGRESSIVE_SEED;
-}
+// How often the jackpot meter creeps up on its own while the table is open
+const METER_TICK_MS = 2500;
 const CARD_FLIP_MS = 160;
 const SORT_DELAY_MS = 520;
 // Cards the player left face down are turned slowly, after the dealer has shown
@@ -71,8 +67,9 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
     ]],
     ["Five Card Progressive", [
         "• Optional $1 bet. Tap the red light to switch it on.",
-        "• Pays on your own hand, natural hands only: a wild card cannot make a progressive hand.",
-        "• Royal Flush wins the whole meter. Straight Flush wins 10% of it.",
+        "• Pays on your own hand, with Three of a Kind or better, whether or not wild cards made it.",
+        "• Five Wilds or a Royal Flush wins the whole meter. Five of a Kind or a Straight Flush wins 10% of it.",
+        "• The meter keeps climbing on its own, and from play at every other table.",
         "• Four of a Kind 300 for 1, Full House 50, Flush 40, Straight 30, Three of a Kind 9.",
     ]],
     ["Trips", [
@@ -188,8 +185,14 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const [badBeatChips, setBadBeatChips] = useState<ChipDenomination[]>([]);
     // Progressive: a fixed $1 bet switched on with the red light, and a jackpot meter that is remembered
     const [progressiveOn, setProgressiveOn] = useState(false);
-    const [meter, setMeter] = useState<number>(readStoredMeter);
-    useEffect(() => { window.localStorage.setItem(METER_STORAGE_KEY, String(meter)); }, [meter]);
+    const [meter, setMeter] = useState<number>(readMeter);
+    const meterRef = useRef(meter);
+    useEffect(() => { meterRef.current = meter; writeMeter(meter); }, [meter]);
+    // the meter creeps up on its own, as if other players were feeding it
+    useEffect(() => {
+        const id = window.setInterval(() => setMeter((m) => Math.round((m + ambientTick()) * 100) / 100), METER_TICK_MS);
+        return () => window.clearInterval(id);
+    }, []);
 
     // Bets locked in for the hand in play
     const [anteBet, setAnteBet] = useState(0);
@@ -320,7 +323,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
             await wait(hidden.length > 0 ? 500 : 0);
             const settled = settle({
                 player: playerCards, dealer: dealerCards, ante: anteBet, play, trips: tripsBet, folded,
-                badBeat: badBeatBet, progressive: progressiveBet > 0, meter,
+                badBeat: badBeatBet, progressive: progressiveBet > 0, meter: meterRef.current,
             });
             if (progressiveBet > 0) setMeter(settled.meterAfter);
             setBankroll((b) => b + settled.totalReturn);
@@ -379,7 +382,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const badBeatView = spotView(badBeatChips, badBeatBet, result?.badBeatReturn ?? 0);
     const progressiveLit = isBetting ? progressiveOn : progressiveBet > 0;
     const progressiveWon = done && (result?.progressiveReturn ?? 0) > 0;
-    const progressiveHit = playerReady && progressiveLit && playerHand && playerHand.natural ? playerHand.category : null;
+    const progressiveHit = playerReady && progressiveLit && playerHand ? playerHand.category : null;
     const badBeatHit = done && result && result.badBeatMultiplier > 0
         ? (result.compare > 0 ? result.dealerHand.category : result.playerHand.category)
         : null;
@@ -690,7 +693,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                     <PayoutColumn
                                         title="Progressive"
                                         unit=" for 1"
-                                        extra={[["Royal Flush", "100%"], ["Straight Flush", "10%"]]}
+                                        extra={[["Five Wilds", "100%"], ["Royal Flush", "100%"], ["Five of a Kind", "10%"], ["Straight Flush", "10%"]]}
                                         entries={PROGRESSIVE_FIXED_PAYTABLE}
                                         highlight={progressiveHit}
                                     />

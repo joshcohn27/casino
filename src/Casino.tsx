@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import UltimateTexasHoldem from "./UltimateTexasHoldem"
 import Blackjack from "./Blackjack"
 import FreeBetBlackjack from "./FreeBetBlackjack"
@@ -12,6 +12,7 @@ import MississippiStud from "./MississippiStud"
 import ILuvSuits from "./ILuvSuits"
 import DJWild from "./DJWild"
 import Feedback from "./Feedback"
+import { feedMeterFromWager } from "./shared/progressiveMeter"
 
 type Game =
     | "home"
@@ -213,6 +214,16 @@ export default function Casino() {
         window.localStorage.setItem(STORAGE_BANKROLL_KEY, String(bankroll))
     }, [bankroll])
 
+    // A wager at any table feeds the DJ Wild progressive meter a little, standing in for the
+    // other players who would be building a real jackpot. DJ Wild looks after its own meter.
+    const lastBankroll = useRef(bankroll)
+    useEffect(() => {
+        const wagered = lastBankroll.current - bankroll
+        lastBankroll.current = bankroll
+        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback") feedMeterFromWager(wagered)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bankroll])
+
     useEffect(() => {
         window.localStorage.setItem(STORAGE_GAME_KEY, game)
     }, [game])
@@ -223,13 +234,16 @@ export default function Casino() {
 
     const bankrollDisplay = useMemo(() => formatMoney(bankroll), [bankroll])
 
+    // Setting the bankroll by hand is not a wager, so it must not feed the meter
     const resetBankroll = () => {
+        lastBankroll.current = DEFAULT_BANKROLL
         setBankroll(DEFAULT_BANKROLL)
     }
 
     const applyBankroll = () => {
         const value = Number(bankrollInput)
         if (!Number.isFinite(value) || value < 0) return
+        lastBankroll.current = Math.floor(value)
         setBankroll(Math.floor(value))
     }
 
