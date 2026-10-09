@@ -84,26 +84,26 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         <AnimatePresence>
             {open && (
                 <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <button className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} aria-label="Close rules modal" />
+                    <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close rules modal" />
                     <motion.div
                         initial={{ opacity: 0, y: 24, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 16, scale: 0.98 }}
                         transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,_rgba(7,20,14,0.98),_rgba(3,10,7,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.6)]"
+                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-line-gold bg-panel text-text"
                     >
-                        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
                             <div>
-                                <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">Help</div>
-                                <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">I Luv Suits Rules</div>
+                                <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
+                                <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">I Luv Suits Rules</div>
                             </div>
-                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">×</button>
+                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink">×</button>
                         </div>
                         <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                            <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
+                            <div className="space-y-4 text-base leading-6 text-text">
                                 {RULES_SECTIONS.map(([title, items]) => (
-                                    <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title}</div>
+                                    <div key={title} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                                        <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                         <div className="space-y-1">{items.map((s) => <div key={s}>{s}</div>)}</div>
                                     </div>
                                 ))}
@@ -123,13 +123,13 @@ function PayoutColumn({ title, entries, unit, highlight }: {
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">{title}</div>
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">{title}</div>
             {Object.entries(entries).sort((a, b) => Number(b[0]) - Number(a[0])).map(([count, mult]) => {
                 const hit = highlight === Number(count);
                 return (
                     <div key={count} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{count}-card {unit}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult.toLocaleString()} to 1</span>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{count}-card {unit}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{mult.toLocaleString()} to 1</span>
                     </div>
                 );
             })}
@@ -341,7 +341,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                 bankroll={bankroll}
                 hideHeader
                 actionBar={
-                    <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+                    <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
                         <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
                         <div className="flex min-h-[46px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
@@ -403,30 +403,29 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                 <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-0.5">
                     <div className="flex items-center gap-2">
                         <h1
-                            className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                            style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                            className="text-center text-2xl font-bold text-gold-soft"
                         >
                             I Luv Suits
                         </h1>
                         <button
                             onClick={() => setShowRules(true)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                             aria-label="Show rules"
                         >
                             i
                         </button>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                        <span>LONGEST FLUSH WINS</span>
-                        <span className="text-white/20">·</span>
-                        <span>DEALER QUALIFIES WITH 3-CARD FLUSH, 9 HIGH</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Longest flush wins</span>
+                        <span className="text-white/75">·</span>
+                        <span>Dealer qualifies with 3-card flush, 9 high</span>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
-                        <span>PLAY 1x</span>
-                        <span className="text-white/15">·</span>
-                        <span>UP TO 2x WITH 5-CARD FLUSH</span>
-                        <span className="text-white/15">·</span>
-                        <span>UP TO 3x WITH 6 OR 7</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Play 1x</span>
+                        <span className="text-white/75">·</span>
+                        <span>Up to 2x with 5-card flush</span>
+                        <span className="text-white/75">·</span>
+                        <span>Up to 3x with 6 or 7</span>
                     </div>
                 </div>
 
@@ -502,7 +501,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 data-testid="result-lines"
                             >
                                 {result.lines.map((line, i) => (
-                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/55"}`}>{line}</p>
+                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
                                 ))}
                             </motion.div>
                         )}
@@ -513,7 +512,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
 
                         {/* Dealer */}
                         <div className="flex w-full flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                            <span className="text-[13px] font-bold text-white/75">Dealer</span>
                             {dealerCards.length > 0 ? (
                                 <HandRow
                                     testId="dealer-cards"
@@ -525,7 +524,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[70px] sm:h-[82px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100/65" data-testid="dealer-hand">
+                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="dealer-hand">
                                 {dealerSorted && dealerHand
                                     ? `${describeFlushHand(dealerHand)}${done && result && !result.dealerQualified ? " (does not qualify)" : ""}`
                                     : ""}
@@ -550,10 +549,10 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[70px] sm:h-[82px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100/65" data-testid="player-hand">
+                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="player-hand">
                                 {playerReady && playerHand ? describeFlushHand(playerHand) : ""}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <span className="text-[13px] font-bold text-white/75">Player</span>
                             <div className="flex min-h-[28px] items-center">
                                 <AnimatePresence>
                                     {suggestion && (
@@ -563,13 +562,13 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0 }}
                                             data-testid="suggestion"
-                                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                            className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
                                                 suggestion !== "fold"
                                                     ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                                     : "border-red-400/30 bg-red-500/10 text-red-300"
                                             }`}
                                         >
-                                            <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                            <span className="text-[13px] opacity-70">Suggest</span>
                                             <span>{suggestion === "fold" ? "Fold" : `Play ${suggestion}x`}</span>
                                         </motion.div>
                                     )}
@@ -577,7 +576,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             </div>
                         </div>
 
-                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>
+                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
                         {dealerRevealed && !done && <span className="sr-only">Settling</span>}
                     </div>
 
@@ -587,7 +586,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                         <div className="mt-4">
                             <PayoutColumn title="Super Flush Rush" entries={SUPER_FLUSH_PAYTABLE} unit="straight flush" highlight={superFlushHit} />
                         </div>
-                        <div className="mt-4 text-center text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
+                        <div className="mt-4 text-center text-[10px] leading-relaxed text-white/75">
                             Ante and Play pay 1 to 1 · {formatMoney(MIN_ANTE)} minimum
                         </div>
                     </div>

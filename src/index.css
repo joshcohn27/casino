@@ -23,9 +23,11 @@
   --color-info: #38bdf8;
   --color-bad: #dc2626;
 
-  /* Two fonts: a slab serif for headings and version numbers, a sans for everything else */
-  --font-heading: "Zilla Slab", Georgia, "Times New Roman", serif;
-  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* One font stack for the whole site. Hierarchy comes from weight, size and color. */
+  --font-*: initial;
+  --font-main: Arial, Helvetica, sans-serif;
+  --default-font-family: var(--font-main);
+  --default-mono-font-family: var(--font-main);
 }
 
 html { background: var(--color-page); }
@@ -33,12 +35,23 @@ body {
   margin: 0;
   background: var(--color-page);
   color: var(--color-text);
-  font-family: var(--font-body);
+  font-family: var(--font-main);
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
 }
-h1, h2, h3 { font-family: var(--font-heading); font-weight: 700; letter-spacing: 0; }
+
+/* Headings: bold, normal case, slightly tight, in clear steps.
+   Page titles 28px, section headings 20px, card titles 16px. */
+@layer base {
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
+  html[data-font="large"] h1 { font-size: 30px; }
+  html[data-font="large"] h2 { font-size: 22px; }
+  html[data-font="large"] h3 { font-size: 18px; }
+}
 
 /* A small rectangular tag: a colored word with a colored left edge */
 .tag {

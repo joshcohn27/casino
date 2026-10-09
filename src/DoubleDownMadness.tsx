@@ -176,7 +176,7 @@ const CARD_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, n
 
 function Chip({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex rounded-full border border-zinc-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-100">
+        <div className="inline-flex rounded-[2px] border border-zinc-300/25 bg-black/30 px-3 py-1 text-sm font-bold text-zinc-100">
             {children}
         </div>
     );
@@ -185,7 +185,7 @@ function Chip({ children }: { children: React.ReactNode }) {
 function InfoPanel({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <div className="px-1 py-2">
-            <div className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-300/80">
+            <div className="mb-3 text-sm font-extrabold text-zinc-300/80">
                 {title}
             </div>
             {children}
@@ -253,7 +253,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 exit={{ opacity: 0 }}
             >
                 <button
-                    className="absolute inset-0 bg-black/72 backdrop-blur-[3px]"
+                    className="absolute inset-0 bg-black/72"
                     onClick={onClose}
                     aria-label="Close rules modal"
                 />
@@ -262,11 +262,11 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.98 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[1.5rem] border border-zinc-200/20 bg-[linear-gradient(180deg,_rgba(39,39,42,0.98),_rgba(9,9,11,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[4px] border border-zinc-200/20 bg-panel text-white"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
                         <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">
+                            <div className="text-[13px] font-extrabold text-amber-200/90">
                                 Game Info
                             </div>
                             <div className="mt-1 text-lg font-extrabold text-zinc-50 sm:text-2xl">
@@ -275,7 +275,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink"
                             aria-label="Close rules modal"
                         >
                             ×
@@ -285,8 +285,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                         <div className="grid gap-3 text-sm leading-6 text-zinc-100/88 sm:grid-cols-2">
                             {sections.map((section) => (
-                                <div key={section.title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
-                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">
+                                <div key={section.title} className="rounded-[4px] border border-white/10 bg-white/[0.055] p-4">
+                                    <div className="mb-2 text-sm font-extrabold text-amber-200">
                                         {section.title}
                                     </div>
                                     <div className="space-y-1">
@@ -298,7 +298,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                             ))}
                         </div>
 
-                        <div className="mt-3 rounded-2xl border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
+                        <div className="mt-3 rounded-[4px] border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
                             The big twist: doubling does not end your hand. You can keep playing after a double, then re-double again if your total is still under 21. If you bust with Push 22 active, the dealer still draws because the side bet depends on the dealer making exactly 22.
                         </div>
                     </div>
@@ -337,7 +337,7 @@ function DDMBar({
     const canClear = isBetting;
 
     return (
-        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-[10px] py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3 sm:px-4">
+        <div className="flex flex-col gap-2 border-t border-line bg-ink px-[10px] py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3 sm:px-4">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -409,7 +409,7 @@ function DDMBar({
                             key="dealer-msg"
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="text-sm italic text-white/40"
+                            className="text-sm italic text-white/75"
                         >
                             Dealer playing…
                         </motion.span>
@@ -930,9 +930,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     return (
         <>
             {isShuffling && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-zinc-300/25 bg-black/65 px-12 py-9 text-center shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
-                        <div className="text-[12px] font-extrabold uppercase tracking-[0.28em] text-zinc-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+                    <div className="rounded-[4px] border border-zinc-300/25 bg-black/65 px-12 py-9 text-center">
+                        <div className="text-[12px] font-extrabold text-zinc-200">
                             Double Down Madness
                         </div>
                         <div className="mt-2 text-4xl font-extrabold text-zinc-200">Shuffling Shoe</div>
@@ -982,7 +982,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         <InfoPanel title="Blackjack Pays">
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between gap-2 text-sm">
-                                    <span className="text-amber-100/80">Suited</span>
+                                    <span className="text-amber-100">Suited</span>
                                     <span className="font-extrabold text-amber-100">2 to 1</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-2 text-sm">
@@ -1015,25 +1015,24 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         <div className="flex flex-col items-center gap-1 select-none">
                             <div className="flex items-center gap-2">
                                 <h1
-                                    className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-zinc-100/80"
-                                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                                    className="text-center text-2xl font-bold text-zinc-100/80"
                                 >
                                     Double Down Madness
                                 </h1>
                                 <button
                                     onClick={() => setShowRules(true)}
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.12)] transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
+                                    className="flex h-6 w-6 items-center justify-center rounded-[4px] border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
                                     aria-label="Show Double Down Madness rules"
                                 >
                                     i
                                 </button>
                             </div>
-                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/30">
-                                <span>SUITED BLACKJACK PAYS 2 TO 1</span>
-                                <span className="text-white/15">·</span>
-                                <span>UNSUITED BLACKJACK 3 TO 2</span>
-                                <span className="text-white/15">·</span>
-                                <span>DEALER 22 PUSHES</span>
+                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
+                                <span>Suited Blackjack pays 2 to 1</span>
+                                <span className="text-white/75">·</span>
+                                <span>Unsuited Blackjack 3 to 2</span>
+                                <span className="text-white/75">·</span>
+                                <span>Dealer 22 pushes</span>
                             </div>
                         </div>
 

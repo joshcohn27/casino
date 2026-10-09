@@ -377,7 +377,7 @@ function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; i
                 className={`flex flex-col items-center justify-center rounded-full border-2 transition-colors ${borderClass} ${bgClass}`}
                 style={{ width: 70, height: 70 }}
             >
-                <span className={`text-[10px] font-extrabold uppercase tracking-[0.12em] ${active || isCurrent ? "text-amber-200" : "text-white/30"}`}>{label}</span>
+                <span className={`text-[13px] font-extrabold ${active || isCurrent ? "text-amber-200" : "text-white/75"}`}>{label}</span>
                 {active && <span className="mt-0.5 text-[10px] font-bold text-amber-300">{formatMoney(bet)}</span>}
             </div>
         </div>
@@ -387,15 +387,15 @@ function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; i
 function MsPayoutColumn({ title, entries, highlight }: { title: string; entries: PayEntry[]; highlight?: string }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">
                 {title}
             </div>
             {entries.map(({ label, display }) => {
                 const hit = highlight === label;
                 return (
                     <div key={label} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{label}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{display}</span>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{label}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{display}</span>
                     </div>
                 );
             })}
@@ -408,10 +408,10 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     const Section = ({ title, items }: { title: string; items: string[] }) => (
         <section>
-            <h3 className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-amber-300/80">{title}</h3>
+            <h3 className="mb-2 text-amber-300">{title}</h3>
             <ul className="flex flex-col gap-1.5">
                 {items.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/65">
+                    <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/90">
                         <span className="mt-[3px] shrink-0 text-amber-400/60">•</span>
                         <span>{item}</span>
                     </li>
@@ -422,15 +422,15 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+            <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-white/10 bg-zinc-950 p-6">
                 <div className="mb-5 flex items-center justify-between">
-                    <h2 className="text-base font-extrabold uppercase tracking-[0.15em] text-amber-100">
+                    <h2 className="text-gold-soft">
                         Mississippi Stud Rules
                     </h2>
                     <button
                         onClick={onClose}
-                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/8 text-sm text-white transition hover:bg-white/15"
+                        className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-white/15 bg-white/8 text-sm text-white transition hover:bg-white/15"
                         aria-label="Close rules"
                     >
                         ×
@@ -744,7 +744,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     // ─── Action bar ───────────────────────────────────────────────────────────
 
     const actionBar = (
-        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+        <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
             <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={stage !== "betting"} />
 
             <div className="flex items-center justify-center gap-3">
@@ -835,25 +835,24 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-col items-center gap-0.5">
                     <div className="flex items-center gap-2">
                         <h1
-                            className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                            style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                            className="text-center text-2xl font-bold text-gold-soft"
                         >
                             Mississippi Stud
                         </h1>
                         <button
                             onClick={() => setShowRules(true)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                             aria-label="Show rules"
                         >
                             i
                         </button>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
                         <span>PAIRS 6–10 PUSH</span>
-                        <span className="text-white/20">·</span>
-                        <span>JACKS OR BETTER WINS</span>
-                        <span className="text-white/20">·</span>
-                        <span>FOLD ANY STREET TO CUT LOSSES</span>
+                        <span className="text-white/75">·</span>
+                        <span>Jacks or better wins</span>
+                        <span className="text-white/75">·</span>
+                        <span>Fold any street to cut losses</span>
                     </div>
                 </div>
 
@@ -882,7 +881,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
                         {/* Community cards */}
                         <div className="flex flex-col items-center gap-1">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                            <div className="text-[13px] font-bold text-white/75">
                                 Community Cards
                             </div>
                             <div className="flex flex-row-reverse gap-2">
@@ -892,7 +891,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                             key={i}
                                             className={`${CARD_CLS} flex items-end justify-center rounded-[10px] border border-dashed border-white/15 bg-white/5 pb-1 sm:rounded-[12px]`}
                                         >
-                                            <span className="text-[10px] text-white/30">{["3rd", "4th", "5th"][i]}</span>
+                                            <span className="text-[10px] text-white/75">{["3rd", "4th", "5th"][i]}</span>
                                         </div>
                                     ))
                                     : communityCards.map((card, i) => (
@@ -914,10 +913,10 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             <div className="flex flex-row-reverse gap-2">
                                 {["3rd St", "4th St", "5th St"].map((lbl, i) => (
                                     <div key={lbl} className="w-[56px] text-center sm:w-[66px]">
-                                        <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
+                                        <span className={`text-[13px] font-bold ${
                                             stage !== "betting" && i < revealedCount(stage)
-                                                ? "text-amber-200/60"
-                                                : "text-white/25"
+                                                ? "text-amber-200"
+                                                : "text-white/75"
                                         }`}>{lbl}</span>
                                     </div>
                                 ))}
@@ -928,7 +927,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
                         {/* Player hole cards */}
                         <div className="flex flex-col items-center gap-1">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                            <div className="text-[13px] font-bold text-white/75">
                                 Your Hand
                             </div>
                             <div className="flex gap-2">
@@ -977,7 +976,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                 floatChips
                                 chips={stage === "betting" ? bonusChips : buildChipStackFromAmount(threeCBBet)}
                                 totalBet={stage === "betting" ? pendingBonus : threeCBBet}
-                                label="BONUS"
+                                label="Bonus"
                                 sublabel="3 card"
                                 isSelected={selectedZone === "bonus"}
                                 isWinner={threeCBBet > 0 && bonusReturn > threeCBBet}
@@ -1006,9 +1005,9 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
                         {/* Street circles */}
                         <div className="flex gap-3">
-                            <StreetCircle label="3RD" bet={thirdBet} isCurrent={stage === "third"} />
-                            <StreetCircle label="4TH" bet={fourthBet} isCurrent={stage === "fourth"} />
-                            <StreetCircle label="5TH" bet={fifthBet} isCurrent={stage === "fifth"} />
+                            <StreetCircle label="3rd" bet={thirdBet} isCurrent={stage === "third"} />
+                            <StreetCircle label="4th" bet={fourthBet} isCurrent={stage === "fourth"} />
+                            <StreetCircle label="5th" bet={fifthBet} isCurrent={stage === "fifth"} />
                         </div>
 
                         {/* Street message */}
@@ -1019,7 +1018,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/50"
+                                    className="text-sm font-bold text-white/90"
                                 >
                                     {stage === "third"
                                         ? "3rd Street - Bet or Fold"
@@ -1038,7 +1037,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     initial={{ opacity: 0, y: 4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
                                         suggestion === "max"
                                             ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                             : suggestion === "3x"
@@ -1048,7 +1047,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                             : "border-red-400/30 bg-red-500/10 text-red-300"
                                     }`}
                                 >
-                                    <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                    <span className="text-[13px] opacity-70">Suggest</span>
                                     <span>{suggestion === "max" ? "Max Bet" : suggestion === "3x" ? "Bet 3×" : suggestion === "1x" ? "Bet 1×" : "Fold"}</span>
                                 </motion.div>
                             )}
@@ -1060,7 +1059,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                 {resultLines.map((line, i) => (
                                     <div
                                         key={i}
-                                        className={`text-[11px] font-bold ${i === 0 ? netColor : "text-white/55"}`}
+                                        className={`text-[11px] font-bold ${i === 0 ? netColor : "text-white/90"}`}
                                     >
                                         {line}
                                     </div>

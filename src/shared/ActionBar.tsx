@@ -1,20 +1,13 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import ChipTray from './ChipTray';
-import type { ChipDenomination } from './money';
+import { BTN_NEUTRAL, BTN_GOLD, BTN_GREEN, type ChipDenomination } from './money';
 
 /* ─── Internal button ────────────────────────────────────────────────────── */
 
 type BtnVariant = 'clear' | 'deal' | 'double';
 
-const BTN_STYLES: Record<BtnVariant, string> = {
-    clear:
-        'border-white/20 bg-white/10 text-white hover:bg-white/16',
-    deal:
-        'border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] text-slate-950 hover:brightness-105',
-    double:
-        'border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] text-slate-950 hover:brightness-105',
-};
+const BTN_STYLES: Record<BtnVariant, string> = { clear: BTN_NEUTRAL, deal: BTN_GOLD, double: BTN_GREEN };
 
 function ActionBtn({
     children,
@@ -31,11 +24,7 @@ function ActionBtn({
         <motion.button
             onClick={onClick}
             disabled={disabled}
-            whileTap={{ scale: disabled ? 1 : 0.95 }}
-            className={`relative rounded-xl border px-5 py-2.5 text-sm font-extrabold
-                        shadow-lg transition
-                        disabled:cursor-not-allowed disabled:opacity-40
-                        ${BTN_STYLES[variant]}`}
+                        className={BTN_STYLES[variant]}
         >
             {children}
         </motion.button>
@@ -98,7 +87,7 @@ export default function ActionBar({
 }: ActionBarProps) {
     return (
         <div
-            className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
         >
             {/* ── Left: chip selector ────────────────────────────────── */}
             <ChipTray
@@ -128,17 +117,9 @@ export default function ActionBar({
 
                     {canDoubleAndDeal && (
                         <SlideIn id="double">
-                            {/* Breathing glow ring — draws the eye to the primary CTA */}
-                            <div className="relative">
-                                <motion.div
-                                    className="absolute -inset-[3px] rounded-[14px] bg-emerald-400/25"
-                                    animate={{ opacity: [0.4, 0.85, 0.4], scale: [1, 1.04, 1] }}
-                                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                                />
-                                <ActionBtn variant="double" onClick={onDoubleAndDeal} disabled={disabled}>
+                            <ActionBtn variant="double" onClick={onDoubleAndDeal} disabled={disabled}>
                                     {doubleLabel}
                                 </ActionBtn>
-                            </div>
                         </SlideIn>
                     )}
                 </AnimatePresence>

@@ -256,7 +256,7 @@ function CardView({
                 {held ? (
                     <div
                         className="rounded-sm border-[3px] border-black bg-yellow-300 px-2 py-[1px] text-[18px] font-black leading-none text-red-600"
-                        style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                        style={CONTROL_SHADOW}
                     >
                         HELD
                     </div>
@@ -279,7 +279,6 @@ function CardView({
                         <div
                             className={`absolute left-[8px] top-[6px] text-[50px] font-black leading-[0.8] ${red ? "text-red-600" : "text-black"
                                 }`}
-                            style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                         >
                             {card.rank}
                         </div>
@@ -301,7 +300,6 @@ function CardView({
                         {isWild && (
                             <div
                                 className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-emerald-400 py-[3px] text-[14px] font-black leading-none text-black"
-                                style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                             >
                                 WILD
                             </div>
@@ -343,7 +341,6 @@ function RetroButton({
             className={`border-[3px] border-[#897700] font-black uppercase transition disabled:cursor-not-allowed disabled:opacity-70 ${small ? "min-h-[38px] px-3 text-[20px]" : "min-h-[46px] px-4 text-[24px]"
                 } ${base}`}
             style={{
-                fontFamily: '"Arial Black", Impact, sans-serif',
                 boxShadow: "inset 0 2px 0 rgba(255,255,255,0.7), 0 2px 0 rgba(0,0,0,0.35)",
             }}
         >
@@ -369,7 +366,6 @@ function DenomBadge({
             className="flex h-[84px] w-[84px] items-center justify-center rounded-full border-[4px] border-[#efe957] bg-[#ff2a00] text-center transition disabled:cursor-not-allowed disabled:opacity-70"
             style={{
                 boxShadow: "inset 0 2px 0 rgba(255,255,255,0.35), 0 4px 0 rgba(0,0,0,0.35)",
-                fontFamily: '"Arial Black", Impact, sans-serif',
             }}
         >
             <div className="leading-none">
@@ -505,7 +501,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                 <div className="border-b-[4px] border-[#efe957] bg-[#020202] py-1.5 text-center">
                     <div
                         className="text-[16px] font-black text-yellow-300 md:text-[20px]"
-                        style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                        style={CONTROL_SHADOW}
                     >
                         DEUCES WILD · FULL PAY
                     </div>
@@ -521,7 +517,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                                     key={value}
                                     className={`border-t-0 border-[#efe957] py-1 text-center text-[28px] font-black leading-none ${index < BET_COLUMNS.length - 1 ? "border-r-[3px]" : ""
                                         } ${isActiveColumn ? "bg-[#ff2a00] text-yellow-300" : "bg-[#0825b2] text-yellow-300"}`}
-                                    style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                    style={CONTROL_SHADOW}
                                 >
                                     {value}
                                 </div>
@@ -537,7 +533,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                                 <div
                                     className={`border-r-[3px] border-t-[3px] border-[#efe957] px-2 py-[2px] text-[18px] font-black uppercase leading-none md:text-[21px] ${isWinningRow ? "bg-[#0b7d12] text-white" : "bg-[#0825b2] text-yellow-300"
                                         }`}
-                                    style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                    style={CONTROL_SHADOW}
                                 >
                                     {row.label}
                                 </div>
@@ -558,7 +554,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                                             key={`${row.key}-${index}`}
                                             className={`border-t-[3px] border-[#efe957] py-[2px] text-center text-[18px] font-black leading-none md:text-[21px] ${index < row.pays.length - 1 ? "border-r-[3px]" : ""
                                                 } ${cellClass}`}
-                                            style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                            style={CONTROL_SHADOW}
                                         >
                                             {value}
                                         </div>
@@ -587,13 +583,13 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                             <div>
                                 <div
                                     className="text-[26px] font-black leading-none text-yellow-300 md:text-[34px]"
-                                    style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                    style={CONTROL_SHADOW}
                                 >
                                     WIN
                                 </div>
                                 <div
                                     className="mt-1 min-w-[92px] text-center text-[34px] font-black leading-none text-yellow-300 md:min-w-[120px] md:text-[48px]"
-                                    style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                    style={CONTROL_SHADOW}
                                 >
                                     {winDisplay}
                                 </div>
@@ -602,19 +598,16 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                             <div className="pb-0">
                                 <div
                                     className="text-center text-[20px] font-black leading-none text-white md:text-[24px]"
-                                    style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                                 >
                                     BET {bet}
                                 </div>
                                 <div
                                     className="mt-1 text-center text-[14px] font-black leading-none text-yellow-200 md:text-[16px]"
-                                    style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                                 >
                                     WAGER ${wagerDisplay}
                                 </div>
                                 <div
                                     className="mt-1 text-center text-[12px] font-bold uppercase tracking-[0.14em] text-yellow-200 md:text-[13px]"
-                                    style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                                 >
                                     {message}
                                 </div>
@@ -628,7 +621,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                         <div className="text-right">
                             <div
                                 className="text-[26px] font-black leading-none text-yellow-300 md:text-[34px]"
-                                style={{ ...CONTROL_SHADOW, fontFamily: '"Arial Black", Impact, sans-serif' }}
+                                style={CONTROL_SHADOW}
                             >
                                 CREDIT {creditDisplay}
                             </div>
@@ -653,7 +646,6 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                         <div className="mt-3 border-[3px] border-[#efe957] bg-[#001a88] px-4 py-3 text-sm text-white">
                             <div
                                 className="font-black uppercase text-yellow-300"
-                                style={{ fontFamily: '"Arial Black", Impact, sans-serif' }}
                             >
                                 How to play — Deuces Wild
                             </div>

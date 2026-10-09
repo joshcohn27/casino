@@ -272,8 +272,8 @@ function PlayCircle({ bet }: { bet: number }) {
                 className="flex flex-col items-center justify-center rounded-full border-2 border-dashed border-emerald-400/60 bg-emerald-900/20"
                 style={{ width: 82, height: 82 }}
             >
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-200/80">Play</span>
-                <span className="mt-0.5 text-[10px] font-normal text-white/45">1×</span>
+                <span className="text-sm font-medium text-emerald-200/80">Play</span>
+                <span className="mt-0.5 text-[10px] font-normal text-white/75">1×</span>
                 {bet > 0 && (
                     <span className="mt-1 text-[10px] font-extrabold text-emerald-300">{formatMoney(bet)}</span>
                 )}
@@ -288,15 +288,15 @@ function PayoutColumn({ title, entries, highlight }: {
     const sorted = Object.entries(entries).sort((a, b) => b[1] - a[1]);
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">
                 {title}
             </div>
             {sorted.map(([hand, mult]) => {
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{mult} to 1</span>
                     </div>
                 );
             })}
@@ -339,12 +339,12 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     const Section = ({ title, items }: { title: string; items: string[] }) => (
         <section>
-            <h3 className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-amber-300/80">
+            <h3 className="mb-2 text-amber-300">
                 {title}
             </h3>
             <ul className="flex flex-col gap-1.5">
                 {items.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/65">
+                    <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/90">
                         <span className="mt-[3px] shrink-0 text-amber-400/60">•</span>
                         <span>{item}</span>
                     </li>
@@ -355,15 +355,15 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+            <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-white/10 bg-zinc-950 p-6">
                 <div className="mb-5 flex items-center justify-between">
-                    <h2 className="text-base font-extrabold uppercase tracking-[0.15em] text-amber-100">
+                    <h2 className="text-gold-soft">
                         Three Card Poker Rules
                     </h2>
                     <button
                         onClick={onClose}
-                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/8 text-sm text-white transition hover:bg-white/15"
+                        className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-white/15 bg-white/8 text-sm text-white transition hover:bg-white/15"
                         aria-label="Close rules"
                     >
                         ×
@@ -647,7 +647,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     // ─── Payout right column ──────────────────────────────────────────────────
 
     const rightColumn = (
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-[4px] border border-white/10 bg-black/25 p-4">
             <PayoutColumn title="Pair Plus" entries={PAIR_PLUS_TABLE} highlight={ppHighlight} />
             <div className="my-2 h-px bg-white/10" />
             <PayoutColumn title="Ante Bonus" entries={ANTE_BONUS_TABLE} highlight={ppHighlight} />
@@ -659,8 +659,8 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     // ─── Hand rankings left column ────────────────────────────────────────────
 
     const leftColumn = (
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-            <div className="mb-2 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
+        <div className="rounded-[4px] border border-white/10 bg-black/25 p-4">
+            <div className="mb-2 text-center text-[13px] font-extrabold text-amber-200">
                 Hand Rankings
             </div>
             {([
@@ -673,14 +673,14 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             ] as [string, string][]).map(([rank, desc], i) => (
                 <div key={rank} className="flex items-start justify-between gap-2 py-0.5 text-[11px]">
                     <div>
-                        <span className="font-bold text-white/80">{rank}</span>
-                        <div className="text-[10px] text-white/35">{desc}</div>
+                        <span className="font-bold text-white/90">{rank}</span>
+                        <div className="text-[10px] text-white/75">{desc}</div>
                     </div>
-                    <span className="shrink-0 text-white/20">#{i + 1}</span>
+                    <span className="shrink-0 text-white/75">#{i + 1}</span>
                 </div>
             ))}
-            <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[10px] text-white/45">
-                Dealer qualifies with <span className="font-bold text-white/65">Queen-high</span> or better
+            <div className="mt-3 rounded-[4px] border border-white/10 bg-white/5 px-2 py-1.5 text-[10px] text-white/75">
+                Dealer qualifies with <span className="font-bold text-white/90">Queen-high</span> or better
             </div>
         </div>
     );
@@ -696,7 +696,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             bankroll={bankroll}
             hideHeader
             actionBar={
-                <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+                <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
                     <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={stage !== "betting"} />
                     <div className="flex items-center justify-center gap-2">
                         <AnimatePresence mode="popLayout" initial={false}>
@@ -738,7 +738,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="text-sm italic text-white/40"
+                                    className="text-sm italic text-white/75"
                                 >
                                     Resolving…
                                 </motion.span>
@@ -780,23 +780,22 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-2">
                     <h1
-                        className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                        style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                        className="text-center text-2xl font-bold text-gold-soft"
                     >
                         Three Card Poker
                     </h1>
                     <button
                         onClick={() => setShowRules(true)}
-                        className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                        className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                         aria-label="Show rules"
                     >
                         i
                     </button>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
+                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
                     <span>ANTE · PLAY · PAIR PLUS</span>
-                    <span className="text-white/20">·</span>
-                    <span>6 CARD BONUS</span>
+                    <span className="text-white/75">·</span>
+                    <span>6 card bonus</span>
                 </div>
             </div>
 
@@ -820,7 +819,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
                     {/* Dealer area */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</div>
+                        <div className="text-[13px] font-bold text-white/75">Dealer</div>
                         <CardRow cards={dealerCards} faceUp={dealerFaceUp} placeholder />
                         <AnimatePresence>
                             {dealerStatusLabel && (
@@ -900,7 +899,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                     {/* Player area */}
                     <div className="flex flex-col items-center gap-2">
                         <CardRow cards={playerCards} faceUp placeholder />
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</div>
+                        <div className="text-[13px] font-bold text-white/75">Player</div>
                         <AnimatePresence>
                             {suggestion && (
                                 <motion.div
@@ -908,13 +907,13 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                     initial={{ opacity: 0, y: 4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
                                         suggestion === "play"
                                             ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                             : "border-red-400/30 bg-red-500/10 text-red-300"
                                     }`}
                                 >
-                                    <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                    <span className="text-[13px] opacity-70">Suggest</span>
                                     <span>{suggestion === "play" ? "Play" : "Fold"}</span>
                                 </motion.div>
                             )}
@@ -945,7 +944,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                                     : (resultInfo?.net ?? 0) < 0
                                                     ? "text-red-300"
                                                     : "text-amber-100"
-                                                : "text-white/55"
+                                                : "text-white/90"
                                         }`}
                                     >
                                         {line}

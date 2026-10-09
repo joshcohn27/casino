@@ -33,7 +33,6 @@ function suitSrc(suit: string): string {
 }
 
 const RANK_FONT: React.CSSProperties = {
-    fontFamily: 'Georgia, "Palatino Linotype", Palatino, serif',
     fontWeight: 700,
 };
 

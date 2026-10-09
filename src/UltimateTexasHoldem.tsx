@@ -223,27 +223,27 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     return (
         <AnimatePresence>
             <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <button className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} aria-label="Close rules modal" />
+                <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close rules modal" />
                 <motion.div initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,_rgba(7,20,14,0.98),_rgba(3,10,7,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.6)]"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-line-gold bg-panel text-text"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
                         <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">Help</div>
-                            <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">Ultimate Texas Hold&apos;em Rules</div>
+                            <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
+                            <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">Ultimate Texas Hold&apos;em Rules</div>
                         </div>
-                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">×</button>
+                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink">×</button>
                     </div>
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                        <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
+                        <div className="space-y-4 text-base leading-6 text-text">
                             {[
                                 ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5 to $25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
                                 ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, Ante, Blind, Play, and Trips lose immediately."]],
                                 ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• Dealer also qualifies with Ace-King high.", "• If dealer doesn't qualify and you win, Ante pushes and Play wins 1 to 1."]],
                                 ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
-                                <div key={title as string} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title as string}</div>
+                                <div key={title as string} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                                    <div className="mb-2 text-sm font-extrabold text-amber-200">{title as string}</div>
                                     <div className="space-y-1">{(items as string[]).map(s => <div key={s}>{s}</div>)}</div>
                                 </div>
                             ))}
@@ -263,13 +263,13 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function PayoutColumn({ title, entries, highlight }: { title: string; entries: Record<string, number>; highlight?: string | null; }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70 text-center">{title}</div>
+            <div className="mb-1 text-[13px] font-extrabold text-amber-200 text-center">{title}</div>
             {Object.entries(entries).sort((a, b) => b[1] - a[1]).map(([hand, mult]) => {
                 const isHit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
-                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
+                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{mult} to 1</span>
                     </div>
                 );
             })}
@@ -542,7 +542,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 bankroll={bankroll}
                 hideHeader
                 actionBar={
-                    <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+                    <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
                         <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
                         <div className="flex min-h-[46px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
@@ -615,24 +615,24 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 {/* Title - full width at the very top */}
                 <div className="mb-3 flex select-none flex-col items-center gap-1 shrink-0">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-center text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90" style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+                        <h1 className="text-center text-2xl font-bold text-gold-soft">
                             Ultimate Texas Hold&apos;em
                         </h1>
-                        <button onClick={() => setShowRules(true)} className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15" aria-label="Show rules">i</button>
+                        <button onClick={() => setShowRules(true)} className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black" aria-label="Show rules">i</button>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                        <span>DEALER QUALIFIES WITH PAIR OR BETTER</span>
-                        <span className="text-white/20">·</span>
-                        <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Dealer qualifies with pair or better</span>
+                        <span className="text-white/75">·</span>
+                        <span>Blind pays on straight or better</span>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
-                        <span>PLAY BET</span>
-                        <span className="text-white/15">·</span>
-                        <span>4x OR 3x PREFLOP</span>
-                        <span className="text-white/15">·</span>
-                        <span>2x AFTER FLOP</span>
-                        <span className="text-white/15">·</span>
-                        <span>1x ON RIVER</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Play bet</span>
+                        <span className="text-white/75">·</span>
+                        <span>4x or 3x preflop</span>
+                        <span className="text-white/75">·</span>
+                        <span>2x after flop</span>
+                        <span className="text-white/75">·</span>
+                        <span>1x on river</span>
                     </div>
                 </div>
 
@@ -700,7 +700,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     onSelect={() => setSelectedSpot("ante")}
                                     onRemove={() => removeLastChip("ante")}
                                 />
-                                <span className="text-base font-bold text-white/50" style={{ letterSpacing: "0.05em" }}>=</span>
+                                <span className="text-base font-bold text-white/90" style={{ letterSpacing: "0.05em" }}>=</span>
                                 <BetSpot
                                     testId="blind"
                                     label="Blind"
@@ -736,13 +736,13 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2" data-testid="settlement">
                                 <div className="flex items-center gap-4 text-xs">
                                     <div className="text-center">
-                                        <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">Player</div>
+                                        <div className="text-[13px] text-white/75">Player</div>
                                         <div className="font-extrabold text-amber-100">{describeBestHand(resolvedHand.playerBest)}</div>
                                     </div>
                                     <div className="h-6 w-px bg-white/10" />
                                     <div className="text-center">
-                                        <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">Dealer{!resolvedHand.dealerQualified ? " (no qualify)" : ""}</div>
-                                        <div className="font-bold text-white/70">{describeBestHand(resolvedHand.dealerBest)}</div>
+                                        <div className="text-[13px] text-white/75">Dealer{!resolvedHand.dealerQualified ? " (no qualify)" : ""}</div>
+                                        <div className="font-bold text-white/90">{describeBestHand(resolvedHand.dealerBest)}</div>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -755,9 +755,9 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     ].map(({ name, result }) => {
                                         const isWin = result.startsWith("Win"), isLose = result === "Lose";
                                         return (
-                                            <div key={name} data-result={name} className="rounded-xl border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
-                                                <div className="text-[10px] uppercase tracking-[0.1em] text-white/35">{name}</div>
-                                                <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100/70"}`}>{result}</div>
+                                            <div key={name} data-result={name} className="rounded-[4px] border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
+                                                <div className="text-[13px] text-white/75">{name}</div>
+                                                <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100"}`}>{result}</div>
                                             </div>
                                         );
                                     })}
@@ -770,7 +770,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     <div className={`${isBetting ? "order-2" : "order-1"} flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-2 lg:flex-1`}>
                         {/* Dealer */}
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                            <span className="text-[13px] font-bold text-white/75">Dealer</span>
                             <div className="flex gap-2" data-testid="dealer-cards">
                                 <AnimatePresence>
                                     {round.dealer.map((card, i) => (
@@ -781,11 +781,11 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 </AnimatePresence>
                                 {round.dealer.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
                             </div>
-                            <span className="h-4 text-xs font-semibold text-amber-100/70">{dealerShown >= 2 ? dealerHandText : ""}</span>
+                            <span className="h-4 text-xs font-semibold text-amber-100">{dealerShown >= 2 ? dealerHandText : ""}</span>
                         </div>
                         {/* Board */}
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
+                            <span className="text-[13px] font-bold text-white/75">Board</span>
                             <div className="flex gap-1.5 sm:gap-2" data-testid="board-cards">
                                 <AnimatePresence>
                                     {round.board.map((card, i) => (
@@ -814,7 +814,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 </div>
                                 {hasSixBet && round.hiddenSixBonusCards.length > 0 && (
                                     <div className="flex flex-col items-center gap-1" data-testid="six-cards">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">6 Card Bonus</span>
+                                        <span className="text-[13px] font-bold text-white/75">6 Card Bonus</span>
                                         <div className="flex gap-1">
                                             {round.hiddenSixBonusCards.map((card, i) => (
                                                 <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(0.2 + i * 0.06)}>
@@ -825,17 +825,17 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     </div>
                                 )}
                             </div>
-                            <span className="h-4 text-xs font-semibold text-amber-100/70">
+                            <span className="h-4 text-xs font-semibold text-amber-100">
                                 {playerHandText}
                                 {hasSixBet && sixShown >= 4 && sixBonusResult && (
-                                    <span className={sixBonusResult.category === "No Bonus" ? "text-white/40" : "text-amber-200"}>
+                                    <span className={sixBonusResult.category === "No Bonus" ? "text-white/75" : "text-amber-200"}>
                                         {" · 6 Card: "}{sixBonusResult.category}
                                     </span>
                                 )}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <span className="text-[13px] font-bold text-white/75">Player</span>
                         </div>
-                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>
+                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
                     </div>
 
                     {/* Payout tables - vertically centered, right side */}

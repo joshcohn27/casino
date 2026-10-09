@@ -319,7 +319,7 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 
 function Chip({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex rounded-full border border-amber-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-100">
+        <div className="inline-flex rounded-[2px] border border-amber-300/25 bg-black/30 px-3 py-1 text-sm font-bold text-amber-100">
             {children}
         </div>
     );
@@ -336,7 +336,7 @@ const BADGE: Record<string, string> = {
 
 function Badge({ result }: { result: string }) {
     return (
-        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${BADGE[result] ?? ""}`}>
+        <span className={`rounded-[2px] border px-2.5 py-0.5 text-sm font-bold ${BADGE[result] ?? ""}`}>
             {result}
         </span>
     );
@@ -347,27 +347,26 @@ function TableLabel({ onShowRules }: { onShowRules: () => void }) {
         <div className="flex flex-col items-center gap-1 select-none">
             <div className="flex items-center gap-2">
                 <h1
-                    className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                    className="text-2xl font-bold text-gold-soft"
                 >
                     Free Bet Blackjack
                 </h1>
                 <button
                     onClick={onShowRules}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.12)] transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
+                    className="flex h-6 w-6 items-center justify-center rounded-[4px] border border-amber-200/35 bg-black/30 text-[11px] font-extrabold text-amber-100 transition hover:border-amber-200/60 hover:bg-amber-200/12 active:scale-95"
                     aria-label="Show Free Bet Blackjack rules"
                 >
                     i
                 </button>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                <span>BLACKJACK PAYS 3 TO 2</span>
-                <span className="text-white/20">·</span>
-                <span>FREE DOUBLES ON 9-10-11</span>
-                <span className="text-white/20">·</span>
-                <span>FREE SPLITS ON 2-9 AND ACES</span>
-                <span className="text-white/20">·</span>
-                <span>DEALER 22 PUSHES</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-white/75">
+                <span>Blackjack pays 3 to 2</span>
+                <span className="text-white/75">·</span>
+                <span>Free doubles on 9-10-11</span>
+                <span className="text-white/75">·</span>
+                <span>Free splits on 2-9 and aces</span>
+                <span className="text-white/75">·</span>
+                <span>Dealer 22 pushes</span>
             </div>
         </div>
     );
@@ -415,7 +414,7 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
     void stage;
 
     return (
-        <div className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition-colors duration-300
+        <div className={`flex flex-col items-center gap-2 rounded-[4px] border p-3 transition-colors duration-300
             ${isActive ? "border-amber-300/50 bg-amber-300/[0.08] ring-2 ring-amber-300/20" : "border-white/10 bg-black/15"}`}
         >
             <div className="flex items-center gap-2">
@@ -440,7 +439,7 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
-            <div className="text-xs text-white/45">
+            <div className="text-xs text-white/75">
                 {betTag} {formatMoney(hand.baseBet.amount)}{doubleSuffix}
             </div>
         </div>
@@ -452,7 +451,7 @@ function PayoutColumn({ title, entries, highlight }: {
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[12px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
+            <div className="mb-1 text-center text-[12px] font-extrabold text-amber-200">
                 {title}
             </div>
             {Object.entries(entries)
@@ -464,8 +463,8 @@ function PayoutColumn({ title, entries, highlight }: {
                             key={label}
                             className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[13px] transition ${isHit ? "bg-amber-300/[0.12]" : ""}`}
                         >
-                            <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{label}</span>
-                            <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
+                            <span className={isHit ? "font-extrabold text-amber-100" : "text-white/75"}>{label}</span>
+                            <span className={`shrink-0 font-bold text-gold`}>{mult} to 1</span>
                         </div>
                     );
                 })}
@@ -522,7 +521,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 exit={{ opacity: 0 }}
             >
                 <button
-                    className="absolute inset-0 bg-black/72 backdrop-blur-[3px]"
+                    className="absolute inset-0 bg-black/72"
                     onClick={onClose}
                     aria-label="Close rules modal"
                 />
@@ -531,20 +530,20 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.98 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[1.5rem] border border-amber-200/20 bg-[linear-gradient(180deg,_rgba(127,29,29,0.98),_rgba(17,24,39,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.65)]"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[4px] border border-amber-200/20 bg-panel text-white"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
                         <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">
+                            <div className="text-[13px] font-extrabold text-amber-200/90">
                                 Game Info
                             </div>
-                            <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">
+                            <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">
                                 Free Bet Blackjack Rules
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink"
                             aria-label="Close rules modal"
                         >
                             ×
@@ -552,10 +551,10 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     </div>
 
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                        <div className="grid gap-3 text-sm leading-6 text-amber-50/88 sm:grid-cols-2">
+                        <div className="grid gap-3 text-sm leading-6 text-amber-50 sm:grid-cols-2">
                             {sections.map((section) => (
-                                <div key={section.title} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
-                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">
+                                <div key={section.title} className="rounded-[4px] border border-white/10 bg-white/[0.055] p-4">
+                                    <div className="mb-2 text-sm font-extrabold text-amber-200">
                                         {section.title}
                                     </div>
                                     <div className="space-y-1">
@@ -567,7 +566,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                             ))}
                         </div>
 
-                        <div className="mt-3 rounded-2xl border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
+                        <div className="mt-3 rounded-[4px] border border-amber-200/15 bg-amber-200/[0.06] p-4 text-sm leading-6 text-amber-50/90">
                             The big twist: qualifying doubles and splits can be made for free. You only risk the paid money you actually put on the table, but free double and free split wins can still add profit. Dealer 22 is the catch because it pushes standing main hands.
                         </div>
                     </div>
@@ -601,7 +600,7 @@ function FreeBetBar({
     const canDeal  = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= buyIn;
 
     return (
-        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+        <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -667,7 +666,7 @@ function FreeBetBar({
                             key="dealer-msg"
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="text-sm italic text-white/40"
+                            className="text-sm italic text-white/75"
                         >
                             Dealer playing…
                         </motion.span>
@@ -1291,11 +1290,11 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     return (
         <>
             {isShuffling && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-amber-300/25 bg-black/65 px-10 py-8 text-center shadow-2xl">
-                        <div className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-amber-200">Free Bet Blackjack</div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                    <div className="rounded-[4px] border border-amber-300/25 bg-black/65 px-10 py-8 text-center">
+                        <div className="text-sm font-extrabold text-amber-200">Free Bet Blackjack</div>
                         <div className="mt-2 text-3xl font-extrabold text-white">Shuffling Shoe</div>
-                        <div className="mt-2 text-sm text-amber-100/80">Please wait…</div>
+                        <div className="mt-2 text-sm text-amber-100">Please wait…</div>
                     </div>
                 </div>
             )}
@@ -1374,7 +1373,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                             testId="push22"
                                             chips={push22Stack}
                                             totalBet={push22Bet}
-                                            label="PUSH 22"
+                                            label="Push 22"
                                             sublabel="11 to 1"
                                             dim={82}
                                             isSelected={selectedZone === "push22"}
@@ -1399,7 +1398,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                             testId="potOfGold"
                                             chips={potOfGoldStack}
                                             totalBet={potOfGoldBet}
-                                            label="POT OF GOLD"
+                                            label="Pot of Gold"
                                             sublabel="varies"
                                             dim={82}
                                             isSelected={selectedZone === "potOfGold"}
@@ -1412,18 +1411,18 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                             </AnimatePresence>
 
                             {/* Free bet token counter */}
-                            <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition-colors ${
+                            <div className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 transition-colors ${
                                 freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
                             }`}>
-                                <span className={`text-[10px] font-bold uppercase tracking-[0.18em] ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/30"}`}>
+                                <span className={`text-[13px] font-bold ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/75"}`}>
                                     Tokens
                                 </span>
-                                <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/30"}`}>
+                                <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/75"}`}>
                                     {freeBetTokens}
                                 </span>
                             </div>
 
-                            <p className="text-sm font-semibold text-amber-100/70">{message}</p>
+                            <p className="text-sm font-semibold text-amber-100">{message}</p>
 
                             {hands.length > 0 && (
                                 <div className="flex flex-wrap justify-center gap-3">

@@ -180,7 +180,7 @@ function GameCard({
 
             <div className="relative flex h-full flex-col justify-between gap-6">
                 <div>
-                    <h2 className="text-2xl text-text">{title}</h2>
+                    <h3 className="text-text">{title}</h3>
                     <div className="mt-1 text-sm font-semibold text-gold-soft">{label}</div>
                     <div className="mt-4 max-w-[52ch] text-base leading-6 text-text-muted">{subtitle}</div>
                 </div>
@@ -315,7 +315,7 @@ export default function Casino() {
             >
                 <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
                     <div className="mb-8 border-b border-line pb-6">
-                        <h1 className="text-5xl text-gold md:text-6xl">
+                        <h1 className="text-gold">
                             Cohn Casino
                         </h1>
                         <p className="mt-2 text-lg font-semibold text-gold-soft">
@@ -421,7 +421,7 @@ export default function Casino() {
                                 <div className="text-sm text-text-muted">
                                     Bankroll
                                 </div>
-                                <div className="font-heading text-3xl font-bold text-gold-soft">{bankrollDisplay}</div>
+                                <div className="text-3xl font-bold text-gold-soft">{bankrollDisplay}</div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <input
@@ -480,7 +480,7 @@ export default function Casino() {
                     {/* Mobile-only site title — acts as Home link */}
                     <button
                         onClick={() => navigate("home")}
-                        className="font-heading text-lg font-bold text-gold sm:hidden"
+                        className="text-lg font-bold text-gold sm:hidden"
                     >
                         Cohn Casino
                     </button>
@@ -537,7 +537,7 @@ export default function Casino() {
                     <div className="hidden sm:flex flex-wrap items-center gap-2">
                         <div className="mr-2 flex items-baseline gap-2">
                             <span className="text-sm text-text-muted">Bankroll</span>
-                            <span className="font-heading text-xl font-bold text-gold-soft" data-testid="nav-bankroll">{bankrollDisplay}</span>
+                            <span className="text-xl font-bold text-gold-soft" data-testid="nav-bankroll">{bankrollDisplay}</span>
                         </div>
 
                         <input
@@ -741,7 +741,7 @@ export default function Casino() {
                 <footer className="border-t border-line bg-ink px-4 py-4 text-sm text-text-muted sm:px-6" data-testid="site-footer">
                     <div className="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span>Cohn Casino</span>
-                    <span className="font-heading text-base font-bold text-gold-soft" data-testid="site-version">v{VERSION}</span>
+                    <span className="text-base font-bold text-gold" data-testid="site-version">v{VERSION}</span>
                     <button
                         onClick={() => navigate("changelog")}
                         className="border-b-2 border-transparent font-semibold text-text transition-colors hover:border-gold"

@@ -638,15 +638,15 @@ function PayoutColumn({ title, entries, highlight }: {
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">
                 {title}
             </div>
             {entries.map(([hand, pays]) => {
                 const isHit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
-                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>
+                        <span className={isHit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>
                             {typeof pays === "number" ? `${pays} to 1` : pays}
                         </span>
                     </div>
@@ -701,26 +701,26 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             >
-                <button className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} aria-label="Close rules modal" />
+                <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close rules modal" />
                 <motion.div
                     initial={{ opacity: 0, y: 24, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.98 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,_rgba(7,20,14,0.98),_rgba(3,10,7,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.6)]"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-line-gold bg-panel text-text"
                 >
-                    <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
                         <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">Help</div>
-                            <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">Pai Gow Poker Rules</div>
+                            <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
+                            <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">Pai Gow Poker Rules</div>
                         </div>
-                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">×</button>
+                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink">×</button>
                     </div>
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                        <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
+                        <div className="space-y-4 text-base leading-6 text-text">
                             {RULES_SECTIONS.map(([title, items]) => (
-                                <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title}</div>
+                                <div key={title} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                                    <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                     <div className="space-y-1">{items.map((s) => <div key={s}>{s}</div>)}</div>
                                 </div>
                             ))}
@@ -737,30 +737,29 @@ function TableLabel({ onRules }: { onRules: () => void }) {
         <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-1">
             <div className="flex items-center gap-2">
                 <h1
-                    className="text-center text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90"
-                    style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                    className="text-center text-2xl font-bold text-gold-soft"
                 >
                     Face-up Pai Gow Poker
                 </h1>
                 <button
                     onClick={onRules}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                    className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                     aria-label="Show rules"
                 >
                     i
                 </button>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
                 <span>7 CARDS · SPLIT INTO 5-CARD HIGH AND 2-CARD LOW</span>
-                <span className="text-white/20">·</span>
-                <span>DEALER TIES WIN</span>
+                <span className="text-white/75">·</span>
+                <span>Dealer ties win</span>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
-                <span>WIN BOTH = EVEN MONEY</span>
-                <span className="text-white/15">·</span>
-                <span>SPLIT = PUSH</span>
-                <span className="text-white/15">·</span>
-                <span>LOSE BOTH = LOSE</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-white/75">
+                <span>Win both = even money</span>
+                <span className="text-white/75">·</span>
+                <span>Split = push</span>
+                <span className="text-white/75">·</span>
+                <span>Lose both = lose</span>
             </div>
         </div>
     );
@@ -786,7 +785,7 @@ function PaiGowBar({
     onChangeBet: () => void;
 }) {
     return (
-        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+        <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
             <ChipTray selectedChip={selectedChip} onSelect={onChipSelect} disabled={stage !== "betting"} />
             <div className="flex items-center justify-center gap-2">
                 <AnimatePresence mode="popLayout" initial={false}>
@@ -1326,7 +1325,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         className={`text-[11px] leading-snug ${
                                             i === 0
                                                 ? (net ?? 0) > 0 ? "text-emerald-300" : (net ?? 0) < 0 ? "text-red-300" : "text-amber-100"
-                                                : "text-white/55"
+                                                : "text-white/90"
                                         }`}
                                     >
                                         {line}
@@ -1342,7 +1341,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         {/* Dealer: High hand in a row, Low hand pushed out in front toward the player */}
                         {dealerCards.length > 0 && (
                             <div className="flex w-full flex-col items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                                <span className="text-[13px] font-bold text-white/75">Dealer</span>
                                 <div
                                     className={`relative w-full max-w-[440px] ${STACK_VARS}`}
                                     style={{ height: `calc(var(--ch) * ${1 + DEALER_ROW_STEP})` }}
@@ -1368,13 +1367,13 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     {dealerIsSet && dealerBestSplit && (
                                         <>
                                             <span>
-                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">High </span>
-                                                <span className="font-semibold text-amber-100/65">{dealerBestSplit.backEval.label}</span>
+                                                <span className="font-bold text-white/75">High </span>
+                                                <span className="font-semibold text-amber-100">{dealerBestSplit.backEval.label}</span>
                                             </span>
-                                            <span className="text-white/20">·</span>
+                                            <span className="text-white/75">·</span>
                                             <span>
-                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">Low </span>
-                                                <span className="font-semibold text-amber-100/65">{dealerBestSplit.frontEval.label}</span>
+                                                <span className="font-bold text-white/75">Low </span>
+                                                <span className="font-semibold text-amber-100">{dealerBestSplit.frontEval.label}</span>
                                             </span>
                                         </>
                                     )}
@@ -1402,7 +1401,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             style={{ ...slotStyle(0, col, 2, PLAYER_ROW_STEP, 1), width: "var(--cw)", height: "var(--ch)" }}
                                             className="flex items-start justify-center rounded-[9px] border border-dashed border-white/20 bg-black/15 pt-1.5 sm:rounded-[11px]"
                                         >
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">Low</span>
+                                            <span className="text-[13px] font-bold text-white/75">Low</span>
                                         </div>
                                     ))}
 
@@ -1441,18 +1440,18 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     {playerReady && (
                                         <>
                                             <span>
-                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">Low </span>
-                                                <span className="font-semibold text-amber-100/65">{currentFrontEval?.label ?? "pick 2 cards"}</span>
+                                                <span className="font-bold text-white/75">Low </span>
+                                                <span className="font-semibold text-amber-100">{currentFrontEval?.label ?? "pick 2 cards"}</span>
                                             </span>
-                                            <span className="text-white/20">·</span>
+                                            <span className="text-white/75">·</span>
                                             <span>
-                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">High </span>
-                                                <span className="font-semibold text-amber-100/65">{currentBackEval?.label ?? "-"}</span>
+                                                <span className="font-bold text-white/75">High </span>
+                                                <span className="font-semibold text-amber-100">{currentBackEval?.label ?? "-"}</span>
                                             </span>
                                         </>
                                     )}
                                 </div>
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                                <span className="text-[13px] font-bold text-white/75">Player</span>
 
                                 {/* Illegal split warning */}
                                 {playerHasStartedSetting && selectedFrontIds.length === 2 && !selectedIsLegal && (
@@ -1463,11 +1462,11 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 {stage === "setting" && selectedFrontIds.length === 2 && selectedIsLegal && (
                                     <div className="flex items-center gap-2 text-[11px]">
                                         <span className="font-bold text-emerald-400">Legal split</span>
-                                        <span className="text-white/20">·</span>
+                                        <span className="text-white/75">·</span>
                                         <span className={
                                             selectedIsExactBest ? "font-bold text-emerald-300"
                                             : selectedMatchesBestOutcome ? "font-bold text-amber-300"
-                                            : "text-white/40"
+                                            : "text-white/75"
                                         }>
                                             {selectedIsExactBest
                                                 ? "Exact best"
@@ -1481,7 +1480,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         )}
 
                         {/* Message */}
-                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{displayMessage}</p>
+                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}
