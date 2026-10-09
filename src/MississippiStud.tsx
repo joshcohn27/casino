@@ -7,13 +7,14 @@ import type { Card as SharedCard } from "./shared/cards";
 import {
     type ChipDenomination,
     formatMoney,
-    CHIP_COLORS,
     buildChipStackFromAmount,
     BTN_GOLD,
     BTN_GREEN,
     BTN_NEUTRAL,
 } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,30 +63,29 @@ const CARD_TRANSITION = (delay: number) => ({
     ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
     delay,
 });
-const STACK_GAP = 9;
 
 type PayEntry = { label: string; display: string };
 
 const MAIN_PAY_ENTRIES: PayEntry[] = [
-    { label: "Royal Flush",     display: "500:1" },
-    { label: "Straight Flush",  display: "100:1" },
-    { label: "Four of a Kind",  display: "40:1"  },
-    { label: "Full House",      display: "10:1"  },
-    { label: "Flush",           display: "6:1"   },
-    { label: "Straight",        display: "4:1"   },
-    { label: "Three of a Kind", display: "3:1"   },
-    { label: "Two Pair",        display: "2:1"   },
-    { label: "Jacks or Better", display: "1:1"   },
-    { label: "Pair of 6s–10s",  display: "Push"  },
+    { label: "Royal Flush",     display: "500 to 1" },
+    { label: "Straight Flush",  display: "100 to 1" },
+    { label: "Four of a Kind",  display: "40 to 1"  },
+    { label: "Full House",      display: "10 to 1"  },
+    { label: "Flush",           display: "6 to 1"   },
+    { label: "Straight",        display: "4 to 1"   },
+    { label: "Three of a Kind", display: "3 to 1"   },
+    { label: "Two Pair",        display: "2 to 1"   },
+    { label: "Jacks or Better", display: "1 to 1"   },
+    { label: "Pair of 6s-10s",  display: "Push"  },
 ];
 
 const THREE_CARD_PAY_ENTRIES: PayEntry[] = [
-    { label: "Mini Royal",      display: "50:1" },
-    { label: "Straight Flush",  display: "40:1" },
-    { label: "Three of a Kind", display: "30:1" },
-    { label: "Straight",        display: "6:1"  },
-    { label: "Flush",           display: "4:1"  },
-    { label: "Pair",            display: "1:1"  },
+    { label: "Mini Royal",      display: "50 to 1" },
+    { label: "Straight Flush",  display: "40 to 1" },
+    { label: "Three of a Kind", display: "30 to 1" },
+    { label: "Straight",        display: "6 to 1"  },
+    { label: "Flush",           display: "4 to 1"  },
+    { label: "Pair",            display: "1 to 1"  },
 ];
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -118,12 +118,6 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
         rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
         faceUp,
     };
-}
-
-function readStored(key: string, fallback: number): number {
-    if (typeof window === "undefined") return fallback;
-    const v = Number(window.localStorage.getItem(key));
-    return Number.isFinite(v) && v >= 0 ? v : fallback;
 }
 
 function revealedCount(stage: Stage): number {
@@ -163,7 +157,7 @@ function evaluateFiveCard(cards: Card[]): { key: MainPayKey | null; label: strin
     if (freqs[0] === 2) {
         const pairVal = [...counts.entries()].find(([, cnt]) => cnt === 2)![0];
         if (pairVal >= 11) return { key: "highPair", label: "Jacks or Better" };
-        if (pairVal >= 6)  return { key: "midPair",  label: "Pair of 6s–10s" };
+        if (pairVal >= 6)  return { key: "midPair",  label: "Pair of 6s-10s" };
         return { key: null, label: "No Win" };
     }
     return { key: null, label: "No Win" };
@@ -208,10 +202,10 @@ function settlePayout(params: {
             const mult = MAIN_PAYTABLE[fiveCardKey];
             if (mult === "push") {
                 mainReturn = totalMainBets;
-                lines.push(`${fiveCardLabel} — Push`);
+                lines.push(`${fiveCardLabel} - Push`);
             } else {
                 mainReturn = totalMainBets * (mult + 1);
-                lines.push(`${fiveCardLabel} · ${mult}:1`);
+                lines.push(`${fiveCardLabel} · ${mult} to 1`);
             }
         } else {
             lines.push(fiveCardLabel);
@@ -224,7 +218,7 @@ function settlePayout(params: {
     if (threeCBBet > 0) {
         if (threeCardKey !== null) {
             bonusReturn = threeCBBet * (threeCardMult + 1);
-            lines.push(`Bonus: ${threeCardLabel} · ${threeCardMult}:1`);
+            lines.push(`Bonus: ${threeCardLabel} · ${threeCardMult} to 1`);
         } else {
             lines.push("Bonus: No win");
         }
@@ -253,10 +247,13 @@ function getPairValue(cards: Card[]): number | null {
         const v = RANK_VALUES[c.rank];
         counts.set(v, (counts.get(v) ?? 0) + 1);
     }
+    let highest: number | null = null;
     for (const [v, cnt] of counts) {
-        if (cnt >= 2) return v;
+        if (cnt >= 2 && (highest === null || v > highest)) {
+            highest = v;
+        }
     }
-    return null;
+    return highest;
 }
 
 function countHighCards(cards: Card[]): number {
@@ -312,6 +309,13 @@ function getMSSuggestion(
     const minVal    = drawMinValue(visibleCards);
     const hadPrev3x = thirdBet === anteBet * 3 || fourthBet === anteBet * 3;
 
+    const tripCounts = new Map<number, number>();
+    for (const c of visibleCards) {
+        const v = RANK_VALUES[c.rank];
+        tripCounts.set(v, (tripCounts.get(v) ?? 0) + 1);
+    }
+    const hasTrips = [...tripCounts.values()].some(cnt => cnt >= 3);
+
     if (stage === "third") {
         if (hasPair) {
             return pv !== null && pv >= 6 ? "max" : "3x";
@@ -323,7 +327,7 @@ function getMSSuggestion(
     }
 
     if (stage === "fourth") {
-        if (hasMidPairOrBetter) return "max";
+        if (hasTrips || hasMidPairOrBetter) return "max";
         if (suited && highCards === 3) return "3x";
         if (sfGaps === 0 && minVal >= 5) return "3x";
         if (sfGaps === 1 && highCards >= 1) return "3x";
@@ -337,7 +341,7 @@ function getMSSuggestion(
     }
 
     if (stage === "fifth") {
-        if (hasMidPairOrBetter) return "3x";
+        if (hasTrips || hasMidPairOrBetter) return "3x";
         if (suited) return "3x";
         if (sGaps === 0) {
             const maxV = Math.max(...visibleCards.map(c => RANK_VALUES[c.rank]));
@@ -354,91 +358,6 @@ function getMSSuggestion(
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function ChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
-    const visible  = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    const stackH   = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
-    return (
-        <div
-            className="relative flex cursor-pointer justify-center"
-            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
-            onClick={onClick}
-        >
-            <AnimatePresence>
-                {visible.map((denom, i) => {
-                    const cfg = CHIP_COLORS[denom];
-                    return (
-                        <motion.div
-                            key={startIdx + i}
-                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                            style={{
-                                bottom: i * STACK_GAP, zIndex: i + 1,
-                                backgroundColor: cfg.bg,
-                                border: `3px solid ${cfg.border}`,
-                                color: cfg.text,
-                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                            }}
-                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 6, scale: 0.8 }}
-                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                        >
-                            {cfg.label}
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function BetZone({ chips, totalBet, label, sublabel, isSelected, isWinner, isLocked, onClick, onRemove, canBet, diamond }: {
-    chips: ChipDenomination[]; totalBet: number; label: string; sublabel: string;
-    isSelected: boolean; isWinner: boolean; isLocked?: boolean;
-    onClick: () => void; onRemove: () => void; canBet: boolean; diamond?: boolean;
-}) {
-    const dim = diamond ? 64 : 70;
-    const ring = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-               : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-               :              "border-white/30";
-    const bg   = isWinner   ? "bg-amber-300/10"
-               : isSelected ? "bg-white/10"
-               :              "bg-black/20";
-    return (
-        <div
-            className={`flex flex-col items-center ${diamond ? "mx-4 mb-4" : ""}`}
-            style={{ position: "relative" }}
-        >
-            <div style={{
-                position: "absolute",
-                bottom: dim - 10,
-                left: "50%",
-                transform: "translateX(-50%)",
-                zIndex: 10,
-                pointerEvents: chips.length > 0 ? "auto" : "none",
-            }}>
-                {chips.length > 0 && (
-                    <ChipStack chips={chips} onClick={onRemove} />
-                )}
-            </div>
-            <button
-                onClick={onClick}
-                disabled={!canBet || !!isLocked}
-                className={`relative flex flex-col items-center justify-center border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
-                style={{ width: dim, height: dim, transform: diamond ? "rotate(45deg)" : undefined, borderRadius: diamond ? "6px" : "9999px" }}
-            >
-                <div style={{ transform: diamond ? "rotate(-45deg)" : undefined }} className="flex flex-col items-center justify-center gap-0.5 px-3 py-2">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">{label}</span>
-                    <span className="mt-0.5 text-[10px] font-medium text-white/45">{sublabel}</span>
-                    {totalBet > 0 && (
-                        <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
-                    )}
-                </div>
-            </button>
-        </div>
-    );
-}
 
 function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; isCurrent?: boolean }) {
     const active = bet > 0;
@@ -461,29 +380,6 @@ function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; i
                 <span className={`text-[10px] font-extrabold uppercase tracking-[0.12em] ${active || isCurrent ? "text-amber-200" : "text-white/30"}`}>{label}</span>
                 {active && <span className="mt-0.5 text-[10px] font-bold text-amber-300">{formatMoney(bet)}</span>}
             </div>
-        </div>
-    );
-}
-
-function BetBar({ pendingBet, returned, net, showResult }: {
-    pendingBet: number; returned: number; net: number; showResult: boolean;
-}) {
-    const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
-    return (
-        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
-            {[
-                { label: "Bet",      val: pendingBet > 0 ? formatMoney(pendingBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—",       color: "text-white" },
-                { label: "Net",      val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "—", color: showResult ? netColor : "text-white" },
-            ].map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
         </div>
     );
 }
@@ -571,7 +467,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "Evaluates the three community cards as a 3-card poker hand.",
                         "Settled when all 3 community cards are revealed, regardless of fold.",
                         "Mini Royal (suited A-K-Q) pays 50 to 1.",
-                        "Straight Flush 40:1 · Three of a Kind 30:1 · Straight 6:1 · Flush 4:1 · Pair 1:1.",
+                        "Straight Flush 40 to 1 · Three of a Kind 30 to 1 · Straight 6 to 1 · Flush 4 to 1 · Pair 1 to 1.",
                     ]} />
                     <Section title="Strategy Tips" items={[
                         "Always bet 3× with a pair of 6s or better, any three to a royal flush, or three to a straight flush.",
@@ -605,8 +501,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     const [fiveCardResult, setFiveCardResult]   = useState<{ key: MainPayKey | null; label: string } | null>(null);
     const [threeCardResult, setThreeCardResult] = useState<{ key: ThreeCardKey | null; label: string } | null>(null);
 
-    const [anteChips, setAnteChips]   = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(ANTE_KEY, 0)));
-    const [bonusChips, setBonusChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(BONUS_KEY, 0)));
+    const [anteChips, setAnteChips]   = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("mississippistud", "ante")));
+    const [bonusChips, setBonusChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("mississippistud", "bonus")));
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(5);
     const [selectedZone, setSelectedZone] = useState<"ante" | "bonus">("ante");
     const [showRules, setShowRules] = useState(false);
@@ -620,10 +516,10 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
     // ─── Bet helpers ──────────────────────────────────────────────────────────
 
-    function addChip(zone: "ante" | "bonus") {
+    function addChip(zone: "ante" | "bonus", chip: ChipDenomination) {
         if (stage !== "betting") return;
-        if (zone === "ante") setAnteChips(p => [...p, selectedChip]);
-        else setBonusChips(p => [...p, selectedChip]);
+        if (zone === "ante") setAnteChips(p => [...p, chip]);
+        else setBonusChips(p => [...p, chip]);
     }
 
     function removeLastChip(zone: "ante" | "bonus") {
@@ -632,15 +528,16 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         else setBonusChips(p => p.slice(0, -1));
     }
 
+    // Clicking a spot only highlights it
     function handleZoneClick(zone: "ante" | "bonus") {
         if (stage !== "betting") return;
-        if (zone === "ante") {
-            setSelectedZone("ante");
-            addChip("ante");
-        } else {
-            if (selectedZone === "bonus") addChip("bonus");
-            else setSelectedZone("bonus");
-        }
+        setSelectedZone(zone);
+    }
+
+    // Tray chip goes onto the highlighted spot
+    function handleChipSelect(chip: ChipDenomination) {
+        setSelectedChip(chip);
+        addChip(selectedZone, chip);
     }
 
     function handleClear() {
@@ -841,22 +738,20 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     }, [visibleCardsForSuggestion, stage, anteBet, thirdBet, fourthBet]);
 
     const netColor      = netResult !== null
-        ? netResult > 0 ? "text-emerald-300" : netResult < 0 ? "text-red-300" : "text-yellow-300"
+        ? netResult > 0 ? "text-emerald-300" : netResult < 0 ? "text-red-300" : "text-amber-100"
         : "text-white";
 
     // ─── Action bar ───────────────────────────────────────────────────────────
 
     const actionBar = (
         <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
-            {stage === "betting" && (
-                <ChipTray selectedChip={selectedChip} onSelect={setSelectedChip} />
-            )}
+            <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={stage !== "betting"} />
 
-            <div className={`flex items-center justify-center gap-3 ${stage !== "betting" ? "col-span-full" : ""}`}>
+            <div className="flex items-center justify-center gap-3">
                 <AnimatePresence mode="popLayout" initial={false}>
-                    {stage === "betting" && (pendingAnte > 0 || pendingBonus > 0) && (
+                    {stage === "betting" && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={handleClear}>Clear</button>
+                            <button className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (
@@ -865,22 +760,22 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="fold">
+                        <SlideBtn key={`fold-${stage}`}>
                             <button className={BTN_NEUTRAL} onClick={handleFold} disabled={resolving.current}>Fold</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="one">
+                        <SlideBtn key={`one-${stage}`}>
                             <button className={BTN_NEUTRAL} onClick={() => handleBetStreet(1)} disabled={resolving.current}>Bet 1×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="three">
+                        <SlideBtn key={`three-${stage}`}>
                             <button className={BTN_GOLD} onClick={() => handleBetStreet(3)} disabled={resolving.current}>Bet 3×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                        <SlideBtn key="max">
+                        <SlideBtn key={`max-${stage}`}>
                             <button
                                 className={BTN_GREEN}
                                 onClick={handleMaxBet}
@@ -918,11 +813,9 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 </AnimatePresence>
             </div>
 
-            {stage === "betting" && (
-                <div className="invisible hidden sm:block">
-                    <ChipTray selectedChip={selectedChip} onSelect={() => {}} disabled />
-                </div>
-            )}
+            <div className="invisible hidden sm:block">
+                <ChipTray selectedChip={selectedChip} onSelect={() => {}} disabled />
+            </div>
         </div>
     );
 
@@ -942,7 +835,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-col items-center gap-0.5">
                     <div className="flex items-center gap-2">
                         <h1
-                            className="text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                            className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
                             style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
                         >
                             Mississippi Stud
@@ -1078,7 +971,10 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
                         {/* Bet circles — Ante and 3CB side by side */}
                         <div className="flex items-end justify-center gap-6 mt-14">
-                            <BetZone
+                            <BetSpot
+                                testId="bonus"
+                                dim={64}
+                                floatChips
                                 chips={stage === "betting" ? bonusChips : buildChipStackFromAmount(threeCBBet)}
                                 totalBet={stage === "betting" ? pendingBonus : threeCBBet}
                                 label="BONUS"
@@ -1086,12 +982,15 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                 isSelected={selectedZone === "bonus"}
                                 isWinner={threeCBBet > 0 && bonusReturn > threeCBBet}
                                 isLocked={stage !== "betting"}
-                                onClick={() => handleZoneClick("bonus")}
+                                onSelect={() => handleZoneClick("bonus")}
                                 onRemove={() => removeLastChip("bonus")}
                                 canBet={stage === "betting"}
                                 diamond={true}
                             />
-                            <BetZone
+                            <BetSpot
+                                testId="ante"
+                                dim={70}
+                                floatChips
                                 chips={stage === "betting" ? anteChips : buildChipStackFromAmount(anteBet)}
                                 totalBet={stage === "betting" ? pendingAnte : anteBet}
                                 label="Ante"
@@ -1099,7 +998,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                 isSelected={selectedZone === "ante"}
                                 isWinner={mainReturn > totalMainBets}
                                 isLocked={stage !== "betting"}
-                                onClick={() => handleZoneClick("ante")}
+                                onSelect={() => handleZoneClick("ante")}
                                 onRemove={() => removeLastChip("ante")}
                                 canBet={stage === "betting"}
                             />
@@ -1123,10 +1022,10 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/50"
                                 >
                                     {stage === "third"
-                                        ? "3rd Street — Bet or Fold"
+                                        ? "3rd Street - Bet or Fold"
                                         : stage === "fourth"
-                                        ? "4th Street — Bet or Fold"
-                                        : "5th Street — Bet or Fold"}
+                                        ? "4th Street - Bet or Fold"
+                                        : "5th Street - Bet or Fold"}
                                 </motion.div>
                             )}
                         </AnimatePresence>

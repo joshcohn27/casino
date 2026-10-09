@@ -4,8 +4,10 @@ import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD } from "./shared/money";
+import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "./shared/money";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,126 +223,6 @@ function TableLabel({ onRules }: { onRules: () => void }) {
     );
 }
 
-function BetBar({ pendingBet, wagered, returned, net, stage }: {
-    pendingBet: number; wagered: number; returned: number; net: number; stage: Stage;
-}) {
-    const showResult = stage === "done";
-    const displayBet = wagered > 0 ? wagered : pendingBet;
-    return (
-        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
-            {([
-                { label: "Bet",      val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—",        color: "text-white" },
-                {
-                    label: "Net",
-                    val:   showResult ? formatMoney(net) : "—",
-                    color: showResult
-                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
-                        : "text-white",
-                },
-            ] as const).map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
-        </div>
-    );
-}
-
-const STACK_GAP = 9;
-
-function ChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
-    const visible  = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    const stackH   = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
-
-    return (
-        <div
-            className="relative flex cursor-pointer justify-center"
-            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
-            onClick={onClick}
-        >
-            <AnimatePresence>
-                {visible.map((denom, i) => {
-                    const cfg = CHIP_COLORS[denom];
-                    return (
-                        <motion.div
-                            key={startIdx + i}
-                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                            style={{
-                                bottom: i * STACK_GAP, zIndex: i + 1,
-                                backgroundColor: cfg.bg,
-                                border: `3px solid ${cfg.border}`,
-                                color: cfg.text,
-                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                            }}
-                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                            animate={{ opacity: 1, y: 0,   scale: 1    }}
-                            exit={{    opacity: 0, y: 6,   scale: 0.8  }}
-                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                        >
-                            {cfg.label}
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function BetZone({ chips, totalBet, label, sublabel, size, isSelected, isWinner, onClick, onRemove, canBet }: {
-    chips: ChipDenomination[];
-    totalBet: number;
-    label: string;
-    sublabel: string;
-    size: "large" | "small";
-    isSelected: boolean;
-    isWinner: boolean;
-    onClick: () => void;
-    onRemove: () => void;
-    canBet: boolean;
-}) {
-    const dim = size === "large" ? 110 : 82;
-
-    const ring  = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-                : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-                :              "border-white/30";
-    const bg    = isWinner   ? "bg-amber-300/10"
-                : isSelected ? "bg-white/10"
-                :              "bg-black/20";
-
-    return (
-        <div className="flex flex-col items-center">
-            {chips.length > 0 ? (
-                <ChipStack chips={chips} onClick={onRemove} />
-            ) : (
-                <div style={{ height: 0 }} />
-            )}
-            <button
-                onClick={onClick}
-                disabled={!canBet}
-                className={`relative flex flex-col items-center justify-center rounded-full border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
-                style={{ width: dim, height: dim }}
-            >
-                {/* Label — normal weight, not extrabold */}
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">
-                    {label}
-                </span>
-                <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>
-                {totalBet > 0 && (
-                    <span className="mt-1 text-[10px] font-extrabold text-amber-200">
-                        {formatMoney(totalBet)}
-                    </span>
-                )}
-            </button>
-        </div>
-    );
-}
-
 function HandLane({ label, cards, handTotal, outcome }: {
     label: string;
     cards: BacCard[];
@@ -382,8 +264,8 @@ function ResultBanner({ winner, pandaHit, dragonHit }: {
 }) {
     if (!winner) return null;
 
-    const text  = dragonHit  ? "DRAGON 7 — BANKER WINS"
-                : pandaHit   ? "PANDA 8 — PLAYER WINS"
+    const text  = dragonHit  ? "DRAGON 7 - BANKER WINS"
+                : pandaHit   ? "PANDA 8 - PLAYER WINS"
                 : winner === "player" ? "PLAYER WINS"
                 : winner === "banker" ? "BANKER WINS"
                 :                      "TIE";
@@ -470,9 +352,9 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     Main Bet Payouts
                                 </h3>
                                 <div className="space-y-1 text-[13px] text-white/80">
-                                    <div className="flex justify-between"><span>Player wins</span><span className="font-semibold text-white">1 : 1</span></div>
-                                    <div className="flex justify-between"><span>Banker wins</span><span className="font-semibold text-white">1 : 1 (push on 3-card 7)</span></div>
-                                    <div className="flex justify-between"><span>Tie</span><span className="font-semibold text-white">8 : 1</span></div>
+                                    <div className="flex justify-between"><span>Player wins</span><span className="font-semibold text-white">1 to 1</span></div>
+                                    <div className="flex justify-between"><span>Banker wins</span><span className="font-semibold text-white">1 to 1 (push on 3-card 7)</span></div>
+                                    <div className="flex justify-between"><span>Tie</span><span className="font-semibold text-white">8 to 1</span></div>
                                     <p className="pt-0.5 text-[12px] text-white/50">On a Tie, Player and Banker bets push.</p>
                                 </div>
                             </section>
@@ -481,8 +363,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     Side Bets
                                 </h3>
                                 <div className="space-y-1 text-[13px] text-white/80">
-                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-semibold text-white">25 : 1</span></div>
-                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-semibold text-white">40 : 1</span></div>
+                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-semibold text-white">25 to 1</span></div>
+                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-semibold text-white">40 to 1</span></div>
                                     <p className="pt-0.5 text-[12px] text-white/50">Side bets are independent of main bets and pay only on the specific outcome.</p>
                                 </div>
                             </section>
@@ -520,7 +402,7 @@ function BaccaratBar({
 
     const canDeal       = (isBetting || isDone) && !isShuffling && totalBet > 0 && bankroll >= totalBet;
     const canChangeBet  = isDone;
-    const canClear      = (isBetting || isDone) && totalBet > 0;
+    const canClear      = isBetting || isDone;
 
     return (
         <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
@@ -539,7 +421,7 @@ function BaccaratBar({
                 <AnimatePresence mode="popLayout" initial={false}>
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling}>Clear</button>
+                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || totalBet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
                     {isDone && (
@@ -549,12 +431,17 @@ function BaccaratBar({
                             </button>
                         </SlideBtn>
                     )}
-                    {(isBetting || isDone) && (
+                    {isBetting && (
                         <SlideBtn key="deal">
                             <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
-                    
+                    {isDone && (
+                        <SlideBtn key="rebet-deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                        </SlideBtn>
+                    )}
+
                     {isDealing && (
                         <motion.span
                             key="dealing"
@@ -586,26 +473,11 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [bankerCards, setBankerCards] = useState<BacCard[]>([]);
     const [_roadHistory, setRoadHistory] = useState<HandHistoryEntry[]>([]);
 
-    const [playerBet, setPlayerBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(PLAYER_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [bankerBet, setBankerBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(BANKER_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [tieBet, setTieBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(TIE_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [pandaBet, setPandaBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(PANDA_BET_STORAGE_KEY) ?? "0"));
-    });
-    const [dragonBet, setDragonBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        return sanitizeBet(Number(window.localStorage.getItem(DRAGON_BET_STORAGE_KEY) ?? "0"));
-    });
+    const [playerBet, setPlayerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "player")));
+    const [bankerBet, setBankerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "banker")));
+    const [tieBet, setTieBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "tie")));
+    const [pandaBet, setPandaBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "panda")));
+    const [dragonBet, setDragonBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "dragon")));
 
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(() => {
         if (typeof window === "undefined") return 25;
@@ -619,6 +491,15 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [message,     setMessage]     = useState("Select a chip, click a betting zone, then press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
     const [showRules,   setShowRules]   = useState(false);
+
+    // Deal runs one at a time, so a double-click cannot take the bet twice. The lock is held
+    // a moment longer so a hand that ends instantly is not dealt over by the second click.
+    const dealLock = useRef(false);
+    const dealOnce = async () => {
+        if (dealLock.current) return;
+        dealLock.current = true;
+        try { await deal(); } finally { window.setTimeout(() => { dealLock.current = false; }, 300); }
+    };
     const [winner,      setWinner]      = useState<Winner | null>(null);
     const [pandaHitResult,  setPandaHitResult]  = useState(false);
     const [dragonHitResult, setDragonHitResult] = useState(false);
@@ -693,8 +574,9 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
 
     const clearSpot = (spot: BetSpotId) => {
         if (!canBet) return;
-        setBet(spot, 0);
-        setChips(spot, []);
+        const next = popLastChip(getBet(spot));
+        setBet(spot, next);
+        setChips(spot, buildChipStackFromAmount(next));
     };
 
     const clearAllBets = () => {
@@ -709,14 +591,10 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         if (canBet && selectedSpot) addChip(selectedSpot, chip);
     };
 
+    // Clicking a spot only highlights it; tray chips go onto the highlighted spot
     const handleZoneClick = (spot: BetSpotId) => {
         if (!canBet) return;
-        // If spot is already selected, add chip immediately
-        if (selectedSpot === spot) {
-            addChip(spot, selectedChip);
-        } else {
-            setSelectedSpot(spot);
-        }
+        setSelectedSpot(spot);
     };
 
     const performShuffleIfNeeded = async (shoe: BacCard[]) => {
@@ -949,7 +827,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             if (stage === "done") nextRound(true);
                             else clearAllBets();
                         }}
-                        onDeal={() => void deal()}
+                        onDeal={() => void dealOnce()}
                         onChangeBet={() => nextRound(false)}
                     />
                 }
@@ -989,11 +867,10 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                     </div>
 
                     <BetBar
-                        pendingBet={totalBet}
-                        wagered={lastWagered}
+                        pendingBet={lastWagered > 0 ? lastWagered : totalBet}
                         returned={lastPayout}
                         net={lastPayout - lastWagered}
-                        stage={stage}
+                        showResult={stage === "done"}
                     />
 
                     <AnimatePresence>
@@ -1006,31 +883,35 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         )}
                     </AnimatePresence>
 
-                    <p className="text-sm font-semibold text-rose-100/70">{message}</p>
+                    <p className="text-sm font-semibold text-rose-100/70">
+                        {canBet && selectedSpot === null ? "Tap a betting spot, then tap chips to bet." : message}
+                    </p>
 
                     {/* Side bets: Panda 8 and Dragon 7 */}
                     <div className="flex items-end justify-center gap-8">
-                        <BetZone
+                        <BetSpot
+                            testId="panda"
                             chips={pandaChips}
                             totalBet={pandaBet}
                             label="Panda 8"
-                            sublabel="25:1"
-                            size="small"
+                            sublabel="25 to 1"
+                            dim={82}
                             isSelected={selectedSpot === "panda"}
                             isWinner={pandaHitResult}
-                            onClick={() => handleZoneClick("panda")}
+                            onSelect={() => handleZoneClick("panda")}
                             onRemove={() => clearSpot("panda")}
                             canBet={canBet}
                         />
-                        <BetZone
+                        <BetSpot
+                            testId="dragon"
                             chips={dragonChips}
                             totalBet={dragonBet}
                             label="Dragon 7"
-                            sublabel="40:1"
-                            size="small"
+                            sublabel="40 to 1"
+                            dim={82}
                             isSelected={selectedSpot === "dragon"}
                             isWinner={dragonHitResult}
-                            onClick={() => handleZoneClick("dragon")}
+                            onSelect={() => handleZoneClick("dragon")}
                             onRemove={() => clearSpot("dragon")}
                             canBet={canBet}
                         />
@@ -1038,39 +919,42 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
 
                     {/* Main bets: Player | Tie | Banker */}
                     <div className="flex items-end justify-center gap-4 sm:gap-6">
-                        <BetZone
+                        <BetSpot
+                            testId="player"
                             chips={playerChips}
                             totalBet={playerBet}
                             label="Player"
-                            sublabel="1:1"
-                            size="large"
+                            sublabel="1 to 1"
+                            dim={110}
                             isSelected={selectedSpot === "player"}
                             isWinner={playerWon}
-                            onClick={() => handleZoneClick("player")}
+                            onSelect={() => handleZoneClick("player")}
                             onRemove={() => clearSpot("player")}
                             canBet={canBet}
                         />
-                        <BetZone
+                        <BetSpot
+                            testId="tie"
                             chips={tieChips}
                             totalBet={tieBet}
                             label="Tie"
-                            sublabel="8:1"
-                            size="large"
+                            sublabel="8 to 1"
+                            dim={110}
                             isSelected={selectedSpot === "tie"}
                             isWinner={tieWon}
-                            onClick={() => handleZoneClick("tie")}
+                            onSelect={() => handleZoneClick("tie")}
                             onRemove={() => clearSpot("tie")}
                             canBet={canBet}
                         />
-                        <BetZone
+                        <BetSpot
+                            testId="banker"
                             chips={bankerChips}
                             totalBet={bankerBet}
                             label="Banker"
-                            sublabel="1:1 / push 3-card 7"
-                            size="large"
+                            sublabel="1 to 1 / push 3-card 7"
+                            dim={110}
                             isSelected={selectedSpot === "banker"}
                             isWinner={bankerWon}
-                            onClick={() => handleZoneClick("banker")}
+                            onSelect={() => handleZoneClick("banker")}
                             onRemove={() => clearSpot("banker")}
                             canBet={canBet}
                         />

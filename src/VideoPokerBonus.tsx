@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react"
+import { defaultBet } from "./shared/settings"
 
 type Props = {
     bankroll: number
@@ -355,13 +356,13 @@ function DenomBadge({
 
 export default function VideoPokerBonus({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("ready")
-    const [bet, setBet] = useState(5)
-    const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(1)
+    const [bet, setBet] = useState(() => defaultBet("videopoker", "credits"))
+    const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(() => defaultBet("videopoker", "denom") as (typeof DENOM_VALUES)[number])
     const [hand, setHand] = useState<Card[]>([])
     const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
     const [deck, setDeck] = useState<Card[]>([])
     const [lastWin, setLastWin] = useState(0)
-    const [message, setMessage] = useState("BET 5")
+    const [message, setMessage] = useState(() => `BET ${defaultBet("videopoker", "credits")}`)
     const [activeRow, setActiveRow] = useState<PayoutKey | null>(null)
     const [helpOpen, setHelpOpen] = useState(false)
 
@@ -628,8 +629,8 @@ export default function VideoPokerBonus({ bankroll, setBankroll }: Props) {
                             </div>
                             <div className="mt-2 leading-6 text-white/95">
                                 Bonus Poker pays enhanced amounts for four of a kind hands.{" "}
-                                Full House pays <span className="font-bold text-yellow-300">8:1</span> and Flush pays{" "}
-                                <span className="font-bold text-yellow-300">5:1</span> (8/5 paytable).{" "}
+                                Full House pays <span className="font-bold text-yellow-300">8 to 1</span> and Flush pays{" "}
+                                <span className="font-bold text-yellow-300">5 to 1</span> (8/5 paytable).{" "}
                                 <span className="font-bold text-yellow-300">BET ONE</span> changes the active column and{" "}
                                 <span className="font-bold text-yellow-300">BET MAX</span> sets it to 5.{" "}
                                 <span className="font-bold text-yellow-300">DENOM</span> cycles the dollar value of each

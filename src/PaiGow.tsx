@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "./shared/money";
+import BetSpot, { BetBar } from "./shared/BetSpot";
+import { sortByPower, type SortMode } from "./shared/handSort";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
 
@@ -60,7 +63,7 @@ type FortuneResult = {
 
 // ─── UI type ──────────────────────────────────────────────────────────────────
 
-type BetSpot = "main" | "fortune" | "aceHigh";
+type BetSpotId = "main" | "fortune" | "aceHigh";
 
 // ─── Game constants (preserved) ───────────────────────────────────────────────
 
@@ -585,7 +588,30 @@ const CARD_TRANSITION = (delay: number) => ({
     delay,
 });
 
-const STACK_GAP = 9;
+// Dealer reveal: steps 1-7 turn the dealer's cards one at a time, step 8 sets them into High / Low
+const DEALER_SET = 8;
+
+// Cards sit in absolutely placed slots so a single card can slide between rows.
+// --cw / --ch are the card width / height set on the stack container.
+const STACK_VARS = "[--cw:49px] [--ch:70px] sm:[--cw:57px] sm:[--ch:82px]";
+const SLOT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+function slotStyle(row: number, col: number, count: number, rowStep: number, z: number): React.CSSProperties {
+    // cards tighten up on narrow screens instead of wrapping
+    const step = `min(calc(var(--cw) + 6px), calc((100% - var(--cw)) / ${Math.max(count - 1, 1)}))`;
+    return {
+        position: "absolute",
+        left: `calc(50% - var(--cw) / 2 + ${col - (count - 1) / 2} * ${step})`,
+        top: `calc(var(--ch) * ${row * rowStep})`,
+        zIndex: z,
+        transition: `left 0.4s ${SLOT_EASE}, top 0.4s ${SLOT_EASE}`,
+    };
+}
+
+// How far the second row sits below the first, as a share of card height.
+// Less than 1 so the hands overlap like a stack on a real table.
+const DEALER_ROW_STEP = 0.62;
+const PLAYER_ROW_STEP = 0.78;
 
 const ACE_HIGH_ROWS: Array<[string, number]> = [
     ["Both Ace High", 40],
@@ -602,80 +628,6 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function ChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
-    const visible = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    const stackH = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
-    return (
-        <div
-            className="relative flex cursor-pointer justify-center"
-            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
-            onClick={onClick}
-        >
-            <AnimatePresence>
-                {visible.map((denom, i) => {
-                    const cfg = CHIP_COLORS[denom];
-                    return (
-                        <motion.div
-                            key={startIdx + i}
-                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                            style={{
-                                bottom: i * STACK_GAP, zIndex: i + 1,
-                                backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
-                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                            }}
-                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 6, scale: 0.8 }}
-                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                        >
-                            {cfg.label}
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function BetZone({ chips, totalBet, label, sublabel, size, isSelected, isWinner, onClick, onRemove, canBet }: {
-    chips: ChipDenomination[];
-    totalBet: number;
-    label: string;
-    sublabel?: string;
-    size: "large" | "small";
-    isSelected: boolean;
-    isWinner: boolean;
-    onClick: () => void;
-    onRemove: () => void;
-    canBet: boolean;
-}) {
-    const dim = size === "large" ? 110 : 82;
-    const ring = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-               : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-               :              "border-white/30";
-    const bg   = isWinner   ? "bg-amber-300/10"
-               : isSelected ? "bg-white/10"
-               :              "bg-black/20";
-    return (
-        <div className="flex flex-col items-center">
-            {chips.length > 0 ? <ChipStack chips={chips} onClick={onRemove} /> : <div style={{ height: 0 }} />}
-            <button
-                onClick={onClick}
-                disabled={!canBet}
-                className={`relative flex flex-col items-center justify-center rounded-full border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
-                style={{ width: dim, height: dim }}
-            >
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
-                {sublabel && <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>}
-                {totalBet > 0 && (
-                    <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
-                )}
-            </button>
-        </div>
-    );
-}
 
 type PayoutEntry = readonly [string, number | string];
 
@@ -695,7 +647,7 @@ function PayoutColumn({ title, entries, highlight }: {
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
                         <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>
-                            {typeof pays === "number" ? `${pays}:1` : pays}
+                            {typeof pays === "number" ? `${pays} to 1` : pays}
                         </span>
                     </div>
                 );
@@ -721,9 +673,10 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Win one hand, lose one hand: push, main bet returned.",
         "• Lose both hands: main bet lost.",
         "• Dealer wins all ties on both hands.",
+        "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
     ]],
-    ["Auto Set Best", [
-        "• Pressing Auto Set Best calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
+    ["Ask Dealer for Help", [
+        "• Pressing Ask Dealer for Help calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
         "• The outcome check indicator shows whether your current split matches, beats, or falls short of that optimal outcome.",
     ]],
     ["Fortune Bonus", [
@@ -784,7 +737,7 @@ function TableLabel({ onRules }: { onRules: () => void }) {
         <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-1">
             <div className="flex items-center gap-2">
                 <h1
-                    className="text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90"
+                    className="text-center text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90"
                     style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
                 >
                     Face-up Pai Gow Poker
@@ -814,18 +767,23 @@ function TableLabel({ onRules }: { onRules: () => void }) {
 }
 
 function PaiGowBar({
-    stage, selectedChip, selectedIsLegal, selectedFrontIds,
-    onChipSelect, onDeal, onAutoSetBest, onSetHand, onNextHand,
+    stage, selectedChip, selectedIsLegal, selectedFrontIds, canRebet, dealerSetting, playerReady,
+    onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onClear, onChangeBet,
 }: {
     stage: Stage;
     selectedChip: ChipDenomination;
     selectedIsLegal: boolean;
     selectedFrontIds: string[];
+    canRebet: boolean;
+    dealerSetting: boolean;
+    playerReady: boolean;
+    onRevealAll: () => void;
     onChipSelect: (c: ChipDenomination) => void;
     onDeal: () => void;
     onAutoSetBest: () => void;
     onSetHand: () => void;
-    onNextHand: () => void;
+    onClear: () => void;
+    onChangeBet: () => void;
 }) {
     return (
         <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
@@ -833,16 +791,26 @@ function PaiGowBar({
             <div className="flex items-center justify-center gap-2">
                 <AnimatePresence mode="popLayout" initial={false}>
                     {stage === "betting" && (
+                        <SlideBtn key="clear">
+                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "betting" && (
                         <SlideBtn key="deal">
                             <button className={BTN_GOLD} onClick={onDeal}>Deal</button>
                         </SlideBtn>
                     )}
-                    {stage === "setting" && (
-                        <SlideBtn key="auto">
-                            <button className={BTN_NEUTRAL} onClick={onAutoSetBest}>Auto Set Best</button>
+                    {stage === "setting" && !playerReady && (
+                        <SlideBtn key="reveal">
+                            <button className={BTN_GOLD} onClick={onRevealAll} disabled={dealerSetting}>Reveal Cards</button>
                         </SlideBtn>
                     )}
-                    {stage === "setting" && (
+                    {stage === "setting" && playerReady && (
+                        <SlideBtn key="auto">
+                            <button className={BTN_NEUTRAL} onClick={onAutoSetBest}>Ask Dealer for Help</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "setting" && playerReady && (
                         <SlideBtn key="set">
                             <button
                                 className={BTN_GOLD}
@@ -854,13 +822,23 @@ function PaiGowBar({
                         </SlideBtn>
                     )}
                     {stage === "showdown" && (
-                        <SlideBtn key="next">
-                            <button className={BTN_GREEN} onClick={onNextHand}>Next Hand</button>
+                        <SlideBtn key="clear-done">
+                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "showdown" && (
+                        <SlideBtn key="change-bet">
+                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "showdown" && (
+                        <SlideBtn key="rebet">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canRebet}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
                 </AnimatePresence>
             </div>
-            <div className="invisible hidden sm:block" aria-hidden>
+            <div className="invisible hidden sm:block">
                 <ChipTray selectedChip={selectedChip} onSelect={() => {}} disabled />
             </div>
         </div>
@@ -874,9 +852,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your wagers and press Deal.");
 
-    const [mainBet, setMainBet] = useState(25);
-    const [fortuneBet, setFortuneBet] = useState(5);
-    const [aceHighBet, setAceHighBet] = useState(5);
+    const [mainBet, setMainBet] = useState(() => defaultBet("paigow", "main"));
+    const [fortuneBet, setFortuneBet] = useState(() => defaultBet("paigow", "fortune"));
+    const [aceHighBet, setAceHighBet] = useState(() => defaultBet("paigow", "aceHigh"));
 
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
@@ -885,14 +863,15 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [wagerAtDeal, setWagerAtDeal] = useState(0);
     const [resultLines, setResultLines] = useState<string[]>([]);
     const [net, setNet] = useState<number | null>(null);
+    const [roundReturned, setRoundReturned] = useState(0);
 
     // ── UI state ──────────────────────────────────────────────────────────────
     const [showRules, setShowRules] = useState(false);
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
-    const [selectedSpot, setSelectedSpot] = useState<BetSpot | null>(null);
-    const [mainChips, setMainChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(25));
-    const [fortuneChips, setFortuneChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
-    const [aceHighChips, setAceHighChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(5));
+    const [selectedSpot, setSelectedSpot] = useState<BetSpotId>("main");
+    const [mainChips, setMainChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "main")));
+    const [fortuneChips, setFortuneChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "fortune")));
+    const [aceHighChips, setAceHighChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("paigow", "aceHigh")));
 
     // Rebuild chip stacks whenever we return to betting (e.g. after Next Hand)
     useEffect(() => {
@@ -900,10 +879,47 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             setMainChips(buildChipStackFromAmount(mainBet));
             setFortuneChips(buildChipStackFromAmount(fortuneBet));
             setAceHighChips(buildChipStackFromAmount(aceHighBet));
-            setSelectedSpot(null);
+            setSelectedSpot("main");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stage]);
+
+    // After a deal the dealer's cards turn over one at a time and are set into High / Low.
+    // The player's cards stay face down until the player turns them (click a card, or Reveal).
+    const [revealStep, setRevealStep] = useState(DEALER_SET);
+    const [peeled, setPeeled] = useState<string[]>([]);
+    const [playerSorted, setPlayerSorted] = useState(false);
+    useLayoutEffect(() => {
+        if (stage !== "setting") { setRevealStep(DEALER_SET); return; }
+        setRevealStep(0);
+        setPeeled([]);
+        setPlayerSorted(false);
+        const timers: number[] = [];
+        let t = 350;
+        for (let step = 1; step <= DEALER_SET; step++) {
+            t += step === DEALER_SET ? 550 : 130;
+            timers.push(window.setTimeout(() => setRevealStep(step), t));
+        }
+        return () => timers.forEach((id) => window.clearTimeout(id));
+    }, [stage]);
+
+    // Once every card is face up, give the last flip a moment and then sort the hand
+    const allPeeled = playerCards.length === 7 && peeled.length === 7;
+    useEffect(() => {
+        if (stage !== "setting" || !allPeeled || playerSorted) return;
+        const id = window.setTimeout(() => setPlayerSorted(true), 520);
+        return () => window.clearTimeout(id);
+    }, [stage, allPeeled, playerSorted]);
+    const playerReady = stage === "showdown" || (stage === "setting" && playerSorted);
+
+    const peelCard = (cardId: string) => {
+        setPeeled((prev) => (prev.includes(cardId) ? prev : [...prev, cardId]));
+    };
+    const revealAll = () => {
+        playerCards.filter((c) => !peeled.includes(c.id)).forEach((c, i) => {
+            window.setTimeout(() => peelCard(c.id), i * 110);
+        });
+    };
 
     // ── Game useMemo (preserved) ──────────────────────────────────────────────
     const dealerBestSplit = useMemo(() => {
@@ -991,7 +1007,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     function autoSetBest() {
         if (!bestPlayerSplitAgainstDealer) return;
         setSelectedFrontIds(bestPlayerSplitAgainstDealer.best.front.map((c) => c.id));
-        setMessage("Best high/low hand set against dealer selected.");
+        setMessage("The dealer set your best high and low hands against theirs.");
     }
 
     function dealHand() {
@@ -1016,7 +1032,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setStage("setting");
         setResultLines([]);
         setNet(null);
-        setMessage("Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Auto Set Best.");
+        setRoundReturned(0);
+        setMessage(getHighPaiGowInfo(d).aceHigh
+            ? "Dealer has Ace-high pai gow. Main bet pushes. Set your hand to finish."
+            : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
     }
 
     function setHandAndResolve() {
@@ -1031,7 +1050,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const lines: string[] = [];
         const playerWinsBack = backCmp > 0; const dealerWinsBack = backCmp <= 0;
         const playerWinsFront = frontCmp > 0; const dealerWinsFront = frontCmp <= 0;
-        if (playerWinsBack && playerWinsFront) {
+        if (dealerAceHighInfo?.aceHigh) {
+            mainReturn += mainBet;
+            lines.push("Dealer has Ace-high pai gow. Main bet pushes.");
+        } else if (playerWinsBack && playerWinsFront) {
             mainReturn += mainBet * 2;
             lines.push("Player wins both hands. Main bet wins 1 to 1.");
         } else if (dealerWinsBack && dealerWinsFront) {
@@ -1068,18 +1090,35 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         }
         setBankroll((b) => b + mainReturn);
         setNet(mainReturn - wagerAtDeal);
+        setRoundReturned(mainReturn);
         setResultLines(lines);
         setStage("showdown");
         setMessage("Showdown complete.");
     }
 
-    function nextHand() {
+    function handleChangeBet() {
         setPlayerCards([]);
         setDealerCards([]);
         setSelectedFrontIds([]);
         setWagerAtDeal(0);
         setResultLines([]);
         setNet(null);
+        setRoundReturned(0);
+        setStage("betting");
+        setMessage("Adjust your wagers and press Deal.");
+    }
+
+    function handleClearAndReset() {
+        setMainBet(MAIN_MIN);
+        setFortuneBet(0);
+        setAceHighBet(0);
+        setPlayerCards([]);
+        setDealerCards([]);
+        setSelectedFrontIds([]);
+        setWagerAtDeal(0);
+        setResultLines([]);
+        setNet(null);
+        setRoundReturned(0);
         setStage("betting");
         setMessage("Set your wagers and press Deal.");
     }
@@ -1087,46 +1126,89 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // ── UI chip handlers ──────────────────────────────────────────────────────
     const canBet = stage === "betting";
 
-    const addChip = (spot: BetSpot, chip: ChipDenomination) => {
+    const addChip = (spot: BetSpotId, chip: ChipDenomination) => {
         if (!canBet) return;
         if (spot === "main") { setMainBet((b) => b + chip); setMainChips((s) => [...s, chip]); }
         else if (spot === "fortune") { setFortuneBet((b) => b + chip); setFortuneChips((s) => [...s, chip]); }
         else { setAceHighBet((b) => b + chip); setAceHighChips((s) => [...s, chip]); }
     };
 
-    const clearSpot = (spot: BetSpot) => {
+    const clearSpot = (spot: BetSpotId) => {
         if (!canBet) return;
-        if (spot === "main") { setMainBet(MAIN_MIN); setMainChips(buildChipStackFromAmount(MAIN_MIN)); }
-        else if (spot === "fortune") { setFortuneBet(0); setFortuneChips([]); }
-        else { setAceHighBet(0); setAceHighChips([]); }
+        if (spot === "main") {
+            setMainBet((b) => { const next = popLastChip(b, MAIN_MIN); setMainChips(buildChipStackFromAmount(next)); return next; });
+        } else if (spot === "fortune") {
+            setFortuneBet((b) => { const next = popLastChip(b, 0); setFortuneChips(buildChipStackFromAmount(next)); return next; });
+        } else {
+            setAceHighBet((b) => { const next = popLastChip(b, 0); setAceHighChips(buildChipStackFromAmount(next)); return next; });
+        }
     };
 
+    // Tray chip goes onto the highlighted spot
     const handleChipSelect = (chip: ChipDenomination) => {
         setSelectedChip(chip);
-        if (canBet && selectedSpot) addChip(selectedSpot, chip);
+        if (canBet) addChip(selectedSpot, chip);
     };
 
-    const handleZoneClick = (spot: BetSpot) => {
+    // Clicking a spot only highlights it
+    const handleZoneClick = (spot: BetSpotId) => {
         if (!canBet) return;
-        if (selectedSpot === spot) addChip(spot, selectedChip);
-        else setSelectedSpot(spot);
+        setSelectedSpot(spot);
+    };
+
+    const handleClear = () => {
+        handleClearAndReset();
+        setMainChips(buildChipStackFromAmount(MAIN_MIN));
+        setFortuneChips([]);
+        setAceHighChips([]);
+        setSelectedSpot("main");
     };
 
     // ── Derived render values ─────────────────────────────────────────────────
-    const selectedSet = new Set(selectedFrontIds);
-    const showDealerSet = stage === "setting" || stage === "showdown";
+    const dealerSetting = stage === "setting" && revealStep < DEALER_SET;
+    const dealerIsSet = revealStep >= DEALER_SET && dealerBestSplit !== null;
+
+    // Player stack: Low hand on top (nearer the dealer), the rest below
+    // Every hand is shown by power: the cards that make the hand first, then the rest by rank
+    const powerOrder = (cards: Card[], mode: SortMode = "auto") => sortByPower(
+        cards.map((c) => ({ id: c.id, value: isJoker(c) ? 14 : valueOf(c), suit: c.suit, wild: isJoker(c) ? "semi" as const : undefined })),
+        mode,
+    );
+    const modeFor = (category: string): SortMode =>
+        category === "Flush" ? "flush"
+        : category === "Straight" || category === "Straight Flush" || category === "Royal Flush" ? "straight"
+        : "groups";
+    const lowIds = playerReady ? powerOrder(playerCards.filter((c) => selectedFrontIds.includes(c.id)), "groups") : [];
+    const dealerHighIds = dealerBestSplit ? powerOrder(dealerBestSplit.back, modeFor(dealerBestSplit.backEval.category)) : [];
+    const dealerLowIds = dealerBestSplit ? powerOrder(dealerBestSplit.front, "groups") : [];
+    // the player's remaining cards: as a set five-card hand once two are picked, otherwise all of them together
+    const playerRest = playerCards.filter((c) => !lowIds.includes(c.id));
+    const playerRestOrder = !playerReady ? playerRest.map((c) => c.id)
+        : playerRest.length === 5 && currentBackEval ? powerOrder(playerRest, modeFor(currentBackEval.category))
+        : powerOrder(playerRest);
+    const playerRowCards = playerRestOrder.map((id) => playerRest.find((c) => c.id === id)!);
     const playerHasStartedSetting = selectedFrontIds.length > 0;
+
+    const displayMessage =
+        stage !== "setting" ? message
+        : dealerSetting ? "Dealer is setting their hand..."
+        : !playerReady
+            ? (dealerAceHighInfo?.aceHigh
+                ? "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards."
+                : "Tap your cards to turn them over, or press Reveal Cards.")
+        : message;
 
     const displayWager = stage === "betting"
         ? mainBet + (fortuneBet > 0 ? fortuneBet : 0) + (aceHighBet > 0 ? aceHighBet : 0)
         : wagerAtDeal;
+    const canRebet = mainBet >= MAIN_MIN && bankroll >= (mainBet + fortuneBet + aceHighBet);
 
     const mainWon = stage === "showdown" && resultLines.some((l) => l.includes("wins both hands"));
     const fortuneWon = stage === "showdown" && fortuneBet > 0 && fortunePreview !== null && fortunePreview.multiplier > 0;
     const aceHighWon = stage === "showdown" && aceHighBet > 0 && !!(dealerAceHighInfo?.aceHigh);
 
     const fortuneHighlight =
-        (stage === "setting" || stage === "showdown") && fortunePreview && fortunePreview.category !== "No Fortune"
+        playerReady && fortunePreview && fortunePreview.category !== "No Fortune"
             ? fortunePreview.category
             : null;
 
@@ -1156,11 +1238,16 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         selectedIsLegal={selectedIsLegal}
                         selectedFrontIds={selectedFrontIds}
+                        canRebet={canRebet}
+                        dealerSetting={revealStep < DEALER_SET}
+                        playerReady={playerReady}
+                        onRevealAll={revealAll}
                         onChipSelect={handleChipSelect}
                         onDeal={dealHand}
                         onAutoSetBest={autoSetBest}
                         onSetHand={setHandAndResolve}
-                        onNextHand={nextHand}
+                        onClear={handleClear}
+                        onChangeBet={handleChangeBet}
                     />
                 }
             >
@@ -1169,65 +1256,57 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* ── LEFT: betting ──────────────────────────────────── */}
-                    <div className="flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:w-64 lg:shrink-0">
+                    <div className={`${canBet ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:px-0`}>
 
-                        {/* Wager / Net bar */}
-                        <div className="flex w-full items-center justify-center gap-4 rounded-xl border border-white/10 bg-black/30 px-4 py-2">
-                            <div className="text-center">
-                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">On Table</div>
-                                <div className="text-sm font-extrabold text-white">{displayWager > 0 ? formatMoney(displayWager) : "—"}</div>
-                            </div>
-                            {stage === "showdown" && net !== null && (
-                                <>
-                                    <div className="h-5 w-px bg-white/10" />
-                                    <div className="text-center">
-                                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
-                                        <div className={`text-sm font-extrabold ${net > 0 ? "text-emerald-300" : net < 0 ? "text-red-400" : "text-amber-100"}`}>
-                                            {net >= 0 ? "+" : ""}{formatMoney(net)}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                        <BetBar
+                            compact
+                            pendingBet={displayWager}
+                            returned={roundReturned}
+                            net={net ?? 0}
+                            showResult={stage === "showdown"}
+                        />
 
                         {/* Side bet circles */}
                         <div className="flex items-end gap-6">
-                            <BetZone
+                            <BetSpot
+                                testId="fortune"
                                 chips={fortuneChips} totalBet={fortuneBet}
                                 label="Fortune" sublabel="optional"
-                                size="small"
+                                dim={82}
                                 isSelected={selectedSpot === "fortune"}
                                 isWinner={fortuneWon}
                                 canBet={canBet}
-                                onClick={() => handleZoneClick("fortune")}
+                                onSelect={() => handleZoneClick("fortune")}
                                 onRemove={() => clearSpot("fortune")}
                             />
-                            <BetZone
+                            <BetSpot
+                                testId="aceHigh"
                                 chips={aceHighChips} totalBet={aceHighBet}
                                 label="Ace High" sublabel="optional"
-                                size="small"
+                                dim={82}
                                 isSelected={selectedSpot === "aceHigh"}
                                 isWinner={aceHighWon}
                                 canBet={canBet}
-                                onClick={() => handleZoneClick("aceHigh")}
+                                onSelect={() => handleZoneClick("aceHigh")}
                                 onRemove={() => clearSpot("aceHigh")}
                             />
                         </div>
 
                         {/* Main bet circle */}
-                        <BetZone
+                        <BetSpot
+                            testId="main"
                             chips={mainChips} totalBet={mainBet}
                             label="Main" sublabel={`min $${MAIN_MIN}`}
-                            size="large"
+                            dim={110}
                             isSelected={selectedSpot === "main"}
                             isWinner={mainWon}
                             canBet={canBet}
-                            onClick={() => handleZoneClick("main")}
+                            onSelect={() => handleZoneClick("main")}
                             onRemove={() => clearSpot("main")}
                         />
 
                         {/* Fortune preview during setting */}
-                        {stage === "setting" && fortunePreview && fortunePreview.category !== "No Fortune" && (
+                        {stage === "setting" && playerReady && fortunePreview && fortunePreview.category !== "No Fortune" && (
                             <p className="text-center text-[11px] font-semibold text-amber-300">
                                 Fortune: {fortunePreview.category}
                             </p>
@@ -1242,62 +1321,64 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 className="flex flex-col items-center gap-1 text-center"
                             >
                                 {resultLines.map((line, i) => (
-                                    <p key={i} className="text-[11px] leading-snug text-white/55">{line}</p>
+                                    <p
+                                        key={i}
+                                        className={`text-[11px] leading-snug ${
+                                            i === 0
+                                                ? (net ?? 0) > 0 ? "text-emerald-300" : (net ?? 0) < 0 ? "text-red-300" : "text-amber-100"
+                                                : "text-white/55"
+                                        }`}
+                                    >
+                                        {line}
+                                    </p>
                                 ))}
                             </motion.div>
                         )}
                     </div>
 
                     {/* ── CENTER: cards ───────────────────────────────────── */}
-                    <div className="flex w-full flex-col items-center gap-3 py-2 lg:flex-1">
+                    <div className={`${canBet ? "order-2" : "order-1"} flex w-full flex-col items-center gap-3 px-2 py-2 lg:order-2 lg:flex-1`}>
 
-                        {/* Dealer section */}
+                        {/* Dealer: High hand in a row, Low hand pushed out in front toward the player */}
                         {dealerCards.length > 0 && (
-                            <div className="flex flex-col items-center gap-2">
+                            <div className="flex w-full flex-col items-center gap-2">
                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                    <AnimatePresence initial={false}>
-                                        {dealerCards.map((card, i) => (
-                                            <motion.div
-                                                key={card.id}
-                                                variants={CARD_VARIANTS}
-                                                initial="initial"
-                                                animate="animate"
-                                                transition={CARD_TRANSITION(i * 0.05)}
-                                            >
-                                                <PlayingCard card={toShared(card, true)} className={CARD_SM} />
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
+                                <div
+                                    className={`relative w-full max-w-[440px] ${STACK_VARS}`}
+                                    style={{ height: `calc(var(--ch) * ${1 + DEALER_ROW_STEP})` }}
+                                    data-testid="dealer-cards"
+                                >
+                                    {dealerCards.map((card, i) => {
+                                        const lowCol = dealerIsSet ? dealerLowIds.indexOf(card.id) : -1;
+                                        const highCol = dealerIsSet ? dealerHighIds.indexOf(card.id) : -1;
+                                        const style = lowCol >= 0 ? slotStyle(1, lowCol, 2, DEALER_ROW_STEP, 20 + lowCol)
+                                            : highCol >= 0 ? slotStyle(0, highCol, 5, DEALER_ROW_STEP, 10 + highCol)
+                                            : slotStyle(0, i, 7, DEALER_ROW_STEP, 10 + i);
+                                        return (
+                                            <div key={card.id} style={style} data-hand={lowCol >= 0 ? "low" : highCol >= 0 ? "high" : "spread"}>
+                                                <motion.div variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.04)}>
+                                                    <PlayingCard card={toShared(card, dealerIsSet || i < revealStep)} className={CARD_SM} />
+                                                </motion.div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
-                                {showDealerSet && dealerBestSplit && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.22 }}
-                                        className="flex flex-col gap-3 sm:flex-row sm:gap-6"
-                                    >
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer High</span>
-                                            <div className="flex gap-1">
-                                                {dealerBestSplit.back.map((c) => (
-                                                    <PlayingCard key={`db-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
-                                                ))}
-                                            </div>
-                                            <span className="text-[11px] font-semibold text-amber-100/65">{dealerBestSplit.backEval.label}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Dealer Low</span>
-                                            <div className="flex gap-1">
-                                                {dealerBestSplit.front.map((c) => (
-                                                    <PlayingCard key={`df-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
-                                                ))}
-                                            </div>
-                                            <span className="text-[11px] font-semibold text-amber-100/65">{dealerBestSplit.frontEval.label}</span>
-                                        </div>
-                                    </motion.div>
-                                )}
+                                <div className="flex min-h-[16px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px]">
+                                    {dealerIsSet && dealerBestSplit && (
+                                        <>
+                                            <span>
+                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">High </span>
+                                                <span className="font-semibold text-amber-100/65">{dealerBestSplit.backEval.label}</span>
+                                            </span>
+                                            <span className="text-white/20">·</span>
+                                            <span>
+                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">Low </span>
+                                                <span className="font-semibold text-amber-100/65">{dealerBestSplit.frontEval.label}</span>
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -1306,82 +1387,80 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             <div className="h-px w-full max-w-md bg-white/8 shrink-0" />
                         )}
 
-                        {/* Player section */}
+                        {/* Player: Low hand on top (nearer the dealer), the other cards below */}
                         {playerCards.length > 0 && (
-                            <div className="flex flex-col items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <div className="flex w-full flex-col items-center gap-2">
+                                <div
+                                    className={`relative w-full max-w-[440px] ${STACK_VARS}`}
+                                    style={{ height: `calc(var(--ch) * ${1 + PLAYER_ROW_STEP})` }}
+                                    data-testid="player-cards"
+                                >
+                                    {/* Empty Low spots */}
+                                    {[0, 1].map((col) => (
+                                        <div
+                                            key={`low-slot-${col}`}
+                                            style={{ ...slotStyle(0, col, 2, PLAYER_ROW_STEP, 1), width: "var(--cw)", height: "var(--ch)" }}
+                                            className="flex items-start justify-center rounded-[9px] border border-dashed border-white/20 bg-black/15 pt-1.5 sm:rounded-[11px]"
+                                        >
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">Low</span>
+                                        </div>
+                                    ))}
 
-                                {/* 7 clickable cards */}
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                    <AnimatePresence initial={false}>
-                                        {playerCards.map((card, i) => (
-                                            <motion.button
-                                                key={card.id}
-                                                onClick={() => toggleFront(card.id)}
-                                                disabled={stage !== "setting"}
-                                                variants={CARD_VARIANTS}
-                                                initial="initial"
-                                                animate="animate"
-                                                transition={CARD_TRANSITION(i * 0.05)}
-                                                whileHover={stage === "setting" ? { y: -3 } : undefined}
-                                                whileTap={stage === "setting" ? { scale: 0.97 } : undefined}
-                                                className={`shrink-0 rounded-[9px] transition-transform duration-150 ${
-                                                    selectedSet.has(card.id)
-                                                        ? "-translate-y-2 ring-2 ring-amber-400/80 ring-offset-1 ring-offset-black/50"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <PlayingCard card={toShared(card, true)} className={CARD_SM} />
-                                            </motion.button>
-                                        ))}
-                                    </AnimatePresence>
+                                    {playerCards.map((card, i) => {
+                                        const isPeeled = peeled.includes(card.id) || stage === "showdown";
+                                        const lowCol = lowIds.indexOf(card.id);
+                                        const rowCol = playerRowCards.findIndex((c) => c.id === card.id);
+                                        const style = lowCol >= 0
+                                            ? slotStyle(0, lowCol, 2, PLAYER_ROW_STEP, 10 + lowCol)
+                                            : slotStyle(1, rowCol, playerRowCards.length, PLAYER_ROW_STEP, 20 + rowCol);
+                                        const canClick = stage === "setting" && !dealerSetting && (!isPeeled || playerReady);
+                                        return (
+                                            <div key={card.id} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
+                                                <motion.button
+                                                    onClick={() => (isPeeled ? toggleFront(card.id) : peelCard(card.id))}
+                                                    disabled={!canClick}
+                                                    aria-label={isPeeled ? (lowCol >= 0 ? "Move back to high hand" : "Move to low hand") : "Turn card over"}
+                                                    variants={CARD_VARIANTS}
+                                                    initial="initial"
+                                                    animate="animate"
+                                                    transition={CARD_TRANSITION(i * 0.04)}
+                                                    whileTap={canClick ? { scale: 0.97 } : undefined}
+                                                    className={`block rounded-[9px] transition-[translate] duration-150 sm:rounded-[11px] ${canClick ? "cursor-pointer hover:-translate-y-1" : "cursor-default"} ${
+                                                        lowCol >= 0 && stage === "setting" ? "ring-2 ring-amber-400/80" : ""
+                                                    }`}
+                                                >
+                                                    <PlayingCard card={toShared(card, isPeeled)} className={CARD_SM} />
+                                                </motion.button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+
+                                {/* Hand names */}
+                                <div className="flex min-h-[16px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px]">
+                                    {playerReady && (
+                                        <>
+                                            <span>
+                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">Low </span>
+                                                <span className="font-semibold text-amber-100/65">{currentFrontEval?.label ?? "pick 2 cards"}</span>
+                                            </span>
+                                            <span className="text-white/20">·</span>
+                                            <span>
+                                                <span className="font-bold uppercase tracking-[0.15em] text-white/30">High </span>
+                                                <span className="font-semibold text-amber-100/65">{currentBackEval?.label ?? "-"}</span>
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
 
                                 {/* Illegal split warning */}
                                 {playerHasStartedSetting && selectedFrontIds.length === 2 && !selectedIsLegal && (
-                                    <p className="text-[11px] font-bold text-red-400">Illegal — high hand must beat low hand</p>
+                                    <p className="text-[11px] font-bold text-red-400">Illegal - high hand must beat low hand</p>
                                 )}
 
-                                {/* Player split display */}
-                                <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">High (5)</span>
-                                        {!playerHasStartedSetting ? (
-                                            <span className="text-[11px] italic text-white/20">Not set</span>
-                                        ) : (
-                                            <>
-                                                <div className="flex gap-1">
-                                                    {selectedBack.map((c) => (
-                                                        <PlayingCard key={`pb-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
-                                                    ))}
-                                                </div>
-                                                <span className="text-[11px] font-semibold text-amber-100/65">
-                                                    {currentBackEval?.label ?? "—"}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">Low (2)</span>
-                                        {!playerHasStartedSetting ? (
-                                            <span className="text-[11px] italic text-white/20">Pick 2 cards</span>
-                                        ) : (
-                                            <>
-                                                <div className="flex gap-1">
-                                                    {selectedFront.map((c) => (
-                                                        <PlayingCard key={`pf-${c.id}`} card={toShared(c, true)} className={CARD_SM} />
-                                                    ))}
-                                                </div>
-                                                <span className="text-[11px] font-semibold text-amber-100/65">
-                                                    {currentFrontEval?.label ?? "Select 2"}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
                                 {/* Outcome quality indicator */}
-                                {playerHasStartedSetting && selectedFrontIds.length === 2 && selectedIsLegal && (
+                                {stage === "setting" && selectedFrontIds.length === 2 && selectedIsLegal && (
                                     <div className="flex items-center gap-2 text-[11px]">
                                         <span className="font-bold text-emerald-400">Legal split</span>
                                         <span className="text-white/20">·</span>
@@ -1402,11 +1481,11 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         )}
 
                         {/* Message */}
-                        <p className="text-sm font-semibold text-amber-50/60">{message}</p>
+                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{displayMessage}</p>
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}
-                    <div className="hidden w-72 shrink-0 flex-col justify-center lg:flex">
+                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-center lg:flex">
                         <PayoutColumn
                             title="Fortune Bonus"
                             entries={sidebetRows()}

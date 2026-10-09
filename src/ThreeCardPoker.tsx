@@ -7,12 +7,13 @@ import type { Card as SharedCard } from "./shared/cards";
 import {
     type ChipDenomination,
     formatMoney,
-    CHIP_COLORS,
     buildChipStackFromAmount,
     BTN_GOLD,
     BTN_NEUTRAL,
 } from "./shared/money";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,7 +83,6 @@ const CARD_TRANSITION = (delay: number) => ({
     ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
     delay,
 });
-const STACK_GAP = 9;
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
@@ -264,75 +264,6 @@ function settle(params: {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ChipStack({ chips, onClick }: { chips: ChipDenomination[]; onClick: () => void }) {
-    const visible = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    const stackH = 52 + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
-    return (
-        <div
-            className="relative flex cursor-pointer justify-center"
-            style={{ width: 52, height: stackH, marginBottom: -20, zIndex: 10 }}
-            onClick={onClick}
-        >
-            <AnimatePresence>
-                {visible.map((denom, i) => {
-                    const cfg = CHIP_COLORS[denom];
-                    return (
-                        <motion.div
-                            key={startIdx + i}
-                            className="absolute left-0 right-0 mx-auto flex h-[48px] w-[48px] select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                            style={{
-                                bottom: i * STACK_GAP, zIndex: i + 1,
-                                backgroundColor: cfg.bg,
-                                border: `3px solid ${cfg.border}`,
-                                color: cfg.text,
-                                boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                            }}
-                            initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 6, scale: 0.8 }}
-                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                        >
-                            {cfg.label}
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function BetZone({ chips, totalBet, label, sublabel, size, isSelected, isWinner, isLocked, onClick, onRemove, canBet }: {
-    chips: ChipDenomination[]; totalBet: number; label: string; sublabel: string;
-    size: "large" | "small"; isSelected: boolean; isWinner: boolean; isLocked?: boolean;
-    onClick: () => void; onRemove: () => void; canBet: boolean;
-}) {
-    const dim = size === "large" ? 110 : 82;
-    const ring = isWinner   ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-               : isSelected ? "border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-               :              "border-white/30";
-    const bg   = isWinner   ? "bg-amber-300/10"
-               : isSelected ? "bg-white/10"
-               :              "bg-black/20";
-    return (
-        <div className="flex flex-col items-center">
-            {chips.length > 0 ? <ChipStack chips={chips} onClick={onRemove} /> : <div style={{ height: 0 }} />}
-            <button
-                onClick={onClick}
-                disabled={!canBet || !!isLocked}
-                className={`relative flex flex-col items-center justify-center rounded-full border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg}`}
-                style={{ width: dim, height: dim }}
-            >
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
-                <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>
-                {totalBet > 0 && (
-                    <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
-                )}
-            </button>
-        </div>
-    );
-}
-
 function PlayCircle({ bet }: { bet: number }) {
     return (
         <div className="flex flex-col items-center">
@@ -365,33 +296,10 @@ function PayoutColumn({ title, entries, highlight }: {
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
                         <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
                     </div>
                 );
             })}
-        </div>
-    );
-}
-
-function BetBar({ pendingBet, returned, net, showResult }: {
-    pendingBet: number; returned: number; net: number; showResult: boolean;
-}) {
-    const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
-    return (
-        <div className="flex items-center justify-center gap-6 rounded-xl border border-white/10 bg-black/30 px-6 py-2.5">
-            {[
-                { label: "Bet", val: pendingBet > 0 ? formatMoney(pendingBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—", color: "text-white" },
-                { label: "Net", val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "—", color: showResult ? netColor : "text-white" },
-            ].map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
         </div>
     );
 }
@@ -470,22 +378,22 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     ]} />
                     <Section title="Dealer Qualification" items={[
                         "Dealer must have Queen-high or better to qualify.",
-                        "If the dealer does NOT qualify: your Ante wins 1:1 and your Play bet is returned (push) — you cannot lose to a non-qualifying dealer.",
-                        "If the dealer qualifies and you win: Ante and Play both pay 1:1.",
+                        "If the dealer does NOT qualify: your Ante wins 1 to 1 and your Play bet is returned (push) — you cannot lose to a non-qualifying dealer.",
+                        "If the dealer qualifies and you win: Ante and Play both pay 1 to 1.",
                         "If the dealer qualifies and dealer wins: Ante and Play are both lost.",
                         "Ties push on Ante and Play.",
                     ]} />
                     <Section title="Ante Bonus" items={[
                         "Pays on your hand regardless of the dealer result or whether the dealer qualifies.",
                         "Not paid if you fold.",
-                        "Straight Flush pays 5:1.",
-                        "Three of a Kind pays 4:1.",
-                        "Straight pays 1:1.",
+                        "Straight Flush pays 5 to 1.",
+                        "Three of a Kind pays 4 to 1.",
+                        "Straight pays 1 to 1.",
                     ]} />
                     <Section title="Pair Plus" items={[
                         "Pays on your hand regardless of whether you beat the dealer or the dealer qualifies.",
                         "Lost if you fold.",
-                        "Straight Flush 40:1 · Three of a Kind 30:1 · Straight 6:1 · Flush 4:1 · Pair 1:1.",
+                        "Straight Flush 40 to 1 · Three of a Kind 30 to 1 · Straight 6 to 1 · Flush 4 to 1 · Pair 1 to 1.",
                     ]} />
                     <Section title="6 Card Bonus" items={[
                         "Uses the best 5-card hand from your 3 cards combined with the dealer's 3 cards.",
@@ -519,9 +427,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
 
-    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(ANTE_KEY, 0)));
-    const [ppChips, setPpChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(PP_KEY, 0)));
-    const [scChips, setScChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(readStored(SC_KEY, 0)));
+    const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "ante")));
+    const [ppChips, setPpChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "pairplus")));
+    const [scChips, setScChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "sixcard")));
 
     const [anteBet, setAnteBet]         = useState(0);
     const [pairPlusBet, setPairPlusBet] = useState(0);
@@ -534,6 +442,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         return ([1, 2.5, 5, 25, 100, 500, 1000, 5000].includes(v) ? v : 5) as ChipDenomination;
     });
     const [resultInfo, setResultInfo] = useState<SettleResult | null>(null);
+    const [resultLines, setResultLines] = useState<string[]>([]);
     const [showRules, setShowRules] = useState(false);
     const resolving = useRef(false);
 
@@ -550,11 +459,11 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     // ─── Bet helpers ──────────────────────────────────────────────────────────
 
-    function addChip(zone: BetZoneId) {
+    function addChip(zone: BetZoneId, chip: ChipDenomination) {
         if (stage !== "betting") return;
-        if (zone === "ante")     setAnteChips(p => [...p, selectedChip]);
-        else if (zone === "pairplus") setPpChips(p => [...p, selectedChip]);
-        else if (zone === "sixcard")  setScChips(p => [...p, selectedChip]);
+        if (zone === "ante")     setAnteChips(p => [...p, chip]);
+        else if (zone === "pairplus") setPpChips(p => [...p, chip]);
+        else if (zone === "sixcard")  setScChips(p => [...p, chip]);
     }
 
     function removeLastChip(zone: BetZoneId) {
@@ -564,15 +473,16 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         else if (zone === "sixcard")  setScChips(p => p.slice(0, -1));
     }
 
+    // Clicking a spot only highlights it
     function handleZoneClick(zone: BetZoneId) {
         if (stage !== "betting") return;
-        if (zone === "ante") {
-            setSelectedZone("ante");
-            addChip("ante");
-        } else {
-            if (selectedZone === zone) addChip(zone);
-            else setSelectedZone(zone);
-        }
+        setSelectedZone(zone);
+    }
+
+    // Tray chip goes onto the highlighted spot
+    function handleChipSelect(chip: ChipDenomination) {
+        setSelectedChip(chip);
+        addChip(selectedZone, chip);
     }
 
     function handleClear() {
@@ -580,6 +490,45 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setPpChips([]);
         setScChips([]);
         setSelectedZone("ante");
+    }
+
+    // ─── Result lines ─────────────────────────────────────────────────────────
+
+    function buildResultLines(settled: SettleResult): string[] {
+        const lines: string[] = [];
+
+        if (settled.folded) {
+            lines.push("Folded - Ante lost");
+        } else {
+            if (settled.qualified) {
+                lines.push(settled.cmp > 0
+                    ? `Win - ${settled.playerRank}`
+                    : settled.cmp < 0
+                    ? `Lose - ${settled.playerRank}`
+                    : `Push - ${settled.playerRank}`);
+            } else {
+                lines.push("Dealer no qualify - Ante wins, Play returned");
+            }
+        }
+
+        if (settled.anteBonusWin > 0)
+            lines.push(`Ante Bonus: ${settled.playerRank}`);
+
+        if (pairPlusBet > 0) {
+            lines.push(settled.ppReturn > 0
+                ? `Pair Plus: ${settled.playerRank}`
+                : settled.folded
+                ? "Pair Plus: Lost on fold"
+                : "Pair Plus: No win");
+        }
+
+        if (sixCardBet > 0) {
+            lines.push(settled.sixCardReturn > 0
+                ? `6 Card Bonus: ${settled.sixCardRank}`
+                : "6 Card Bonus: No win");
+        }
+
+        return lines;
     }
 
     // ─── Game actions ─────────────────────────────────────────────────────────
@@ -600,6 +549,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setDealerCards(dCards);
         setDeck(d2);
         setResultInfo(null);
+        setResultLines([]);
         setPlayBet(0);
         setStage("dealt");
     }
@@ -612,6 +562,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         const settled = settle({ playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: 0, folded: true });
         setBankroll(p => p + settled.anteReturn + settled.anteBonusWin + settled.playReturn + settled.ppReturn + settled.sixCardReturn);
         setResultInfo(settled);
+        setResultLines(buildResultLines(settled));
         setStage("done");
         resolving.current = false;
     }
@@ -628,19 +579,28 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         const settled = settle({ playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: pb, folded: false });
         setBankroll(p => p + settled.anteReturn + settled.anteBonusWin + settled.playReturn + settled.ppReturn + settled.sixCardReturn);
         setResultInfo(settled);
+        setResultLines(buildResultLines(settled));
         setStage("done");
         resolving.current = false;
     }
 
-    function handleNextHand() {
+    function handleChangeBet() {
         if (deck.length < 10) setDeck(createDeck());
-        setPlayerCards([]);
-        setDealerCards([]);
-        setAnteBet(0);
-        setPairPlusBet(0);
-        setSixCardBet(0);
-        setPlayBet(0);
-        setResultInfo(null);
+        setPlayerCards([]); setDealerCards([]);
+        setAnteBet(0); setPairPlusBet(0);
+        setSixCardBet(0); setPlayBet(0);
+        setResultInfo(null); setResultLines([]);
+        setSelectedZone("ante");
+        setStage("betting");
+    }
+
+    function handleClearAndReset() {
+        setAnteChips([]); setPpChips([]);
+        setScChips([]);
+        setPlayerCards([]); setDealerCards([]);
+        setAnteBet(0); setPairPlusBet(0);
+        setSixCardBet(0); setPlayBet(0);
+        setResultInfo(null); setResultLines([]);
         setSelectedZone("ante");
         setStage("betting");
     }
@@ -660,16 +620,16 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     const dealerStatusLabel = resultInfo
         ? resultInfo.qualified
-            ? `Qualifies — ${resultInfo.dealerRank}`
-            : "Does not qualify — Ante wins, Play returned"
+            ? `Qualifies - ${resultInfo.dealerRank}`
+            : "Does not qualify - Ante wins, Play returned"
         : null;
 
     const playerResultLabel = resultInfo
         ? resultInfo.folded
             ? "Folded"
-            : resultInfo.cmp > 0 ? `Win — ${resultInfo.playerRank}`
-            : resultInfo.cmp < 0 ? `Lose — ${resultInfo.playerRank}`
-            : `Push — ${resultInfo.playerRank}`
+            : resultInfo.cmp > 0 ? `Win - ${resultInfo.playerRank}`
+            : resultInfo.cmp < 0 ? `Lose - ${resultInfo.playerRank}`
+            : `Push - ${resultInfo.playerRank}`
         : null;
 
     const suggestion =
@@ -737,18 +697,20 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             hideHeader
             actionBar={
                 <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
-                    <ChipTray selectedChip={selectedChip} onSelect={setSelectedChip} disabled={stage !== "betting"} />
+                    <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={stage !== "betting"} />
                     <div className="flex items-center justify-center gap-2">
                         <AnimatePresence mode="popLayout" initial={false}>
-                            {stage === "betting" && pendingAnte === 0 && pendingPp === 0 && pendingSc === 0
-                                ? null
-                                : stage === "betting" && (
-                                    <SlideBtn key="clear">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear}>
-                                            Clear
-                                        </button>
-                                    </SlideBtn>
-                                )}
+                            {stage === "betting" && (
+                                <SlideBtn key="clear">
+                                    <button
+                                        className={BTN_NEUTRAL}
+                                        onClick={handleClear}
+                                        disabled={pendingAnte === 0 && pendingPp === 0 && pendingSc === 0}
+                                    >
+                                        Clear
+                                    </button>
+                                </SlideBtn>
+                            )}
                             {stage === "betting" && (
                                 <SlideBtn key="deal">
                                     <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>
@@ -782,9 +744,27 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 </motion.span>
                             )}
                             {stage === "done" && (
-                                <SlideBtn key="next">
-                                    <button className={BTN_GOLD} onClick={handleNextHand}>
-                                        Next Hand
+                                <SlideBtn key="clear-done">
+                                    <button className={BTN_NEUTRAL} onClick={handleClearAndReset}>
+                                        Clear
+                                    </button>
+                                </SlideBtn>
+                            )}
+                            {stage === "done" && (
+                                <SlideBtn key="change">
+                                    <button className={BTN_NEUTRAL} onClick={handleChangeBet}>
+                                        Change Bet
+                                    </button>
+                                </SlideBtn>
+                            )}
+                            {stage === "done" && (
+                                <SlideBtn key="rebet">
+                                    <button
+                                        className={BTN_GOLD}
+                                        onClick={handleDeal}
+                                        disabled={pendingAnte <= 0 || bankroll < pendingAnte + pendingPp + pendingSc}
+                                    >
+                                        Rebet & Deal
                                     </button>
                                 </SlideBtn>
                             )}
@@ -800,7 +780,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-2">
                     <h1
-                        className="text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
+                        className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
                         style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
                     >
                         Three Card Poker
@@ -860,39 +840,42 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                     {/* Bet zones */}
                     <div className="flex flex-col items-center gap-2">
                         <div className="flex items-end gap-4">
-                            <BetZone
+                            <BetSpot
+                                testId="pairplus"
                                 chips={ppChips}
                                 totalBet={stage === "betting" ? pendingPp : pairPlusBet}
                                 label="Pair Plus"
                                 sublabel="optional"
-                                size="small"
+                                dim={82}
                                 isSelected={selectedZone === "pairplus"}
                                 isWinner={!!(resultInfo && !resultInfo.folded && resultInfo.ppReturn > 0)}
-                                onClick={() => handleZoneClick("pairplus")}
+                                onSelect={() => handleZoneClick("pairplus")}
                                 onRemove={() => removeLastChip("pairplus")}
                                 canBet={stage === "betting"}
                             />
-                            <BetZone
+                            <BetSpot
+                                testId="ante"
                                 chips={anteChips}
                                 totalBet={stage === "betting" ? pendingAnte : anteBet}
                                 label="Ante"
                                 sublabel="required"
-                                size="large"
+                                dim={110}
                                 isSelected={selectedZone === "ante"}
                                 isWinner={!!(resultInfo && !resultInfo.folded && resultInfo.anteReturn > anteBet)}
-                                onClick={() => handleZoneClick("ante")}
+                                onSelect={() => handleZoneClick("ante")}
                                 onRemove={() => removeLastChip("ante")}
                                 canBet={stage === "betting"}
                             />
-                            <BetZone
+                            <BetSpot
+                                testId="sixcard"
                                 chips={scChips}
                                 totalBet={stage === "betting" ? pendingSc : sixCardBet}
                                 label="6 Card"
-                                sublabel="optional, best 5 of 6 cards"
-                                size="small"
+                                sublabel="optional"
+                                dim={82}
                                 isSelected={selectedZone === "sixcard"}
                                 isWinner={!!(resultInfo && resultInfo.sixCardReturn > 0)}
-                                onClick={() => handleZoneClick("sixcard")}
+                                onSelect={() => handleZoneClick("sixcard")}
                                 onRemove={() => removeLastChip("sixcard")}
                                 canBet={stage === "betting"}
                             />
@@ -949,6 +932,27 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {stage === "done" && resultLines.length > 0 && (
+                            <div className="flex flex-col items-center gap-1 text-center">
+                                {resultLines.map((line, i) => (
+                                    <div
+                                        key={i}
+                                        className={`text-[11px] font-bold ${
+                                            i === 0
+                                                ? (resultInfo?.net ?? 0) > 0
+                                                    ? "text-emerald-300"
+                                                    : (resultInfo?.net ?? 0) < 0
+                                                    ? "text-red-300"
+                                                    : "text-amber-100"
+                                                : "text-white/55"
+                                        }`}
+                                    >
+                                        {line}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                 </div>

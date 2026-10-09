@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_GOLD, BTN_NEUTRAL } from "./shared/money";
+import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,7 +168,7 @@ function roundResolvedLike(stage: Stage) { return stage === "showdown" || stage 
 function valueToLabel(value: number) { if (value === 14) return "Ace"; if (value === 13) return "King"; if (value === 12) return "Queen"; if (value === 11) return "Jack"; return String(value); }
 
 function describeBestHand(best: BestFive | null) {
-    if (!best) return "—";
+    if (!best) return "-";
     switch (best.category) {
         case "High Card": return `${valueToLabel(best.score[1])} High`;
         case "Pair": return `Pair of ${valueToLabel(best.score[1])}s`;
@@ -203,16 +206,15 @@ const CARD_VARIANTS = { initial: { opacity: 0, y: -18, scale: 0.94 }, animate: {
 const CARD_TRANSITION = (delay: number) => ({ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay });
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
 
-const DENOM_DESC = [5000, 1000, 500, 100, 25, 5, 2.5, 1] as const;
+// 6 Card Bonus cards sit beside the player's hand, slightly smaller
+const BONUS_CARD_CLS = "h-[64px] w-[45px] rounded-[8px] sm:h-[76px] sm:w-[53px] sm:rounded-[10px]";
 
-function buildChipStack(amount: number): ChipDenomination[] {
-    const chips: ChipDenomination[] = [];
-    let remaining = Math.round(amount * 100) / 100;
-    for (const d of DENOM_DESC) {
-        while (remaining >= d - 0.001 && chips.length < 8) { chips.push(d as ChipDenomination); remaining = Math.round((remaining - d) * 100) / 100; }
-    }
-    return chips;
-}
+// Showdown pacing (ms)
+const DEALER_FLIP_MS = 450;
+const SETTLE_STEP_MS = 380;
+const SETTLE_ALL = 4; // play, ante, blind, trips
+
+type SpotId = "ante" | "trips" | "six";
 
 // ─── Rules modal ──────────────────────────────────────────────────────────────
 
@@ -235,10 +237,10 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                         <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
                             {[
-                                ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5–$25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
+                                ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5 to $25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
                                 ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, Ante, Blind, Play, and Trips lose immediately."]],
                                 ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• Dealer also qualifies with Ace-King high.", "• If dealer doesn't qualify and you win, Ante pushes and Play wins 1 to 1."]],
-                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1:1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1:1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
+                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
                                 <div key={title as string} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title as string}</div>
@@ -253,84 +255,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
-// ─── BetBar ───────────────────────────────────────────────────────────────────
 
-function BetBar({ pendingBet, returned, net, showResult }: { pendingBet: number; returned: number; net: number; showResult: boolean; }) {
-    const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
-    return (
-        <div className="flex items-center justify-center gap-6 py-1">
-            <div className="text-center">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Bet</div>
-                <div className="text-sm font-extrabold text-white">{formatMoney(pendingBet)}</div>
-            </div>
-            {showResult && (<>
-                <div className="h-6 w-px bg-white/10" />
-                <div className="text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Returned</div>
-                    <div className="text-sm font-extrabold text-emerald-300">{formatMoney(returned)}</div>
-                </div>
-                <div className="h-6 w-px bg-white/10" />
-                <div className="text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Net</div>
-                    <div className={`text-sm font-extrabold ${netColor}`}>{net >= 0 ? "+" : ""}{formatMoney(net)}</div>
-                </div>
-            </>)}
-        </div>
-    );
-}
 
-// ─── BetCircle ────────────────────────────────────────────────────────────────
-
-function BetCircle({ label, sublabel, amount, size, locked, canBet, selectedChip, isWinner, diamond, onAdd, onClear }: {
-    label: string; sublabel?: string; amount: number; size: "large" | "small";
-    locked?: boolean; canBet: boolean; selectedChip: ChipDenomination | null;
-    isWinner?: boolean; diamond?: boolean; onAdd: () => void; onClear: () => void;
-}) {
-    const dim = size === "large" ? 90 : 70;
-    const chips = buildChipStack(amount).slice(0, 5);
-    const clickable = !locked && canBet && selectedChip != null;
-    const clearable = !locked && canBet && amount > 0;
-    const ringClass = isWinner
-        ? "border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)]"
-        : diamond
-            ? amount > 0 ? "border-amber-400/60" : "border-amber-300/25"
-            : amount > 0 ? "border-white/40" : "border-white/20";
-    const bgClass = isWinner ? "bg-amber-300/10" : amount > 0 ? "bg-black/25" : "bg-black/20";
-
-    return (
-        <div className="flex flex-col items-center gap-1">
-            <div className="relative" style={diamond ? { padding: "10px" } : undefined}>
-                <button
-                    onClick={clickable ? onAdd : undefined}
-                    disabled={!clickable}
-                    className={`flex flex-col items-center justify-center border-2 transition-all duration-200 ${diamond ? "rounded-sm" : "rounded-full"} ${ringClass} ${bgClass} ${clickable ? (diamond ? "hover:border-amber-300/80 cursor-pointer" : "hover:border-white/60 cursor-pointer") : "cursor-default"}`}
-                    style={{ width: dim, height: dim, ...(diamond ? { transform: "rotate(45deg)" } : {}) }}
-                >
-                    <div style={diamond ? { transform: "rotate(-45deg)" } : undefined} className="flex flex-col items-center">
-                        {chips.length > 0 ? (
-                            <>
-                                <div className="flex flex-col-reverse items-center">
-                                    {chips.slice(0, 4).map((chip, i) => {
-                                        const c = CHIP_COLORS[chip];
-                                        return <div key={i} className="rounded-full border" style={{ width: 22, height: 7, background: c.bg, borderColor: c.border, marginTop: i > 0 ? -3 : 0 }} />;
-                                    })}
-                                </div>
-                                <span className="mt-1 text-[10px] font-extrabold text-white">{formatMoney(amount)}</span>
-                            </>
-                        ) : (
-                            <span className="text-[10px] text-white/30">{locked && amount > 0 ? formatMoney(amount) : "—"}</span>
-                        )}
-                    </div>
-                </button>
-                {clearable && (
-                    <button onClick={onClear} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500/80 text-[11px] font-bold text-white transition hover:bg-red-500" aria-label={`Clear ${label} bet`}>×</button>
-                )}
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-white/55">{label}</span>
-            {sublabel && <span className="text-[10px] tracking-[0.08em] text-white/30">{sublabel}</span>}
-        </div>
-    );
-}
 
 // ─── Payout column (on felt) ──────────────────────────────────────────────────
 
@@ -343,7 +269,7 @@ function PayoutColumn({ title, entries, highlight }: { title: string; entries: R
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
                     </div>
                 );
             })}
@@ -355,10 +281,10 @@ function PayoutColumn({ title, entries, highlight }: { title: string; entries: R
 
 export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const [stage, setStage] = useState<Stage>("betting");
-    const [ante, setAnte] = useState(25);
+    const [ante, setAnte] = useState(() => defaultBet("uth", "ante"));
     const blind = ante;
-    const [trips, setTrips] = useState(10);
-    const [sixCardBonus, setSixCardBonus] = useState(5);
+    const [trips, setTrips] = useState(() => defaultBet("uth", "trips"));
+    const [sixCardBonus, setSixCardBonus] = useState(() => defaultBet("uth", "six"));
     const [play, setPlay] = useState(0);
     const [wagerAtDeal, setWagerAtDeal] = useState(0);
     const [pendingSixCardReturn, setPendingSixCardReturn] = useState(0);
@@ -370,7 +296,13 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const [isRevealing, setIsRevealing] = useState(false);
     const [resolvedHand, setResolvedHand] = useState<ResolvedHand | null>(null);
     const [showRules, setShowRules] = useState(false);
-    const [selectedChip, setSelectedChip] = useState<ChipDenomination | null>(null);
+    const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
+    const [selectedSpot, setSelectedSpot] = useState<SpotId>("ante");
+    // Showdown display pacing: how many dealer cards are turned, how many bets have
+    // visibly settled (play, ante, blind, trips), how many bonus cards are turned.
+    const [dealerShown, setDealerShown] = useState(0);
+    const [settleShown, setSettleShown] = useState(0);
+    const [sixShown, setSixShown] = useState(0);
 
     const sixBonusResult = useMemo(() => {
         if (round.hiddenSixBonusCards.length !== 4 || round.player.length !== 2) return null;
@@ -389,18 +321,16 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     }, [round.dealer, round.board, stage]);
 
     const totalMainWager = ante + blind + trips + sixCardBonus + play;
-    const visibleNet = payout ? payout.net : -wagerAtDeal;
-    const showFinalNet = stage === "roundOver";
 
     const blindHighlight = resolvedHand && !resolvedHand.folded && resolvedHand.compare > 0 && resolvedHand.blindMultiplier ? resolvedHand.blindCategory : null;
     const tripsHighlight = resolvedHand?.tripsMultiplier ? resolvedHand.tripsCategory : null;
     const sixCardHighlight = stage === "roundOver" && resolvedHand?.sixCardMultiplier ? resolvedHand.sixCardCategory : null;
 
-    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1:1" : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
-    const blindResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.blindMultiplier ? `Win ${resolvedHand.blindMultiplier}:1` : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
-    const playResultText = useMemo(() => { if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet"; if (resolvedHand.folded) return "Lose"; if (play === 0) return "No Bet"; if (resolvedHand.compare > 0) return "Win 1:1"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout, play]);
-    const tripsResultText = useMemo(() => { if (trips <= 0) return "No Bet"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.tripsMultiplier ? `Win ${resolvedHand.tripsMultiplier}:1` : "Lose"; }, [resolvedHand, payout, trips]);
-    const sixCardResultText = useMemo(() => { if (sixCardBonus <= 0) return "No Bet"; if (stage === "awaitingBonusReveal") return "Pending Reveal"; if (stage !== "roundOver") return "Pending"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.sixCardMultiplier ? `Win ${resolvedHand.sixCardMultiplier}:1` : "Lose"; }, [resolvedHand, payout, stage, sixCardBonus]);
+    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1 to 1" : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
+    const blindResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.blindMultiplier ? `Win ${resolvedHand.blindMultiplier} to 1` : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
+    const playResultText = useMemo(() => { if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet"; if (resolvedHand.folded) return "Lose"; if (play === 0) return "No Bet"; if (resolvedHand.compare > 0) return "Win 1 to 1"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout, play]);
+    const tripsResultText = useMemo(() => { if (trips <= 0) return "No Bet"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.tripsMultiplier ? `Win ${resolvedHand.tripsMultiplier} to 1` : "Lose"; }, [resolvedHand, payout, trips]);
+    const sixCardResultText = useMemo(() => { if (sixCardBonus <= 0) return "No Bet"; if (stage === "awaitingBonusReveal") return "Pending Reveal"; if (stage !== "roundOver") return "Pending"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.sixCardMultiplier ? `Win ${resolvedHand.sixCardMultiplier} to 1` : "Lose"; }, [resolvedHand, payout, stage, sixCardBonus]);
 
     const settleRound = (playStake: number, folded: boolean, finalRound: RoundState) => {
         const playerEval = evaluateBestFrom([...finalRound.player, ...finalRound.board]);
@@ -426,12 +356,31 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         setResolvedHand({ playerBest: playerEval, dealerBest: dealerEval, dealerQualified, compare, folded, blindCategory: playerEval.category, tripsCategory: playerEval.category, sixCardCategory: sixBonus.category, blindMultiplier: BLIND_PAYTABLE[playerEval.category] || 0, tripsMultiplier: TRIPS_PAYTABLE[playerEval.category] || 0, sixCardMultiplier: sixBonus.multiplier });
         setPendingSixCardReturn(sixReturn);
         const totalReturn = anteReturn + blindReturn + playReturn + tripsReturn;
-        const net = totalReturn - wagerAtDeal;
+        const net = totalReturn - (wagerAtDeal + playStake);
         setBankroll(b => b + totalReturn);
         setPayout({ ante: anteReturn, blind: blindReturn, play: playReturn, trips: tripsReturn, sixCardBonus: 0, total: totalReturn, net, summary });
-        if (sixCardBonus > 0) { setStage("awaitingBonusReveal"); setMessage("Main hand settled. Press Reveal 6 Card Bonus."); }
+        if (sixCardBonus > 0) { setStage("awaitingBonusReveal"); setMessage("Main hand settled. Revealing 6 Card Bonus..."); }
         else { setStage("roundOver"); setMessage("Round complete."); }
     };
+
+    // Turn the dealer's cards one at a time, settle, then show each bet resolving in turn.
+    const runShowdown = async (playStake: number, folded: boolean, finalRound: RoundState) => {
+        setIsRevealing(true);
+        setStage("showdown");
+        await wait(DEALER_FLIP_MS);
+        setDealerShown(1);
+        await wait(DEALER_FLIP_MS);
+        setDealerShown(2);
+        await wait(DEALER_FLIP_MS + 200);
+        settleRound(playStake, folded, finalRound);
+        for (let step = 1; step <= SETTLE_ALL; step++) {
+            setSettleShown(step);
+            await wait(SETTLE_STEP_MS);
+        }
+        setIsRevealing(false);
+    };
+
+    const resetShowdownDisplay = () => { setDealerShown(0); setSettleShown(0); setSixShown(0); };
 
     const startRound = () => {
         const normalizedAnte = Math.max(MIN_MAIN_BET, Math.floor(ante / 2.5) * 2.5);
@@ -445,6 +394,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         [player, nextDeck] = draw(nextDeck, 2);[dealer, nextDeck] = draw(nextDeck, 2);[hiddenSix, nextDeck] = draw(nextDeck, 4);
         setAnte(normalizedAnte); setTrips(normalizedTrips); setSixCardBonus(normalizedSix); setPlay(0); setWagerAtDeal(totalBet);
         setPayout(null); setResolvedHand(null); setLastDecision(null); setPendingSixCardReturn(0); setPendingSixCardSummary(null);
+        resetShowdownDisplay();
         setBankroll(b => b - totalBet);
         setRound({ deck: nextDeck, player, dealer, board: [], hiddenSixBonusCards: hiddenSix });
         setStage("preflop"); setMessage("Cards dealt. Bet 3x or 4x now, or check.");
@@ -466,8 +416,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         setRound(r => ({ ...r, deck: nextDeck }));
         for (let i = 0; i < runout.length; i++) { await wait(CARD_REVEAL_DELAY_MS); setRound(r => ({ ...r, board: [...r.board, runout[i]] })); }
         const finalRound = { ...round, deck: nextDeck, board: [...round.board, ...runout] };
-        if (goToShowdownAfter) { setStage("showdown"); settleRound(playStake, false, finalRound); }
-        else { setStage("river"); setMessage("River is out. Bet 1x now, or fold."); }
+        if (goToShowdownAfter) { await runShowdown(playStake, false, finalRound); return; }
+        setStage("river"); setMessage("River is out. Bet 1x now, or fold.");
         setIsRevealing(false);
     };
 
@@ -485,18 +435,18 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
             await wait(1000);
             for (let i = 3; i < 5; i++) { await wait(250); setRound(r => ({ ...r, board: [...r.board, board[i]] })); }
             const nextRound = { ...round, deck: nextDeck, board };
-            setStage("showdown"); setMessage(`Play bet placed for ${multiplier}x. Settling hand.`);
-            settleRound(stake, false, nextRound); setIsRevealing(false); return;
+            setMessage(`Play bet placed for ${multiplier}x. Settling hand.`);
+            await runShowdown(stake, false, nextRound); return;
         }
         if (stage === "flop") { await revealTurnAndRiver(true, stake); return; }
-        if (stage === "river") { setStage("showdown"); setMessage(`Play bet placed for ${multiplier}x. Settling hand.`); settleRound(stake, false, round); }
+        if (stage === "river") { setMessage(`Play bet placed for ${multiplier}x. Settling hand.`); await runShowdown(stake, false, round); }
     };
 
     const revealRiver = async () => { setLastDecision("check"); await revealTurnAndRiver(false); };
 
     const foldHand = () => {
         if (isRevealing) return;
-        setPlay(0); setLastDecision("fold"); setStage("showdown"); setMessage("Player folds."); settleRound(0, true, round);
+        setPlay(0); setLastDecision("fold"); setMessage("Player folds."); void runShowdown(0, true, round);
     };
 
     const revealSixCardBonus = () => {
@@ -509,21 +459,79 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         setPendingSixCardReturn(0); setPendingSixCardSummary(null); setStage("roundOver"); setMessage("6 Card Bonus revealed.");
     };
 
-    const resetForNextRound = () => {
+    const handleChangeBet = () => {
+        setPlay(0); setWagerAtDeal(0); setRound(initialRound()); setPayout(null); setResolvedHand(null);
+        setStage("betting"); setMessage("Adjust your bets and press Deal."); setLastDecision(null);
+        setPendingSixCardReturn(0); setPendingSixCardSummary(null); setIsRevealing(false);
+        resetShowdownDisplay();
+    };
+
+    const handleClearAndReset = () => {
+        setAnte(0); setTrips(0); setSixCardBonus(0);
         setPlay(0); setWagerAtDeal(0); setRound(initialRound()); setPayout(null); setResolvedHand(null);
         setStage("betting"); setMessage("Set your bets and press Deal."); setLastDecision(null);
         setPendingSixCardReturn(0); setPendingSixCardSummary(null); setIsRevealing(false);
+        resetShowdownDisplay();
     };
 
+    // 6 Card Bonus turns over on its own once the main bets have settled
+    const revealSixRef = useRef(revealSixCardBonus);
+    useEffect(() => { revealSixRef.current = revealSixCardBonus; });
+    useEffect(() => {
+        if (stage !== "awaitingBonusReveal" || settleShown < SETTLE_ALL) return;
+        const timers: number[] = [];
+        let t = 300;
+        for (let n = 1; n <= 4; n++) {
+            timers.push(window.setTimeout(() => setSixShown(n), t));
+            t += 260;
+        }
+        timers.push(window.setTimeout(() => revealSixRef.current(), t + 450));
+        return () => timers.forEach((id) => window.clearTimeout(id));
+    }, [stage, settleShown]);
+
+    // ── UI chip handlers ──────────────────────────────────────────────────────
     const canAct = !isRevealing;
     const isBetting = stage === "betting";
-    const dealerRevealed = roundResolvedLike(stage);
-    const committedBet = isBetting ? totalMainWager : wagerAtDeal + play;
-    const showSixCardView = stage === "roundOver" && sixCardBonus > 0;
 
-    const btnBase = "min-w-[88px] rounded-full border px-5 py-3 text-sm font-extrabold shadow-lg transition disabled:opacity-45 active:translate-y-px";
-    const btnGray = `${btnBase} border-slate-500/60 bg-gradient-to-b from-slate-500 to-slate-700 text-white hover:brightness-110`;
-    const btnRed = `${btnBase} border-red-300/60 bg-gradient-to-b from-red-500 to-red-700 text-white hover:brightness-105`;
+    // Tray chip goes onto the highlighted spot
+    const handleChipSelect = (chip: ChipDenomination) => {
+        setSelectedChip(chip);
+        if (!isBetting) return;
+        if (selectedSpot === "ante") setAnte(a => a + chip);
+        else if (selectedSpot === "trips") setTrips(t => Math.min(MAX_TRIPS, t + chip));
+        else setSixCardBonus(v => Math.min(MAX_SIX_BONUS, v + chip));
+    };
+
+    // Clicking the chips on a spot takes the last chip back
+    const removeLastChip = (spot: SpotId) => {
+        if (!isBetting) return;
+        if (spot === "ante") setAnte(a => popLastChip(a));
+        else if (spot === "trips") setTrips(t => popLastChip(t));
+        else setSixCardBonus(v => popLastChip(v));
+    };
+
+    const handleClear = () => { handleClearAndReset(); setSelectedSpot("ante"); };
+
+    // ── Derived render values ─────────────────────────────────────────────────
+    const committedBet = isBetting ? totalMainWager : wagerAtDeal + play;
+    const canDeal = ante >= MIN_MAIN_BET;
+    const canRebet = ante >= MIN_MAIN_BET && bankroll >= ante + blind + trips + sixCardBonus;
+    const roundDone = stage === "roundOver" && settleShown >= SETTLE_ALL;
+    const hasSixBet = sixCardBonus > 0 && !isBetting;
+
+    // What a spot shows once its bet has visibly settled: losing chips leave,
+    // winning stacks grow to the amount returned.
+    const spotView = (bet: number, result: string, shown: boolean, returned: number) => {
+        if (shown && result === "Lose") return { chips: [] as ChipDenomination[], total: 0, win: false };
+        if (shown && result.startsWith("Win")) return { chips: buildChipStackFromAmount(returned), total: returned, win: true };
+        return { chips: buildChipStackFromAmount(bet), total: bet, win: false };
+    };
+    const settled = !!(resolvedHand && payout);
+    const playView = spotView(play, playResultText, settled && settleShown >= 1, payout?.play ?? 0);
+    const anteView = spotView(ante, anteResultText, settled && settleShown >= 2, payout?.ante ?? 0);
+    const blindView = spotView(blind, blindResultText, settled && settleShown >= 3, payout?.blind ?? 0);
+    const tripsView = spotView(trips, tripsResultText, settled && settleShown >= 4, payout?.trips ?? 0);
+    const sixView = spotView(sixCardBonus, sixCardResultText, roundDone, payout?.sixCardBonus ?? 0);
 
     return (
         <>
@@ -535,53 +543,79 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 hideHeader
                 actionBar={
                     <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
-                        <ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={setSelectedChip} disabled={!isBetting} />
-                        <div className="flex items-center justify-center gap-2">
+                        <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
+                        <div className="flex min-h-[46px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (
-                                    <motion.div key="deal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <motion.button onClick={startRound} disabled={!canAct} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="rounded-full border border-amber-200/80 bg-gradient-to-b from-amber-300 to-amber-500 px-10 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg disabled:opacity-45">Deal</motion.button>
-                                    </motion.div>
+                                    <SlideBtn key="clear">
+                                        <button onClick={handleClear} disabled={!canAct || totalMainWager <= 0} className={BTN_NEUTRAL}>Clear</button>
+                                    </SlideBtn>
+                                )}
+                                {isBetting && (
+                                    <SlideBtn key="deal">
+                                        <button onClick={startRound} disabled={!canAct || !canDeal} className={BTN_GOLD}>Deal</button>
+                                    </SlideBtn>
                                 )}
                                 {stage === "preflop" && (
-                                    <motion.div key="preflop" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                                    <SlideBtn key="bet4x">
                                         <button onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
+                                    </SlideBtn>
+                                )}
+                                {stage === "preflop" && (
+                                    <SlideBtn key="bet3x">
                                         <button onClick={() => void placePlayBet(3)} disabled={!canAct} className={BTN_GOLD}>Bet 3x</button>
-                                        <button onClick={() => void revealFlop()} disabled={!canAct} className={btnGray}>Check</button>
-                                    </motion.div>
+                                    </SlideBtn>
+                                )}
+                                {stage === "preflop" && (
+                                    <SlideBtn key="check-preflop">
+                                        <button onClick={() => void revealFlop()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
+                                    </SlideBtn>
                                 )}
                                 {stage === "flop" && (
-                                    <motion.div key="flop" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                                    <SlideBtn key="bet2x">
                                         <button onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
-                                        <button onClick={() => void revealRiver()} disabled={!canAct} className={btnGray}>Check</button>
-                                    </motion.div>
+                                    </SlideBtn>
+                                )}
+                                {stage === "flop" && (
+                                    <SlideBtn key="check-flop">
+                                        <button onClick={() => void revealRiver()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
+                                    </SlideBtn>
                                 )}
                                 {stage === "river" && (
-                                    <motion.div key="river" className="flex gap-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                                    <SlideBtn key="bet1x">
                                         <button onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
-                                        <button onClick={foldHand} disabled={!canAct} className={btnRed}>Fold</button>
-                                    </motion.div>
+                                    </SlideBtn>
                                 )}
-                                {stage === "awaitingBonusReveal" && (
-                                    <motion.div key="reveal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={revealSixCardBonus} disabled={!canAct} className={BTN_GOLD}>Reveal 6 Card Bonus</button>
-                                    </motion.div>
+                                {stage === "river" && (
+                                    <SlideBtn key="fold">
+                                        <button onClick={foldHand} disabled={!canAct} className={BTN_NEUTRAL}>Fold</button>
+                                    </SlideBtn>
                                 )}
                                 {stage === "roundOver" && (
-                                    <motion.div key="next" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                                        <button onClick={resetForNextRound} disabled={!canAct} className={BTN_GREEN}>Next Hand</button>
-                                    </motion.div>
+                                    <SlideBtn key="clear-done">
+                                        <button onClick={handleClear} disabled={!canAct} className={BTN_NEUTRAL}>Clear</button>
+                                    </SlideBtn>
+                                )}
+                                {stage === "roundOver" && (
+                                    <SlideBtn key="change-bet">
+                                        <button onClick={handleChangeBet} disabled={!canAct} className={BTN_NEUTRAL}>Change Bet</button>
+                                    </SlideBtn>
+                                )}
+                                {stage === "roundOver" && (
+                                    <SlideBtn key="rebet-deal">
+                                        <button onClick={startRound} disabled={!canAct || !canRebet} className={BTN_GOLD}>Rebet &amp; Deal</button>
+                                    </SlideBtn>
                                 )}
                             </AnimatePresence>
                         </div>
-                        <div className="invisible hidden sm:block" aria-hidden><ChipTray selectedChip={selectedChip as ChipDenomination} onSelect={() => { }} /></div>
+                        <div className="invisible hidden sm:block"><ChipTray selectedChip={selectedChip} onSelect={() => { }} disabled /></div>
                     </div>
                 }
             >
-                {/* Title — full width at the very top */}
+                {/* Title - full width at the very top */}
                 <div className="mb-3 flex select-none flex-col items-center gap-1 shrink-0">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90" style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+                        <h1 className="text-center text-xl font-extrabold uppercase tracking-[0.16em] text-amber-100/90" style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
                             Ultimate Texas Hold&apos;em
                         </h1>
                         <button onClick={() => setShowRules(true)} className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15" aria-label="Show rules">i</button>
@@ -605,85 +639,101 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 {/* Three-column body: betting left | cards center | payout tables right */}
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
-                    {/* Betting column — vertically centered */}
-                    <div className="flex w-full flex-col items-center justify-center gap-3 py-2 lg:w-64 lg:shrink-0">
+                    {/* Betting column - on mobile it sits above the cards while betting and below them during the hand */}
+                    <div className={`${isBetting ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-1 lg:w-64 lg:shrink-0`}>
                         <BetBar
+                            compact
                             pendingBet={committedBet}
                             returned={payout ? payout.total : 0}
-                            net={showFinalNet ? (payout ? payout.net : visibleNet) : visibleNet}
-                            showResult={showFinalNet}
+                            net={payout ? payout.net : 0}
+                            showResult={roundDone}
                         />
 
                         {/* Betting circles */}
-                        <div className="flex flex-col items-center gap-3">
+                        <div className="mt-10 flex flex-col items-center gap-12">
                             {/* Row 1: TRIPS (diamond) + 6 CARD (circle) */}
-                            <div className="flex items-center gap-8">
-                                <BetCircle
-                                    label="TRIPS"
+                            <div className="flex items-center gap-6">
+                                <BetSpot
+                                    testId="trips"
+                                    label="Trips"
                                     sublabel={`max $${MAX_TRIPS}`}
-                                    amount={trips}
-                                    size="small"
+                                    chips={tripsView.chips}
+                                    totalBet={tripsView.total}
+                                    dim={70}
                                     diamond
+                                    floatChips
                                     canBet={isBetting}
-                                    selectedChip={selectedChip}
-                                    onAdd={() => setTrips(t => Math.min(MAX_TRIPS, t + (selectedChip ?? 0)))}
-                                    onClear={() => setTrips(0)}
+                                    isSelected={selectedSpot === "trips"}
+                                    isWinner={tripsView.win}
+                                    onSelect={() => setSelectedSpot("trips")}
+                                    onRemove={() => removeLastChip("trips")}
                                 />
-                                <BetCircle
-                                    label="6 CARD"
+                                <BetSpot
+                                    testId="six"
+                                    label="6 Card"
                                     sublabel={`max $${MAX_SIX_BONUS}`}
-                                    amount={sixCardBonus}
-                                    size="small"
+                                    chips={sixView.chips}
+                                    totalBet={sixView.total}
+                                    dim={82}
+                                    floatChips
                                     canBet={isBetting}
-                                    selectedChip={selectedChip}
-                                    onAdd={() => setSixCardBonus(v => Math.min(MAX_SIX_BONUS, v + (selectedChip ?? 0)))}
-                                    onClear={() => setSixCardBonus(0)}
+                                    isSelected={selectedSpot === "six"}
+                                    isWinner={sixView.win}
+                                    onSelect={() => setSelectedSpot("six")}
+                                    onRemove={() => removeLastChip("six")}
                                 />
                             </div>
 
                             {/* Row 2: ANTE = BLIND */}
                             <div className="flex items-center gap-3">
-                                <BetCircle
-                                    label="ANTE"
-                                    amount={ante}
-                                    size="large"
+                                <BetSpot
+                                    testId="ante"
+                                    label="Ante"
+                                    sublabel={`min $${MIN_MAIN_BET}`}
+                                    chips={anteView.chips}
+                                    totalBet={anteView.total}
+                                    dim={90}
+                                    floatChips
                                     canBet={isBetting}
-                                    selectedChip={selectedChip}
-                                    isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)}
-                                    onAdd={() => setAnte(a => a + (selectedChip ?? 0))}
-                                    onClear={() => setAnte(MIN_MAIN_BET)}
+                                    isSelected={selectedSpot === "ante"}
+                                    isWinner={anteView.win}
+                                    onSelect={() => setSelectedSpot("ante")}
+                                    onRemove={() => removeLastChip("ante")}
                                 />
                                 <span className="text-base font-bold text-white/50" style={{ letterSpacing: "0.05em" }}>=</span>
-                                <BetCircle
-                                    label="BLIND"
-                                    amount={blind}
-                                    size="large"
-                                    locked
+                                <BetSpot
+                                    testId="blind"
+                                    label="Blind"
+                                    sublabel="matches ante"
+                                    chips={blindView.chips}
+                                    totalBet={blindView.total}
+                                    dim={90}
+                                    floatChips
+                                    isLocked
                                     canBet={false}
-                                    selectedChip={null}
-                                    isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded)}
-                                    onAdd={() => { }}
-                                    onClear={() => { }}
+                                    isSelected={false}
+                                    isWinner={blindView.win}
                                 />
                             </div>
 
                             {/* Row 3: PLAY */}
-                            <BetCircle
-                                label="PLAY"
-                                amount={play}
-                                size="large"
-                                locked
+                            <BetSpot
+                                testId="play"
+                                label="Play"
+                                chips={playView.chips}
+                                totalBet={playView.total}
+                                dim={90}
+                                floatChips
+                                isLocked
                                 canBet={false}
-                                selectedChip={null}
-                                isWinner={!!(resolvedHand && resolvedHand.compare > 0 && !resolvedHand.folded && play > 0)}
-                                onAdd={() => { }}
-                                onClear={() => { }}
+                                isSelected={false}
+                                isWinner={playView.win}
                             />
                         </div>
 
-                        {/* Settlement — no background box */}
-                        {resolvedHand && payout && stage === "roundOver" && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2">
+                        {/* Settlement - no background box */}
+                        {resolvedHand && payout && roundDone && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2" data-testid="settlement">
                                 <div className="flex items-center gap-4 text-xs">
                                     <div className="text-center">
                                         <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">Player</div>
@@ -705,7 +755,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                     ].map(({ name, result }) => {
                                         const isWin = result.startsWith("Win"), isLose = result === "Lose";
                                         return (
-                                            <div key={name} className="rounded-xl border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
+                                            <div key={name} data-result={name} className="rounded-xl border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
                                                 <div className="text-[10px] uppercase tracking-[0.1em] text-white/35">{name}</div>
                                                 <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100/70"}`}>{result}</div>
                                             </div>
@@ -716,79 +766,80 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         )}
                     </div>
 
-                    {/* Cards column — vertically centered */}
-                    <div className="flex w-full flex-col items-center justify-center gap-3 py-2 lg:flex-1">
-                        <AnimatePresence mode="wait">
-                            {showSixCardView ? (
-                                <motion.div key="six-card-view" initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">6 Card Bonus</span>
-                                    <div className="flex flex-wrap items-center justify-center gap-2">
-                                        {round.player.map(card => <PlayingCard key={card.id} card={toShared(card, true)} className={CARD_CLS} />)}
-                                        <span className="text-lg font-bold text-white/30">+</span>
-                                        {round.hiddenSixBonusCards.map((card, i) => (
+                    {/* Cards column - center on desktop */}
+                    <div className={`${isBetting ? "order-2" : "order-1"} flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-2 lg:flex-1`}>
+                        {/* Dealer */}
+                        <div className="flex flex-col items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                            <div className="flex gap-2" data-testid="dealer-cards">
+                                <AnimatePresence>
+                                    {round.dealer.map((card, i) => (
+                                        <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                            <PlayingCard card={toShared(card, i < dealerShown)} className={CARD_CLS} />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                                {round.dealer.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
+                            </div>
+                            <span className="h-4 text-xs font-semibold text-amber-100/70">{dealerShown >= 2 ? dealerHandText : ""}</span>
+                        </div>
+                        {/* Board */}
+                        <div className="flex flex-col items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
+                            <div className="flex gap-1.5 sm:gap-2" data-testid="board-cards">
+                                <AnimatePresence>
+                                    {round.board.map((card, i) => (
+                                        <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
+                                            <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                                {Array.from({ length: 5 - round.board.length }).map((_, i) => (
+                                    <div key={i} className={`${CARD_CLS} border border-white/10 bg-white/5 opacity-20`} />
+                                ))}
+                            </div>
+                        </div>
+                        {/* Player, with the 6 Card Bonus cards alongside */}
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="flex items-end gap-3">
+                                <div className="flex gap-2" data-testid="player-cards">
+                                    <AnimatePresence>
+                                        {round.player.map((card, i) => (
                                             <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
                                                 <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
                                             </motion.div>
                                         ))}
-                                    </div>
-                                    {sixBonusResult && <span className={`text-sm font-extrabold ${sixBonusResult.category === "No Bonus" ? "text-white/50" : "text-amber-200"}`}>{sixBonusResult.category}</span>}
-                                </motion.div>
-                            ) : (
-                                <motion.div key="main-hand-view" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex flex-col items-center gap-3">
-                                    {/* Dealer */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
-                                        <div className="flex gap-2">
-                                            <AnimatePresence>
-                                                {round.dealer.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
-                                                        <PlayingCard card={toShared(card, dealerRevealed)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {round.dealer.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
-                                        </div>
-                                        {dealerHandText && <span className="text-xs font-semibold text-amber-100/70">{dealerHandText}</span>}
-                                    </div>
-                                    {/* Board */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Board</span>
-                                        <div className="flex gap-2">
-                                            <AnimatePresence>
-                                                {round.board.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
-                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {stage !== "betting" && round.board.length < 5 && Array.from({ length: 5 - round.board.length }).map((_, i) => (
-                                                <div key={i} className={`${CARD_CLS} border border-white/10 bg-white/5 opacity-20`} />
+                                    </AnimatePresence>
+                                    {round.player.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
+                                </div>
+                                {hasSixBet && round.hiddenSixBonusCards.length > 0 && (
+                                    <div className="flex flex-col items-center gap-1" data-testid="six-cards">
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">6 Card Bonus</span>
+                                        <div className="flex gap-1">
+                                            {round.hiddenSixBonusCards.map((card, i) => (
+                                                <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(0.2 + i * 0.06)}>
+                                                    <PlayingCard card={toShared(card, i < sixShown)} className={BONUS_CARD_CLS} />
+                                                </motion.div>
                                             ))}
                                         </div>
                                     </div>
-                                    {/* Player */}
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="flex gap-2">
-                                            <AnimatePresence>
-                                                {round.player.map((card, i) => (
-                                                    <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
-                                                        <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-                                            {round.player.length === 0 && <div className="flex gap-2 opacity-20"><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /><div className={`${CARD_CLS} border border-white/20 bg-white/5`} /></div>}
-                                        </div>
-                                        {playerHandText && <span className="text-xs font-semibold text-amber-100/70">{playerHandText}</span>}
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                        <p className="text-sm font-semibold text-amber-50/60">{message}</p>
+                                )}
+                            </div>
+                            <span className="h-4 text-xs font-semibold text-amber-100/70">
+                                {playerHandText}
+                                {hasSixBet && sixShown >= 4 && sixBonusResult && (
+                                    <span className={sixBonusResult.category === "No Bonus" ? "text-white/40" : "text-amber-200"}>
+                                        {" · 6 Card: "}{sixBonusResult.category}
+                                    </span>
+                                )}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                        </div>
+                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>
                     </div>
 
-                    {/* Payout tables — vertically centered, right side */}
-                    <div className="hidden w-72 shrink-0 flex-col justify-center lg:flex">
+                    {/* Payout tables - vertically centered, right side */}
+                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-center lg:flex">
                         <div className="flex gap-3">
                             <div className="flex-1">
                                 <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHighlight as string | null} />

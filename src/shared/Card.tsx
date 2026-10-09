@@ -150,6 +150,8 @@ export default function PlayingCard({ card, className = '', style }: Props) {
         <div
             className={`relative shrink-0 [perspective:600px] ${className}`}
             style={style}
+            data-card={card.id}
+            data-face-up={card.faceUp ? "true" : "false"}
         >
             <motion.div
                 animate={{ rotateY: card.faceUp ? 180 : 0 }}

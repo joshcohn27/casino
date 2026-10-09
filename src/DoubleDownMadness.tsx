@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
 import type { Card as SharedCard } from "./shared/cards";
-import { type ChipDenomination, formatMoney, CHIP_COLORS, buildChipStackFromAmount, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
+import BetSpot, { BetBar } from "./shared/BetSpot";
 import { SlideBtn } from "./shared/SlideBtn";
+import { defaultBet } from "./shared/settings";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank =
@@ -143,12 +145,12 @@ function isMadnessBlackjack(cards: Card[]) {
 }
 
 function getDealerDisplayTotal(dealer: Card[], stage: Stage) {
-    if (!dealer.length) return "—";
+    if (!dealer.length) return "-";
     if (stage === "dealer" || stage === "done") {
         return `${total(dealer)}${isSoft(dealer) ? " soft" : ""}`;
     }
     const up = dealer[0];
-    if (!up) return "—";
+    if (!up) return "-";
     return up.rank === "A" ? "11" : `${up.value}`;
 }
 
@@ -176,103 +178,6 @@ function Chip({ children }: { children: React.ReactNode }) {
     return (
         <div className="inline-flex rounded-full border border-zinc-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-100">
             {children}
-        </div>
-    );
-}
-
-function BetBar({
-    pendingBet, totalRisk, returned, net, stage,
-}: {
-    pendingBet: number; totalRisk: number; returned: number; net: number; stage: Stage;
-}) {
-    const showResult = stage === "done";
-    const displayBet = totalRisk > 0 ? totalRisk : pendingBet;
-    return (
-        <div className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5">
-            {[
-                { label: "Bet In", val: displayBet > 0 ? formatMoney(displayBet) : "—", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "—", color: "text-white" },
-                {
-                    label: "Net",
-                    val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "—",
-                    color: showResult
-                        ? net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100"
-                        : "text-white",
-                },
-            ].map(({ label, val, color }, i, arr) => (
-                <React.Fragment key={label}>
-                    <div className="text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`}>{val}</div>
-                    </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
-                </React.Fragment>
-            ))}
-        </div>
-    );
-}
-
-const STACK_GAP = 9;
-
-function BetCircle({
-    chips, totalBet, label, interactive = false, onClick,
-}: {
-    chips: ChipDenomination[];
-    totalBet: number;
-    label: string;
-    interactive?: boolean;
-    onClick?: () => void;
-}) {
-    const visible = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
-    return (
-        <div className="flex flex-col items-center gap-1.5">
-            <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">{label}</div>
-            <div className="flex flex-col items-center">
-                <div
-                    className="relative z-10 flex justify-center"
-                    style={{ width: 48, height: 48 + (visible.length > 1 ? (visible.length - 1) * STACK_GAP : 0), marginBottom: -20 }}
-                >
-                    <AnimatePresence>
-                        {visible.map((denom, i) => {
-                            const cfg = CHIP_COLORS[denom];
-                            return (
-                                <motion.div
-                                    key={startIdx + i}
-                                    className="absolute left-0 right-0 mx-auto flex h-12 w-12 select-none items-center justify-center rounded-full text-[10px] font-extrabold"
-                                    style={{
-                                        bottom: i * STACK_GAP, zIndex: i + 1,
-                                        backgroundColor: cfg.bg, border: `3px solid ${cfg.border}`, color: cfg.text,
-                                        boxShadow: "inset 0 1px 3px rgba(255,255,255,0.28), inset 0 -1px 2px rgba(0,0,0,0.18), 0 5px 14px rgba(0,0,0,0.5)",
-                                    }}
-                                    initial={{ opacity: 0, y: -22, scale: 0.72 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 6, scale: 0.8 }}
-                                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                                >
-                                    {cfg.label}
-                                </motion.div>
-                            );
-                        })}
-                    </AnimatePresence>
-                </div>
-                <button
-                    onClick={interactive ? onClick : undefined}
-                    disabled={!interactive}
-                    className={`flex h-[96px] w-[96px] items-center justify-center rounded-full border-2 border-dashed bg-black/20 backdrop-blur-sm transition ${interactive
-                        ? "cursor-pointer border-white/40 hover:border-white/60 hover:bg-black/30"
-                        : "cursor-default border-white/20"
-                        }`}
-                >
-                    {totalBet === 0 ? (
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">
-                            {interactive ? "Click" : "—"}
-                        </span>
-                    ) : (
-                        <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
-                    )}
-                </button>
-            </div>
         </div>
     );
 }
@@ -408,20 +313,19 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function DDMBar({
     stage, isShuffling, bet, sideBet, bankroll,
     canDouble, canHit, canStand, canTakeInsurance,
-    doubleWagersCount,
+    doubleWagersCount, canDealFromDone,
     selectedChip, onChipSelect,
-    onClear, onDeal, onTakeInsurance, onNoInsurance,
-    onHit, onStand, onDouble, onNextHand,
+    onClear, onDeal, onChangeBet, onTakeInsurance, onNoInsurance,
+    onHit, onStand, onDouble,
 }: {
     stage: Stage; isShuffling: boolean;
     bet: number; sideBet: number; bankroll: number;
     canDouble: boolean; canHit: boolean; canStand: boolean; canTakeInsurance: boolean;
-    doubleWagersCount: number;
+    doubleWagersCount: number; canDealFromDone: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onDeal: () => void;
+    onClear: () => void; onDeal: () => void; onChangeBet: () => void;
     onTakeInsurance: () => void; onNoInsurance: () => void;
     onHit: () => void; onStand: () => void; onDouble: () => void;
-    onNextHand: () => void;
 }) {
     const isBetting = stage === "betting";
     const isDone = stage === "done";
@@ -430,7 +334,7 @@ function DDMBar({
     const isInsurance = stage === "insurance";
 
     const canDeal = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= clampMainBet(bet) + sideBet;
-    const canClear = isBetting && (bet > 0 || sideBet > 0);
+    const canClear = isBetting;
 
     return (
         <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-[10px] py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3 sm:px-4">
@@ -454,7 +358,7 @@ function DDMBar({
 
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={bet <= 0 && sideBet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
@@ -518,8 +422,14 @@ function DDMBar({
                     )}
 
                     {isDone && (
-                        <SlideBtn key="next-hand">
-                            <button className={BTN_GOLD} onClick={onNextHand}>Next Hand</button>
+                        <SlideBtn key="change-bet">
+                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                        </SlideBtn>
+                    )}
+
+                    {isDone && (
+                        <SlideBtn key="rebet-deal">
+                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -541,19 +451,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
     const [stage, setStage] = useState<Stage>("betting");
 
-    const [bet, setBet] = useState<number>(() => {
-        if (typeof window === "undefined") return 10;
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        return Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-    });
+    const [bet, setBet] = useState<number>(() => defaultBet("doubledownmadness", "main"));
 
-    const [push22Bet, setPush22Bet] = useState<number>(() => {
-        if (typeof window === "undefined") return 0;
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        return Number.isFinite(parsed) ? parsed : 0;
-    });
+    const [push22Bet, setPush22Bet] = useState<number>(() => defaultBet("doubledownmadness", "push22"));
 
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
@@ -574,20 +474,8 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
     // UI-only state
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(25);
-    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return buildChipStackFromAmount(10);
-        const raw = window.localStorage.getItem(BET_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 10;
-        const v = Number.isFinite(parsed) && parsed >= MIN_BET ? parsed : 10;
-        return buildChipStackFromAmount(v);
-    });
-    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => {
-        if (typeof window === "undefined") return [];
-        const raw = window.localStorage.getItem(PUSH22_STORAGE_KEY);
-        const parsed = raw ? Number(raw) : 0;
-        const v = Number.isFinite(parsed) ? parsed : 0;
-        return buildChipStackFromAmount(v);
-    });
+    const [chipStack, setChipStack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("doubledownmadness", "main")));
+    const [push22Stack, setPush22Stack] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("doubledownmadness", "push22")));
 
     useEffect(() => {
         window.localStorage.setItem(BET_STORAGE_KEY, String(clampMainBet(bet)));
@@ -836,7 +724,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
             const mainReturn = mainRisk * 2;
             returned += mainReturn;
             lines.push(`Main action wins even money: ${formatMoney(mainReturn)} returned.`);
-            finishRound(returned, lines, "Winner", mainRisk);
+            finishRound(returned, lines, "Win", mainRisk);
             return;
         }
 
@@ -963,26 +851,58 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         setMessage("You may still hit, stand, or re-double.");
     };
 
-    const nextHand = () => {
+    const handleChangeBet = () => {
         clearRoundState();
         setStage("betting");
         setMessage(shouldShuffle(deck) ? "Cut card reached. Next hand will shuffle." : "Set your bets and press Deal.");
     };
 
+    const [selectedZone, setSelectedZone] = useState<"main" | "push22">("main");
+
+    // One action at a time: a second click is ignored while the first is still resolving,
+    // so a double-click cannot settle (and pay) a hand twice.
+    const actionLock = useRef(false);
+    const runAction = async (action: () => Promise<void>, holdMs = 0) => {
+        if (actionLock.current) return;
+        actionLock.current = true;
+        try { await action(); } finally {
+            // Deal holds the lock a moment longer so a hand that ends instantly is not dealt over
+            if (holdMs > 0) window.setTimeout(() => { actionLock.current = false; }, holdMs);
+            else actionLock.current = false;
+        }
+    };
+
+    const canDealFromDone =
+        stage === "done" && !isShuffling &&
+        baseBet >= MIN_BET && bankroll >= baseBet + sideBet;
+
+    // Tray chip goes onto the highlighted spot
     const handleChipSelect = (chip: ChipDenomination) => {
         setSelectedChip(chip);
-        if (stage === "betting") {
+        if (stage !== "betting" || isShuffling) return;
+        if (selectedZone === "push22") {
+            const next = clampSideBet(push22Bet + chip);
+            if (next > push22Bet) {
+                setPush22Bet(next);
+                setPush22Stack(buildChipStackFromAmount(next));
+            }
+        } else {
             setBet((b) => b + chip);
             setChipStack((s) => [...s, chip]);
         }
     };
 
-    const handlePush22Click = () => {
+    // Clicking the chips on a spot takes the last chip back
+    const removeLastChip = (zone: "main" | "push22") => {
         if (stage !== "betting" || isShuffling) return;
-        const next = clampSideBet(push22Bet + selectedChip);
-        if (next > push22Bet) {
+        if (zone === "push22") {
+            const next = popLastChip(push22Bet);
             setPush22Bet(next);
             setPush22Stack(buildChipStackFromAmount(next));
+        } else {
+            const next = popLastChip(bet);
+            setBet(next);
+            setChipStack(buildChipStackFromAmount(next));
         }
     };
 
@@ -1040,16 +960,17 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         canStand={canStand}
                         canTakeInsurance={canTakeInsurance}
                         doubleWagersCount={doubleWagers.length}
+                        canDealFromDone={canDealFromDone}
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearBets}
-                        onDeal={() => void deal()}
-                        onTakeInsurance={() => void takeInsurance()}
-                        onNoInsurance={() => void declineInsurance()}
-                        onHit={() => void hit()}
-                        onStand={() => void stand()}
-                        onDouble={() => void doubleDown()}
-                        onNextHand={nextHand}
+                        onDeal={() => void runAction(deal, 300)}
+                        onChangeBet={handleChangeBet}
+                        onTakeInsurance={() => void runAction(takeInsurance)}
+                        onNoInsurance={() => void runAction(declineInsurance)}
+                        onHit={() => void runAction(hit)}
+                        onStand={() => void runAction(stand)}
+                        onDouble={() => void runAction(doubleDown)}
                     />
                 }
             >
@@ -1062,11 +983,11 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between gap-2 text-sm">
                                     <span className="text-amber-100/80">Suited</span>
-                                    <span className="font-extrabold text-amber-100">2 : 1</span>
+                                    <span className="font-extrabold text-amber-100">2 to 1</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-2 text-sm">
                                     <span className="text-zinc-300/80">Unsuited</span>
-                                    <span className="font-extrabold text-white">3 : 2</span>
+                                    <span className="font-extrabold text-white">3 to 2</span>
                                 </div>
                             </div>
                         </InfoPanel>
@@ -1094,7 +1015,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         <div className="flex flex-col items-center gap-1 select-none">
                             <div className="flex items-center gap-2">
                                 <h1
-                                    className="text-xl font-extrabold uppercase tracking-[0.18em] text-zinc-100/80"
+                                    className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-zinc-100/80"
                                     style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
                                 >
                                     Double Down Madness
@@ -1108,13 +1029,20 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 </button>
                             </div>
                             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/30">
-                                <span>SUITED BLACKJACK PAYS 2:1</span>
+                                <span>SUITED BLACKJACK PAYS 2 TO 1</span>
                                 <span className="text-white/15">·</span>
-                                <span>UNSUITED BLACKJACK 3:2</span>
+                                <span>UNSUITED BLACKJACK 3 TO 2</span>
                                 <span className="text-white/15">·</span>
                                 <span>DEALER 22 PUSHES</span>
                             </div>
                         </div>
+
+                        <BetBar
+                            pendingBet={stage !== "betting" && totalRiskAll > 0 ? totalRiskAll : baseBet + sideBet}
+                            returned={roundReturned}
+                            net={roundNet}
+                            showResult={stage === "done"}
+                        />
 
                         {/* Dealer lane */}
                         <div className="flex flex-col items-center gap-2">
@@ -1155,17 +1083,29 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     transition={{ duration: 0.2 }}
                                     className="flex items-end gap-8"
                                 >
-                                    <BetCircle
+                                    <BetSpot
+                                        testId="main"
                                         chips={chipStack}
                                         totalBet={bet}
-                                        label="Main Bet"
+                                        label="Main"
+                                        sublabel={`min $${MIN_BET}`}
+                                        dim={100}
+                                        isSelected={selectedZone === "main"}
+                                        onSelect={() => setSelectedZone("main")}
+                                        onRemove={() => removeLastChip("main")}
+                                        canBet={!isShuffling}
                                     />
-                                    <BetCircle
+                                    <BetSpot
+                                        testId="push22"
                                         chips={push22Stack}
                                         totalBet={push22Bet}
                                         label="Push 22"
-                                        interactive
-                                        onClick={handlePush22Click}
+                                        sublabel="optional"
+                                        dim={82}
+                                        isSelected={selectedZone === "push22"}
+                                        onSelect={() => setSelectedZone("push22")}
+                                        onRemove={() => removeLastChip("push22")}
+                                        canBet={!isShuffling}
                                     />
                                 </motion.div>
                             )}
@@ -1218,20 +1158,12 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
                     {/* ── Right column ──────────────────────────────────────── */}
                     <div className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:items-center lg:gap-3">
-                        <BetBar
-                            pendingBet={baseBet + sideBet}
-                            totalRisk={stage !== "betting" ? totalRiskAll : 0}
-                            returned={roundReturned}
-                            net={roundNet}
-                            stage={stage}
-                        />
-
                         {insuranceBet > 0 && (
                             <div className="w-full">
                                 <InfoPanel title="Insurance">
                                     <div className="space-y-2">
                                         <Row label="Bet" value={formatMoney(insuranceBet)} />
-                                        <Row label="Pays" value="2 : 1" />
+                                        <Row label="Pays" value="2 to 1" />
                                     </div>
                                 </InfoPanel>
                             </div>
