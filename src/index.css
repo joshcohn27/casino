@@ -23,6 +23,21 @@
   --color-info: #38bdf8;
   --color-bad: #dc2626;
 
+  /* Green felt palette for the nav, footer, Home, Settings and Feedback.
+     Taken from the Blackjack and Roulette felt. No blue and no yellow or gold.
+     The game tables and What's New keep the colors above. */
+  --color-room: #114224;           /* page background */
+  --color-room-panel: #0b2c18;     /* panels, nav, footer */
+  --color-room-deep: #061a0e;      /* form fields and plain buttons */
+  --color-room-raised: #16542e;    /* hover */
+  --color-room-line: #4f8f69;      /* borders */
+  --color-room-text: #f4efe4;
+  --color-room-muted: #c9d6cc;     /* descriptions and captions */
+  --color-room-accent: #34d399;    /* headings, key numbers, active and focus */
+  --color-room-red: #9b1c26;       /* primary buttons */
+  --color-room-red-hover: #b3212d;
+  --color-room-red-pressed: #7d151e;
+
   /* One font stack for the whole site. Hierarchy comes from weight, size and color. */
   --font-*: initial;
   --font-main: Arial, Helvetica, sans-serif;
