@@ -1175,8 +1175,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         mode,
     );
     const modeFor = (category: string): SortMode =>
-        category === "Flush" || category === "Straight Flush" || category === "Royal Flush" ? "flush"
-        : category === "Straight" ? "straight"
+        category === "Flush" ? "flush"
+        : category === "Straight" || category === "Straight Flush" || category === "Royal Flush" ? "straight"
         : "groups";
     const lowIds = playerReady ? powerOrder(playerCards.filter((c) => selectedFrontIds.includes(c.id)), "groups") : [];
     const dealerHighIds = dealerBestSplit ? powerOrder(dealerBestSplit.back, modeFor(dealerBestSplit.backEval.category)) : [];

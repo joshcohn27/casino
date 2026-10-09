@@ -99,8 +99,8 @@ function wait(ms: number) { return new Promise((resolve) => window.setTimeout(re
 function sortedIds(cards: Card[]): string[] {
     if (cards.length !== HAND_SIZE) return cards.map((c) => c.id);
     const category = evaluateHand(cards).category;
-    const mode = category === "Flush" || category === "Straight Flush" || category === "Royal Flush" ? "flush"
-        : category === "Straight" ? "straight"
+    const mode = category === "Flush" ? "flush"
+        : category === "Straight" || category === "Straight Flush" || category === "Royal Flush" ? "straight"
         : "groups";
     return sortByPower(cards.map((c) => ({ id: c.id, value: c.value, suit: c.suit, wild: isWild(c) ? "full" as const : undefined })), mode);
 }

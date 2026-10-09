@@ -3,6 +3,8 @@
 //   A K Q 5 5        ->  5 5 A K Q        (the pair leads, kickers by rank)
 //   five to a flush  ->  the flush in rank order, then the other cards by rank
 //   a straight       ->  the run from the top down, then the other cards
+//   wild cards       ->  sit where they are playing: a deuce standing in for the 10 of a
+//                        10-high straight goes first, one filling a gap goes in the gap
 //
 // Used wherever a game re-sorts cards after they are turned over.
 
@@ -43,7 +45,8 @@ function groupOrder(cards: SortCard[]): SortCard[] {
     return [...leadCards, ...fullWilds, ...others];
 }
 
-// The suit holding a five-card flush (wild cards count toward it), or null
+// The suit holding a five-card flush (wild cards count toward it), or null.
+// Each wild stands in for the highest rank the flush does not already hold, and is placed there.
 function flushCards(cards: SortCard[]): SortCard[] | null {
     const wilds = cards.filter((c) => c.wild);
     const suits = new Map<string, SortCard[]>();
@@ -54,23 +57,35 @@ function flushCards(cards: SortCard[]): SortCard[] | null {
         suited.sort(byValueDesc);
         if (!best || suited.length > best.length || (suited.length === best.length && suited[0].value > best[0].value)) best = suited;
     }
-    return best ? [...best, ...wilds] : null;
+    if (!best) return null;
+    const held = new Set(best.map((c) => c.value));
+    const placed = best.map((card) => ({ card, value: card.value }));
+    let next = 14;
+    for (const wild of wilds) {
+        while (next >= 2 && held.has(next)) next--;
+        placed.push({ card: wild, value: next });
+        held.add(next);
+    }
+    return placed.sort((a, b) => b.value - a.value).map((p) => p.card);
 }
 
-// The highest five-card straight (wild cards fill gaps), top card first, or null
+// The highest five-card straight, top card first, or null.
+// A wild card takes the slot of the rank it stands in for.
 function straightCards(cards: SortCard[]): SortCard[] | null {
     const wilds = cards.filter((c) => c.wild);
     const naturals = cards.filter((c) => !c.wild);
     for (let top = 14; top >= 5; top--) {
         const run: SortCard[] = [];
+        let used = 0;
         for (let v = top; v > top - 5; v--) {
             // the ace plays low in 5-4-3-2-A
             const want = v === 1 ? 14 : v;
             const hit = naturals.find((c) => c.value === want && !run.includes(c));
             if (hit) run.push(hit);
+            else if (used < wilds.length) run.push(wilds[used++]);
+            else break;
         }
-        const missing = 5 - run.length;
-        if (missing <= wilds.length) return [...run, ...wilds.slice(0, missing)];
+        if (run.length === 5) return run;
     }
     return null;
 }
