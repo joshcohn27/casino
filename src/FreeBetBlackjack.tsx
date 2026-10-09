@@ -465,7 +465,7 @@ function PayoutColumn({ title, entries, highlight }: {
                             className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[13px] transition ${isHit ? "bg-amber-300/[0.12]" : ""}`}
                         >
                             <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{label}</span>
-                            <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                            <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
                         </div>
                     );
                 })}
@@ -1375,7 +1375,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                             chips={push22Stack}
                                             totalBet={push22Bet}
                                             label="PUSH 22"
-                                            sublabel="11:1"
+                                            sublabel="11 to 1"
                                             dim={82}
                                             isSelected={selectedZone === "push22"}
                                             onSelect={() => setSelectedZone("push22")}

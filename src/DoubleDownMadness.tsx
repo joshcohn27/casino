@@ -983,11 +983,11 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between gap-2 text-sm">
                                     <span className="text-amber-100/80">Suited</span>
-                                    <span className="font-extrabold text-amber-100">2 : 1</span>
+                                    <span className="font-extrabold text-amber-100">2 to 1</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-2 text-sm">
                                     <span className="text-zinc-300/80">Unsuited</span>
-                                    <span className="font-extrabold text-white">3 : 2</span>
+                                    <span className="font-extrabold text-white">3 to 2</span>
                                 </div>
                             </div>
                         </InfoPanel>
@@ -1029,9 +1029,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 </button>
                             </div>
                             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/30">
-                                <span>SUITED BLACKJACK PAYS 2:1</span>
+                                <span>SUITED BLACKJACK PAYS 2 TO 1</span>
                                 <span className="text-white/15">·</span>
-                                <span>UNSUITED BLACKJACK 3:2</span>
+                                <span>UNSUITED BLACKJACK 3 TO 2</span>
                                 <span className="text-white/15">·</span>
                                 <span>DEALER 22 PUSHES</span>
                             </div>
@@ -1163,7 +1163,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 <InfoPanel title="Insurance">
                                     <div className="space-y-2">
                                         <Row label="Bet" value={formatMoney(insuranceBet)} />
-                                        <Row label="Pays" value="2 : 1" />
+                                        <Row label="Pays" value="2 to 1" />
                                     </div>
                                 </InfoPanel>
                             </div>

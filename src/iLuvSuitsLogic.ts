@@ -201,7 +201,7 @@ export function settle(params: {
     const flushRushReturn = flushRush > 0 && flushRushMultiplier > 0 ? flushRush + flushRush * flushRushMultiplier : 0;
     if (flushRush > 0) {
         lines.push(flushRushMultiplier > 0
-            ? `Flush Rush: ${playerHand.count}-card flush - ${flushRushMultiplier}:1`
+            ? `Flush Rush: ${playerHand.count}-card flush - ${flushRushMultiplier} to 1`
             : "Flush Rush: No win");
     }
 
@@ -210,7 +210,7 @@ export function settle(params: {
     const superFlushReturn = superFlush > 0 && superFlushMultiplier > 0 ? superFlush + superFlush * superFlushMultiplier : 0;
     if (superFlush > 0) {
         lines.push(superFlushMultiplier > 0
-            ? `Super Flush Rush: ${superFlushCount}-card straight flush - ${superFlushMultiplier}:1`
+            ? `Super Flush Rush: ${superFlushCount}-card straight flush - ${superFlushMultiplier} to 1`
             : "Super Flush Rush: No win");
     }
 

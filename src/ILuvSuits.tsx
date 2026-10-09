@@ -129,7 +129,7 @@ function PayoutColumn({ title, entries, unit, highlight }: {
                 return (
                     <div key={count} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
                         <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{count}-card {unit}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult.toLocaleString()}:1</span>
+                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult.toLocaleString()} to 1</span>
                     </div>
                 );
             })}
@@ -588,7 +588,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             <PayoutColumn title="Super Flush Rush" entries={SUPER_FLUSH_PAYTABLE} unit="straight flush" highlight={superFlushHit} />
                         </div>
                         <div className="mt-4 text-center text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-                            Ante and Play pay 1:1 · {formatMoney(MIN_ANTE)} minimum
+                            Ante and Play pay 1 to 1 · {formatMoney(MIN_ANTE)} minimum
                         </div>
                     </div>
 

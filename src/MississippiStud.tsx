@@ -67,25 +67,25 @@ const CARD_TRANSITION = (delay: number) => ({
 type PayEntry = { label: string; display: string };
 
 const MAIN_PAY_ENTRIES: PayEntry[] = [
-    { label: "Royal Flush",     display: "500:1" },
-    { label: "Straight Flush",  display: "100:1" },
-    { label: "Four of a Kind",  display: "40:1"  },
-    { label: "Full House",      display: "10:1"  },
-    { label: "Flush",           display: "6:1"   },
-    { label: "Straight",        display: "4:1"   },
-    { label: "Three of a Kind", display: "3:1"   },
-    { label: "Two Pair",        display: "2:1"   },
-    { label: "Jacks or Better", display: "1:1"   },
+    { label: "Royal Flush",     display: "500 to 1" },
+    { label: "Straight Flush",  display: "100 to 1" },
+    { label: "Four of a Kind",  display: "40 to 1"  },
+    { label: "Full House",      display: "10 to 1"  },
+    { label: "Flush",           display: "6 to 1"   },
+    { label: "Straight",        display: "4 to 1"   },
+    { label: "Three of a Kind", display: "3 to 1"   },
+    { label: "Two Pair",        display: "2 to 1"   },
+    { label: "Jacks or Better", display: "1 to 1"   },
     { label: "Pair of 6s-10s",  display: "Push"  },
 ];
 
 const THREE_CARD_PAY_ENTRIES: PayEntry[] = [
-    { label: "Mini Royal",      display: "50:1" },
-    { label: "Straight Flush",  display: "40:1" },
-    { label: "Three of a Kind", display: "30:1" },
-    { label: "Straight",        display: "6:1"  },
-    { label: "Flush",           display: "4:1"  },
-    { label: "Pair",            display: "1:1"  },
+    { label: "Mini Royal",      display: "50 to 1" },
+    { label: "Straight Flush",  display: "40 to 1" },
+    { label: "Three of a Kind", display: "30 to 1" },
+    { label: "Straight",        display: "6 to 1"  },
+    { label: "Flush",           display: "4 to 1"  },
+    { label: "Pair",            display: "1 to 1"  },
 ];
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -205,7 +205,7 @@ function settlePayout(params: {
                 lines.push(`${fiveCardLabel} - Push`);
             } else {
                 mainReturn = totalMainBets * (mult + 1);
-                lines.push(`${fiveCardLabel} · ${mult}:1`);
+                lines.push(`${fiveCardLabel} · ${mult} to 1`);
             }
         } else {
             lines.push(fiveCardLabel);
@@ -218,7 +218,7 @@ function settlePayout(params: {
     if (threeCBBet > 0) {
         if (threeCardKey !== null) {
             bonusReturn = threeCBBet * (threeCardMult + 1);
-            lines.push(`Bonus: ${threeCardLabel} · ${threeCardMult}:1`);
+            lines.push(`Bonus: ${threeCardLabel} · ${threeCardMult} to 1`);
         } else {
             lines.push("Bonus: No win");
         }
@@ -467,7 +467,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "Evaluates the three community cards as a 3-card poker hand.",
                         "Settled when all 3 community cards are revealed, regardless of fold.",
                         "Mini Royal (suited A-K-Q) pays 50 to 1.",
-                        "Straight Flush 40:1 · Three of a Kind 30:1 · Straight 6:1 · Flush 4:1 · Pair 1:1.",
+                        "Straight Flush 40 to 1 · Three of a Kind 30 to 1 · Straight 6 to 1 · Flush 4 to 1 · Pair 1 to 1.",
                     ]} />
                     <Section title="Strategy Tips" items={[
                         "Always bet 3× with a pair of 6s or better, any three to a royal flush, or three to a straight flush.",

@@ -629,8 +629,8 @@ export default function VideoPokerBonus({ bankroll, setBankroll }: Props) {
                             </div>
                             <div className="mt-2 leading-6 text-white/95">
                                 Bonus Poker pays enhanced amounts for four of a kind hands.{" "}
-                                Full House pays <span className="font-bold text-yellow-300">8:1</span> and Flush pays{" "}
-                                <span className="font-bold text-yellow-300">5:1</span> (8/5 paytable).{" "}
+                                Full House pays <span className="font-bold text-yellow-300">8 to 1</span> and Flush pays{" "}
+                                <span className="font-bold text-yellow-300">5 to 1</span> (8/5 paytable).{" "}
                                 <span className="font-bold text-yellow-300">BET ONE</span> changes the active column and{" "}
                                 <span className="font-bold text-yellow-300">BET MAX</span> sets it to 5.{" "}
                                 <span className="font-bold text-yellow-300">DENOM</span> cycles the dollar value of each

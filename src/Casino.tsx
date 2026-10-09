@@ -343,14 +343,14 @@ export default function Casino() {
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <GameCard
                             title="Blackjack"
-                            subtitle="6-deck shoe · Blackjack pays 3:2 · Dealer stands on all 17s · Split up to 4 hands · Double after split · Reshuffles at 85% penetration"
+                            subtitle="6-deck shoe · Blackjack pays 3 to 2 · Dealer stands on all 17s · Split up to 4 hands · Double after split · Reshuffles at 85% penetration"
                             feltColor="#1f7a45"
                             onClick={() => setGame("blackjack")}
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
                             title="Free Bet Blackjack"
-                            subtitle="Free doubles on hard 9, 10, and 11 · Free splits on pairs through 9s and aces · Dealer 22 pushes all live hands · Push 22 side bet pays 11:1 · Pot of Gold side bet pays by free-bet token count"
+                            subtitle="Free doubles on hard 9, 10, and 11 · Free splits on pairs through 9s and aces · Dealer 22 pushes all live hands · Push 22 side bet pays 11 to 1 · Pot of Gold side bet pays by free-bet token count"
                             feltColor="#7f1d1d"
                             onClick={() => setGame("freebetblackjack")}
                             bankroll={bankrollDisplay}
@@ -378,7 +378,7 @@ export default function Casino() {
                         />
                         <GameCard
                             title="Three Card Poker"
-                            subtitle="3-card hands · Trips beats straights · Dealer qualifies with Queen-high · Pair Plus side bet pays up to 40:1 · 6 Card Bonus uses best 5 of all 6 cards"
+                            subtitle="3-card hands · Trips beats straights · Dealer qualifies with Queen-high · Pair Plus side bet pays up to 40 to 1 · 6 Card Bonus uses best 5 of all 6 cards"
                             feltColor="#0c4a6e"
                             onClick={() => setGame("threecardpoker")}
                             bankroll={bankrollDisplay}
@@ -399,21 +399,21 @@ export default function Casino() {
                         />
                         <GameCard
                             title="DJ Wild"
-                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always qualifies · Blind pays up to 1,000:1 · Trips pays more on natural hands"
+                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always qualifies · Blind pays up to 1,000 to 1 · Trips pays more on natural hands"
                             feltColor="#3b1a6b"
                             onClick={() => setGame("djwild")}
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
                             title="Baccarat"
-                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1:1 · Tie pays 8:1 · Dragon 7 side bet pays 40:1 · Panda 8 side bet pays 25:1 · 8-deck shoe"
+                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1 to 1 · Tie pays 8 to 1 · Dragon 7 side bet pays 40 to 1 · Panda 8 side bet pays 25 to 1 · 8-deck shoe"
                             feltColor="#7f1d1d"
                             onClick={() => setGame("baccarat")}
                             bankroll={bankrollDisplay}
                         />
                         <GameCard
                             title="Roulette"
-                            subtitle="American wheel with 38 pockets · Straight up pays 35:1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
+                            subtitle="American wheel with 38 pockets · Straight up pays 35 to 1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
                             feltColor="#1b6b3a"
                             onClick={() => setGame("roulette")}
                             bankroll={bankrollDisplay}

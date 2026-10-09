@@ -32,14 +32,20 @@ export const BLIND_PAYTABLE: Partial<Record<Category, number>> = {
     "Five Wilds": 1000, "Royal Flush": 50, "Five of a Kind": 10, "Straight Flush": 9,
     "Four of a Kind": 4, "Full House": 3, Flush: 2, Straight: 1,
 };
+// Trips, as printed on the table felt: 1,000 / 70 for a Royal, 50 / 6 for Four of a Kind.
 export const TRIPS_NATURAL_PAYTABLE: Partial<Record<Category, number>> = {
-    "Royal Flush": 1000, "Straight Flush": 200, "Four of a Kind": 60, "Full House": 30,
+    "Royal Flush": 1000, "Straight Flush": 200, "Four of a Kind": 50, "Full House": 30,
     Flush: 25, Straight: 20, "Three of a Kind": 6,
 };
 export const TRIPS_WILD_PAYTABLE: Partial<Record<Category, number>> = {
-    "Five Wilds": 2000, "Royal Flush": 90, "Five of a Kind": 70, "Straight Flush": 25,
+    "Five Wilds": 2000, "Royal Flush": 70, "Five of a Kind": 60, "Straight Flush": 25,
     "Four of a Kind": 6, "Full House": 5, Flush: 4, Straight: 3, "Three of a Kind": 1,
 };
+/** Rows of the Trips table in the order the felt prints them */
+export const TRIPS_TABLE_ROWS: Category[] = [
+    "Five Wilds", "Royal Flush", "Straight Flush", "Five of a Kind", "Four of a Kind",
+    "Full House", "Flush", "Straight", "Three of a Kind",
+];
 
 // Two-Way Bad Beat: pays when a Three of a Kind or better loses, by the hand that was beaten
 export const BAD_BEAT_PAYTABLE: Partial<Record<Category, number>> = {
@@ -47,20 +53,28 @@ export const BAD_BEAT_PAYTABLE: Partial<Record<Category, number>> = {
     "Full House": 200, Flush: 100, Straight: 50, "Three of a Kind": 15,
 };
 
-// Five Card Progressive: a fixed $1 bet on the player's hand. Paid "for 1" (the amount
-// shown is what comes back, the $1 included). Wild and natural hands pay alike.
-// Five Wilds takes the whole meter (as at Canterbury Park). Five of a Kind is not on any
-// published table found, so it is set level with a Straight Flush.
-export const PROGRESSIVE_BET = 1;
+// Progressive: a fixed $5 bet on the player's hand, with wild cards counting as they do in
+// the base game. This is the manufacturer's DJ Wild progressive pay table DJWP-1, the one
+// Canterbury Park describes (Five Wilds take the jackpot, a natural Royal takes 10%, and it
+// pays from a Straight up). Fixed pays are "for 1": per dollar bet, the stake included, so a
+// Straight at 5 for 1 returns $25 on the $5 bet. A deuce played as a deuce counts as natural.
+export const PROGRESSIVE_BET = 5;
 export const PROGRESSIVE_SEED = 10000;
-/** Added to the jackpot meter by each progressive bet */
-export const PROGRESSIVE_CONTRIBUTION = 0.25;
-export const PROGRESSIVE_METER_SHARE: Partial<Record<Category, number>> = {
-    "Five Wilds": 1, "Royal Flush": 1, "Five of a Kind": 0.1, "Straight Flush": 0.1,
-};
-export const PROGRESSIVE_FIXED_PAYTABLE: Partial<Record<Category, number>> = {
-    "Four of a Kind": 300, "Full House": 50, Flush: 40, Straight: 30, "Three of a Kind": 9,
-};
+/** Added to the jackpot meter by each progressive bet (about 16% of it, consistent with the table's published 20% hold) */
+export const PROGRESSIVE_CONTRIBUTION = 0.82;
+
+export type ProgressiveRow = { label: string; share?: number; pays?: number };
+export const PROGRESSIVE_PAYTABLE: ProgressiveRow[] = [
+    { label: "Five Wilds", share: 1 },
+    { label: "Natural Royal Flush", share: 0.1 },
+    { label: "Wild Royal Flush", pays: 200 },
+    { label: "Five of a Kind", pays: 150 },
+    { label: "Straight Flush", pays: 50 },
+    { label: "Four of a Kind", pays: 10 },
+    { label: "Full House", pays: 9 },
+    { label: "Flush", pays: 8 },
+    { label: "Straight", pays: 5 },
+];
 
 export function isWild(card: Card): boolean { return card.rank === "2" || card.rank === "JOKER"; }
 
@@ -222,16 +236,23 @@ export function badBeat(player: HandEval, dealer: HandEval): { multiplier: numbe
     return { multiplier: BAD_BEAT_PAYTABLE[beaten.category] ?? 0, beaten, beatenIs: cmp > 0 ? "dealer" : "player" };
 }
 
-/** Five Card Progressive: amount returned for a $1 bet, and the meter afterwards. */
+/** The progressive pay table row a hand lands on, or null if it does not pay. */
+export function progressiveRow(hand: HandEval): ProgressiveRow | null {
+    const label = hand.category === "Royal Flush" ? (hand.natural ? "Natural Royal Flush" : "Wild Royal Flush") : hand.category;
+    return PROGRESSIVE_PAYTABLE.find((r) => r.label === label) ?? null;
+}
+
+/** Progressive: amount returned for the $5 bet, and the meter afterwards. */
 export function progressivePayout(hand: HandEval, meter: number): { payout: number; meterAfter: number } {
-    const share = PROGRESSIVE_METER_SHARE[hand.category];
-    if (share !== undefined) {
-        const payout = Math.round(meter * share * 100) / 100;
+    const row = progressiveRow(hand);
+    if (!row) return { payout: 0, meterAfter: meter };
+    if (row.share !== undefined) {
+        const payout = Math.round(meter * row.share * 100) / 100;
         const left = Math.round((meter - payout) * 100) / 100;
         // the whole meter going out resets it to the seed
-        return { payout, meterAfter: share >= 1 ? PROGRESSIVE_SEED : left };
+        return { payout, meterAfter: row.share >= 1 ? PROGRESSIVE_SEED : left };
     }
-    return { payout: PROGRESSIVE_FIXED_PAYTABLE[hand.category] ?? 0, meterAfter: meter };
+    return { payout: (row.pays ?? 0) * PROGRESSIVE_BET, meterAfter: meter };
 }
 
 // ─── Strategy ─────────────────────────────────────────────────────────────────
@@ -294,7 +315,7 @@ export function settle(params: {
     ante: number; play: number; trips: number;
     folded: boolean;
     badBeat?: number;
-    /** true when the $1 progressive bet was made */
+    /** true when the $5 progressive bet was made */
     progressive?: boolean;
     meter?: number;
 }): Settlement {
@@ -318,7 +339,7 @@ export function settle(params: {
         playReturn = play * 2;
         blindReturn = blind + blind * blindMult;
         lines.push(`Win - ${playerHand.label}`);
-        lines.push(blindMult > 0 ? `Blind: ${playerHand.category} - ${blindMult}:1` : "Blind: Push");
+        lines.push(blindMult > 0 ? `Blind: ${playerHand.category} - ${blindMult} to 1` : "Blind: Push");
     } else if (compare === 0) {
         anteReturn = ante; blindReturn = blind; playReturn = play;
         lines.push(`Push - ${playerHand.label}`);
@@ -331,7 +352,7 @@ export function settle(params: {
     const tripsReturn = trips > 0 && tripsMult > 0 ? trips + trips * tripsMult : 0;
     if (trips > 0) {
         lines.push(tripsMult > 0
-            ? `Trips: ${playerHand.natural ? "Natural" : "Wild"} ${playerHand.category} - ${tripsMult}:1`
+            ? `Trips: ${playerHand.natural ? "Natural" : "Wild"} ${playerHand.category} - ${tripsMult} to 1`
             : "Trips: No win");
     }
 
@@ -340,7 +361,7 @@ export function settle(params: {
     const badBeatReturn = badBeatBet > 0 && beat.multiplier > 0 ? badBeatBet + badBeatBet * beat.multiplier : 0;
     if (badBeatBet > 0) {
         lines.push(beat.multiplier > 0 && beat.beaten
-            ? `Bad Beat: ${beat.beatenIs === "dealer" ? "dealer's" : "your"} ${beat.beaten.category} beaten - ${beat.multiplier}:1`
+            ? `Bad Beat: ${beat.beatenIs === "dealer" ? "dealer's" : "your"} ${beat.beaten.category} beaten - ${beat.multiplier} to 1`
             : "Bad Beat: No win");
     }
 
@@ -348,7 +369,7 @@ export function settle(params: {
     const prog = progressive ? progressivePayout(playerHand, meter) : { payout: 0, meterAfter: meter };
     if (progressive) {
         lines.push(prog.payout > 0
-            ? `Progressive: ${playerHand.category} pays $${prog.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            ? `Progressive: ${progressiveRow(playerHand)?.label ?? playerHand.category} pays $${prog.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             : "Progressive: No win");
     }
 

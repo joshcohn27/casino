@@ -647,7 +647,7 @@ function PayoutColumn({ title, entries, highlight }: {
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
                         <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>
-                            {typeof pays === "number" ? `${pays}:1` : pays}
+                            {typeof pays === "number" ? `${pays} to 1` : pays}
                         </span>
                     </div>
                 );

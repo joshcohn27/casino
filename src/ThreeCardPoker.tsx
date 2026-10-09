@@ -296,7 +296,7 @@ function PayoutColumn({ title, entries, highlight }: {
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
                         <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
                     </div>
                 );
             })}
@@ -378,22 +378,22 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     ]} />
                     <Section title="Dealer Qualification" items={[
                         "Dealer must have Queen-high or better to qualify.",
-                        "If the dealer does NOT qualify: your Ante wins 1:1 and your Play bet is returned (push) — you cannot lose to a non-qualifying dealer.",
-                        "If the dealer qualifies and you win: Ante and Play both pay 1:1.",
+                        "If the dealer does NOT qualify: your Ante wins 1 to 1 and your Play bet is returned (push) — you cannot lose to a non-qualifying dealer.",
+                        "If the dealer qualifies and you win: Ante and Play both pay 1 to 1.",
                         "If the dealer qualifies and dealer wins: Ante and Play are both lost.",
                         "Ties push on Ante and Play.",
                     ]} />
                     <Section title="Ante Bonus" items={[
                         "Pays on your hand regardless of the dealer result or whether the dealer qualifies.",
                         "Not paid if you fold.",
-                        "Straight Flush pays 5:1.",
-                        "Three of a Kind pays 4:1.",
-                        "Straight pays 1:1.",
+                        "Straight Flush pays 5 to 1.",
+                        "Three of a Kind pays 4 to 1.",
+                        "Straight pays 1 to 1.",
                     ]} />
                     <Section title="Pair Plus" items={[
                         "Pays on your hand regardless of whether you beat the dealer or the dealer qualifies.",
                         "Lost if you fold.",
-                        "Straight Flush 40:1 · Three of a Kind 30:1 · Straight 6:1 · Flush 4:1 · Pair 1:1.",
+                        "Straight Flush 40 to 1 · Three of a Kind 30 to 1 · Straight 6 to 1 · Flush 4 to 1 · Pair 1 to 1.",
                     ]} />
                     <Section title="6 Card Bonus" items={[
                         "Uses the best 5-card hand from your 3 cards combined with the dealer's 3 cards.",

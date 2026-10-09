@@ -240,7 +240,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                 ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5 to $25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
                                 ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, Ante, Blind, Play, and Trips lose immediately."]],
                                 ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• Dealer also qualifies with Ace-King high.", "• If dealer doesn't qualify and you win, Ante pushes and Play wins 1 to 1."]],
-                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1:1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1:1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
+                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
                                 <div key={title as string} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title as string}</div>
@@ -269,7 +269,7 @@ function PayoutColumn({ title, entries, highlight }: { title: string; entries: R
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult}:1</span>
+                        <span className={`shrink-0 font-bold ${isHit ? "text-amber-300" : "text-white/35"}`}>{mult} to 1</span>
                     </div>
                 );
             })}
@@ -326,11 +326,11 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const tripsHighlight = resolvedHand?.tripsMultiplier ? resolvedHand.tripsCategory : null;
     const sixCardHighlight = stage === "roundOver" && resolvedHand?.sixCardMultiplier ? resolvedHand.sixCardCategory : null;
 
-    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1:1" : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
-    const blindResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.blindMultiplier ? `Win ${resolvedHand.blindMultiplier}:1` : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
-    const playResultText = useMemo(() => { if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet"; if (resolvedHand.folded) return "Lose"; if (play === 0) return "No Bet"; if (resolvedHand.compare > 0) return "Win 1:1"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout, play]);
-    const tripsResultText = useMemo(() => { if (trips <= 0) return "No Bet"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.tripsMultiplier ? `Win ${resolvedHand.tripsMultiplier}:1` : "Lose"; }, [resolvedHand, payout, trips]);
-    const sixCardResultText = useMemo(() => { if (sixCardBonus <= 0) return "No Bet"; if (stage === "awaitingBonusReveal") return "Pending Reveal"; if (stage !== "roundOver") return "Pending"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.sixCardMultiplier ? `Win ${resolvedHand.sixCardMultiplier}:1` : "Lose"; }, [resolvedHand, payout, stage, sixCardBonus]);
+    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1 to 1" : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
+    const blindResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.blindMultiplier ? `Win ${resolvedHand.blindMultiplier} to 1` : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
+    const playResultText = useMemo(() => { if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet"; if (resolvedHand.folded) return "Lose"; if (play === 0) return "No Bet"; if (resolvedHand.compare > 0) return "Win 1 to 1"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout, play]);
+    const tripsResultText = useMemo(() => { if (trips <= 0) return "No Bet"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.tripsMultiplier ? `Win ${resolvedHand.tripsMultiplier} to 1` : "Lose"; }, [resolvedHand, payout, trips]);
+    const sixCardResultText = useMemo(() => { if (sixCardBonus <= 0) return "No Bet"; if (stage === "awaitingBonusReveal") return "Pending Reveal"; if (stage !== "roundOver") return "Pending"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.sixCardMultiplier ? `Win ${resolvedHand.sixCardMultiplier} to 1` : "Lose"; }, [resolvedHand, payout, stage, sixCardBonus]);
 
     const settleRound = (playStake: number, folded: boolean, finalRound: RoundState) => {
         const playerEval = evaluateBestFrom([...finalRound.player, ...finalRound.board]);

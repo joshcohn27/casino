@@ -571,7 +571,7 @@ function RouletteSVGBoard({bets, onBet, onRemove, canBet, selectedChip}: {
                     <text x={ZW+GRID_W+CBW/2} y={r*CELL+CELL/2}
                         textAnchor="middle" dominantBaseline="middle"
                         fontSize="10" fontWeight="700" fill="#fbbf24" pointerEvents="none"
-                    >2:1</text>
+                    >2 to 1</text>
                 </g>
             ))}
 
@@ -683,7 +683,7 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
                                 "Click dozen or outside bet zones at the bottom of the board.",
                                 "Click any placed chip to remove it.",
                             ]],
-                            ["Payouts", ["Straight up 35:1","Split 17:1","Street 11:1","Corner 8:1","Dozen / Column 2:1","Red/Black · Even/Odd · 1-18/19-36  1:1"]],
+                            ["Payouts", ["Straight up 35 to 1","Split 17 to 1","Street 11 to 1","Corner 8 to 1","Dozen / Column 2 to 1","Red/Black · Even/Odd · 1-18/19-36  1 to 1"]],
                             ["House Rules", ["American wheel — 38 pockets (0, 00, 1–36).","0 and 00 are green; not red/black, odd/even, or high/low.","Payouts include return of the original wager plus profit.","Six-line bets are not offered on this layout."]],
                         ] as [string, string[]][]).map(([title, items]) => (
                             <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -906,7 +906,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                         {/* Payout table */}
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                             <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Payouts</div>
-                            {[["Straight","35:1"],["Split","17:1"],["Street","11:1"],["Corner","8:1"],["Dozen / Column","2:1"],["Even money","1:1"]].map(([b,p])=>(
+                            {[["Straight","35 to 1"],["Split","17 to 1"],["Street","11 to 1"],["Corner","8 to 1"],["Dozen / Column","2 to 1"],["Even money","1 to 1"]].map(([b,p])=>(
                                 <div key={b} className="flex justify-between border-b border-white/5 py-1 text-xs text-white/75">
                                     <span>{b}</span><span className="font-bold text-amber-100">{p}</span>
                                 </div>

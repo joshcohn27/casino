@@ -9,13 +9,13 @@ import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD,
 import { SlideBtn } from "./shared/SlideBtn";
 import { defaultBet, defaultToggle } from "./shared/settings";
 import { sortByPower } from "./shared/handSort";
-import { readMeter, writeMeter, ambientTick } from "./shared/progressiveMeter";
+import { readMeter, writeMeter, ambientHands, simulateOtherPlayers, makeRng, type OtherPlayerHit } from "./shared/progressiveMeter";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, PLAY_MULTIPLE,
     BLIND_PAYTABLE, TRIPS_NATURAL_PAYTABLE, TRIPS_WILD_PAYTABLE, BAD_BEAT_PAYTABLE,
-    PROGRESSIVE_BET, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_FIXED_PAYTABLE,
-    createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
+    PROGRESSIVE_BET, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_PAYTABLE, progressiveRow,
+    TRIPS_TABLE_ROWS, createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
 } from "./djWildLogic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -29,6 +29,10 @@ type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateActio
 const FELT_COLOR = "#3b1a6b";
 // How often the jackpot meter creeps up on its own while the table is open
 const METER_TICK_MS = 2500;
+// How long the table holds on a progressive win before the next hand can be dealt
+const PROGRESSIVE_WIN_HOLD_MS = 3500;
+// How long the "another player hit it" notice stays up
+const OTHER_HIT_NOTICE_MS = 9000;
 const CARD_FLIP_MS = 160;
 const SORT_DELAY_MS = 520;
 // Cards the player left face down are turned slowly, after the dealer has shown
@@ -66,11 +70,13 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Pays by the hand that was beaten: Three of a Kind 15 to 1, Straight 50, Flush 100, Full House 200, Four of a Kind 300, Straight Flush or better 500.",
         "• A tie is not a beat.",
     ]],
-    ["Five Card Progressive", [
-        "• Optional $1 bet. Tap the red light to switch it on.",
-        "• Pays on your own hand, with Three of a Kind or better, whether or not wild cards made it.",
-        "• Five Wilds or a Royal Flush wins the whole meter. Five of a Kind or a Straight Flush wins 10% of it.",
-        "• The meter keeps climbing on its own, and from play at every other table.",
+    ["Progressive", [
+        "• Optional $5 bet. Tap the red light to switch it on.",
+        "• Pays on your own hand, with a Straight or better. Wild cards count, as they do in the main game.",
+        "• Five Wilds wins the whole meter. A natural Royal Flush wins 10% of it.",
+        "• Wild Royal Flush pays $1,000, Five of a Kind $750, Straight Flush $250, Four of a Kind $50, Full House $45, Flush $40, Straight $25.",
+        "• A deuce that plays as an ordinary deuce counts as natural.",
+        "• The meter keeps climbing as other players bet, and they can hit it too. It resets if it reaches $999,999.",
         "• Four of a Kind 300 for 1, Full House 50, Flush 40, Straight 30, Three of a Kind 9.",
     ]],
     ["Trips", [
@@ -140,7 +146,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 // ─── Payout column ────────────────────────────────────────────────────────────
 
-function PayoutColumn({ title, entries, highlight, unit = ":1", extra }: {
+function PayoutColumn({ title, entries, highlight, unit = " to 1", extra }: {
     title: string; entries: Partial<Record<string, number>>; highlight?: string | null;
     unit?: string;
     /** Rows shown above the numeric ones, e.g. shares of the jackpot */
@@ -171,6 +177,40 @@ function PayoutColumn({ title, entries, highlight, unit = ":1", extra }: {
     );
 }
 
+// ─── Trips table: one table, natural and wild payouts side by side ────────────
+
+function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatural: boolean }) {
+    // laid out like the table felt: every cell reads "x to 1", and a hand that can only be
+    // made with wild cards shows its one payout in both columns
+    const cell = (value: number | undefined, lit: boolean) => (
+        <span className={`w-[62px] shrink-0 whitespace-nowrap text-right font-bold tabular-nums ${lit ? "text-amber-300" : "text-white/35"}`}>
+            {(value ?? 0).toLocaleString()} to 1
+        </span>
+    );
+    return (
+        <div className="flex flex-col gap-1 pt-2" data-testid="trips-table">
+            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">Trips Pays</div>
+            <div className="flex items-center justify-between gap-1 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/30">
+                <span className="flex-1">Hand</span>
+                <span className="w-[62px] shrink-0 text-right">Natural</span>
+                <span className="w-[62px] shrink-0 text-right">Wild</span>
+            </div>
+            {TRIPS_TABLE_ROWS.map((hand) => {
+                const hit = hitHand === hand;
+                const wild = TRIPS_WILD_PAYTABLE[hand];
+                const natural = TRIPS_NATURAL_PAYTABLE[hand] ?? wild;
+                return (
+                    <div key={hand} data-trips-row={hand} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
+                        <span className={`flex-1 ${hit ? "font-extrabold text-amber-100" : "text-white/45"}`}>{hand}</span>
+                        {cell(natural, hit && hitNatural)}
+                        {cell(wild, hit && !hitNatural)}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DJWild({ bankroll, setBankroll }: Props) {
@@ -184,16 +224,30 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "ante")));
     const [tripsChips, setTripsChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "trips")));
     const [badBeatChips, setBadBeatChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("djwild", "badBeat")));
-    // Progressive: a fixed $1 bet switched on with the red light, and a jackpot meter that is remembered
+    // Progressive: a fixed $5 bet switched on with the red light, and a jackpot meter that is remembered
     const [progressiveOn, setProgressiveOn] = useState(() => defaultToggle("djwild", "progressive"));
     const [meter, setMeter] = useState<number>(readMeter);
     const meterRef = useRef(meter);
     useEffect(() => { meterRef.current = meter; writeMeter(meter); }, [meter]);
-    // the meter creeps up on its own, as if other players were feeding it
+    // Other players: every few seconds a few simulated hands feed the meter, and each one has
+    // the real chance of hitting the jackpot or a natural Royal.
+    const [otherHit, setOtherHit] = useState<OtherPlayerHit | null>(null);
     useEffect(() => {
-        const id = window.setInterval(() => setMeter((m) => Math.round((m + ambientTick()) * 100) / 100), METER_TICK_MS);
+        const rng = makeRng(Date.now());
+        const id = window.setInterval(() => {
+            const next = simulateOtherPlayers(meterRef.current, ambientHands(), rng);
+            setMeter(next.meter);
+            if (next.hit) setOtherHit(next.hit);
+        }, METER_TICK_MS);
         return () => window.clearInterval(id);
     }, []);
+    useEffect(() => {
+        if (!otherHit) return;
+        const id = window.setTimeout(() => setOtherHit(null), OTHER_HIT_NOTICE_MS);
+        return () => window.clearTimeout(id);
+    }, [otherHit]);
+    // true while the table is holding on a progressive win so it cannot be dealt past
+    const [progressiveHold, setProgressiveHold] = useState(false);
 
     // Bets locked in for the hand in play
     const [anteBet, setAnteBet] = useState(0);
@@ -331,6 +385,12 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
             setResult(settled);
             setStage("done");
             setMessage(settled.lines[0]);
+            // a progressive win holds the table for a moment so the amount can be read
+            if (settled.progressiveReturn > 0) {
+                setProgressiveHold(true);
+                await wait(PROGRESSIVE_WIN_HOLD_MS);
+                setProgressiveHold(false);
+            }
         } finally {
             busy.current = false;
         }
@@ -383,7 +443,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const badBeatView = spotView(badBeatChips, badBeatBet, result?.badBeatReturn ?? 0);
     const progressiveLit = isBetting ? progressiveOn : progressiveBet > 0;
     const progressiveWon = done && (result?.progressiveReturn ?? 0) > 0;
-    const progressiveHit = playerReady && progressiveLit && playerHand ? playerHand.category : null;
+    const progressiveHit = playerReady && progressiveLit && playerHand ? progressiveRow(playerHand)?.label ?? null : null;
     const badBeatHit = done && result && result.badBeatMultiplier > 0
         ? (result.compare > 0 ? result.dealerHand.category : result.playerHand.category)
         : null;
@@ -391,8 +451,8 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
 
     const blindHit = done && result && result.blindMultiplier > 0 ? result.playerHand.category : null;
     const tripsPays = playerReady && playerHand && tripsMultiplier(playerHand) > 0;
-    const tripsNaturalHit = tripsPays && playerHand.natural ? playerHand.category : null;
-    const tripsWildHit = tripsPays && !playerHand.natural ? playerHand.category : null;
+    const tripsHit = tripsPays ? playerHand.category : null;
+    const tripsHitNatural = !!(tripsPays && playerHand.natural);
     // Strategy suggestion, from the cards the player has actually turned over
     const suggestion = stage === "dealt" ? suggestAction(playerCards.filter((c) => peeled.includes(c.id))) : null;
     const netColor = !result ? "" : result.net > 0 ? "text-emerald-300" : result.net < 0 ? "text-red-300" : "text-amber-100";
@@ -437,17 +497,17 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="clear-done">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear}>Clear</button>
+                                        <button className={BTN_NEUTRAL} onClick={handleClear} disabled={progressiveHold}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="change-bet">
-                                        <button className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
+                                        <button className={BTN_NEUTRAL} onClick={handleChangeBet} disabled={progressiveHold}>Change Bet</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="rebet-deal">
-                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal || progressiveHold}>Rebet &amp; Deal</button>
                                     </SlideBtn>
                                 )}
                             </AnimatePresence>
@@ -521,7 +581,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                         : "inset 0 2px 6px rgba(0,0,0,0.7)",
                                 }}
                             >
-                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/30"}`}>$1</span>
+                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/30"}`}>${PROGRESSIVE_BET}</span>
                             </button>
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/45">Progressive</span>
@@ -534,6 +594,39 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 </span>
                             </div>
                         </div>
+
+                        {/* The player's progressive win, held on screen */}
+                        <AnimatePresence>
+                            {progressiveWon && result && (
+                                <motion.div
+                                    key="progressive-win"
+                                    initial={{ opacity: 0, scale: 0.85 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                                    data-testid="progressive-win"
+                                    className="w-full rounded-xl border border-amber-300/60 bg-amber-400/15 px-3 py-2 text-center shadow-[0_0_28px_rgba(251,191,36,0.35)]"
+                                >
+                                    <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-200">Progressive Win</div>
+                                    <div className="text-xl font-extrabold text-amber-100">{formatMoney(result.progressiveReturn)}</div>
+                                    <div className="text-[11px] font-semibold text-amber-100/70">{progressiveRow(result.playerHand)?.label}</div>
+                                </motion.div>
+                            )}
+                            {otherHit && !progressiveWon && (
+                                <motion.div
+                                    key="other-hit"
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    data-testid="other-hit"
+                                    className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-center text-[11px] font-semibold text-red-200"
+                                >
+                                    {otherHit.kind === "jackpot"
+                                        ? `Another player hit Five Wilds and took the ${formatMoney(otherHit.amount)} jackpot. The meter has reset.`
+                                        : `Another player hit a natural Royal Flush for ${formatMoney(otherHit.amount)}.`}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <div className="flex items-end gap-6">
                             <BetSpot
@@ -683,25 +776,21 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Right column - payout tables, desktop only */}
-                    <div className="order-3 hidden lg:flex lg:w-72 lg:shrink-0 lg:flex-col lg:justify-center">
-                        <div className="flex gap-3">
-                            <div className="flex-1">
+                    <div className="order-3 hidden lg:flex lg:w-[24rem] lg:shrink-0 lg:flex-col lg:justify-center">
+                        <div className="grid grid-cols-[1fr_1.55fr] gap-3">
+                            <div>
                                 <PayoutColumn title="Blind Pays" entries={BLIND_PAYTABLE} highlight={blindHit} />
-                                <div className="mt-3">
-                                    <PayoutColumn title="Trips Natural" entries={TRIPS_NATURAL_PAYTABLE} highlight={tripsNaturalHit} />
-                                </div>
                                 <div className="mt-3">
                                     <PayoutColumn
                                         title="Progressive"
-                                        unit=" for 1"
-                                        extra={[["Five Wilds", "100%"], ["Royal Flush", "100%"], ["Five of a Kind", "10%"], ["Straight Flush", "10%"]]}
-                                        entries={PROGRESSIVE_FIXED_PAYTABLE}
+                                        extra={PROGRESSIVE_PAYTABLE.map((r) => [r.label, r.share !== undefined ? `${r.share * 100}%` : `$${((r.pays ?? 0) * PROGRESSIVE_BET).toLocaleString()}`] as const)}
+                                        entries={{}}
                                         highlight={progressiveHit}
                                     />
                                 </div>
                             </div>
-                            <div className="flex-1">
-                                <PayoutColumn title="Trips Wild" entries={TRIPS_WILD_PAYTABLE} highlight={tripsWildHit} />
+                            <div>
+                                <TripsTable hitHand={tripsHit} hitNatural={tripsHitNatural} />
                                 <div className="mt-3">
                                     <PayoutColumn title="Bad Beat" entries={BAD_BEAT_PAYTABLE} highlight={badBeatHit} />
                                 </div>

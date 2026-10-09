@@ -352,9 +352,9 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     Main Bet Payouts
                                 </h3>
                                 <div className="space-y-1 text-[13px] text-white/80">
-                                    <div className="flex justify-between"><span>Player wins</span><span className="font-semibold text-white">1 : 1</span></div>
-                                    <div className="flex justify-between"><span>Banker wins</span><span className="font-semibold text-white">1 : 1 (push on 3-card 7)</span></div>
-                                    <div className="flex justify-between"><span>Tie</span><span className="font-semibold text-white">8 : 1</span></div>
+                                    <div className="flex justify-between"><span>Player wins</span><span className="font-semibold text-white">1 to 1</span></div>
+                                    <div className="flex justify-between"><span>Banker wins</span><span className="font-semibold text-white">1 to 1 (push on 3-card 7)</span></div>
+                                    <div className="flex justify-between"><span>Tie</span><span className="font-semibold text-white">8 to 1</span></div>
                                     <p className="pt-0.5 text-[12px] text-white/50">On a Tie, Player and Banker bets push.</p>
                                 </div>
                             </section>
@@ -363,8 +363,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     Side Bets
                                 </h3>
                                 <div className="space-y-1 text-[13px] text-white/80">
-                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-semibold text-white">25 : 1</span></div>
-                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-semibold text-white">40 : 1</span></div>
+                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-semibold text-white">25 to 1</span></div>
+                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-semibold text-white">40 to 1</span></div>
                                     <p className="pt-0.5 text-[12px] text-white/50">Side bets are independent of main bets and pay only on the specific outcome.</p>
                                 </div>
                             </section>
@@ -894,7 +894,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             chips={pandaChips}
                             totalBet={pandaBet}
                             label="Panda 8"
-                            sublabel="25:1"
+                            sublabel="25 to 1"
                             dim={82}
                             isSelected={selectedSpot === "panda"}
                             isWinner={pandaHitResult}
@@ -907,7 +907,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             chips={dragonChips}
                             totalBet={dragonBet}
                             label="Dragon 7"
-                            sublabel="40:1"
+                            sublabel="40 to 1"
                             dim={82}
                             isSelected={selectedSpot === "dragon"}
                             isWinner={dragonHitResult}
@@ -924,7 +924,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             chips={playerChips}
                             totalBet={playerBet}
                             label="Player"
-                            sublabel="1:1"
+                            sublabel="1 to 1"
                             dim={110}
                             isSelected={selectedSpot === "player"}
                             isWinner={playerWon}
@@ -937,7 +937,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             chips={tieChips}
                             totalBet={tieBet}
                             label="Tie"
-                            sublabel="8:1"
+                            sublabel="8 to 1"
                             dim={110}
                             isSelected={selectedSpot === "tie"}
                             isWinner={tieWon}
@@ -950,7 +950,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             chips={bankerChips}
                             totalBet={bankerBet}
                             label="Banker"
-                            sublabel="1:1 / push 3-card 7"
+                            sublabel="1 to 1 / push 3-card 7"
                             dim={110}
                             isSelected={selectedSpot === "banker"}
                             isWinner={bankerWon}
