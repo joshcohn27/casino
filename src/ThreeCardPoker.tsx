@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
+import { DeckContext } from "./shared/deck";
 import type { Card as SharedCard } from "./shared/cards";
 import {
     type ChipDenomination,
@@ -305,6 +306,8 @@ function PayoutColumn({ title, entries, highlight }: {
 }
 
 function CardRow({ cards, faceUp, placeholder }: { cards: Card[]; faceUp: boolean; placeholder?: boolean }) {
+    // keyed by deck as well as by name, so a card dealt two hands running is a new card on screen
+    const deckNo = useContext(DeckContext);
     if (cards.length === 0) {
         if (!placeholder) return null;
         return (
@@ -319,7 +322,7 @@ function CardRow({ cards, faceUp, placeholder }: { cards: Card[]; faceUp: boolea
         <div className="flex gap-2">
             {cards.map((card, i) => (
                 <motion.div
-                    key={card.id}
+                    key={`${deckNo}-${card.id}`}
                     variants={CARD_VARIANTS}
                     initial="initial"
                     animate="animate"
@@ -541,7 +544,8 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setBankroll(p => p - total);
 
         setDeckNo((n) => n + 1);
-        const newDeck = deck.length < 10 ? createDeck() : deck;
+        // every hand comes from the other deck, freshly shuffled
+        const newDeck = createDeck();
         const [pCards, d1] = draw(newDeck, 3);
         const [dCards, d2] = draw(d1, 3);
 

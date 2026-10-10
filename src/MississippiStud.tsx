@@ -555,7 +555,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         setBankroll(p => p - (pendingAnte + pendingBonus));
 
         setDeckNo((n) => n + 1);
-        const d = deck.length < 10 ? createDeck() : deck;
+        // every hand comes from the other deck, freshly shuffled
+        const d = createDeck();
         const [pCards, d1] = draw(d, 2);
         const [cCards, d2] = draw(d1, 3);
 
@@ -899,7 +900,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     ))
                                     : communityCards.map((card, i) => (
                                         <motion.div
-                                            key={card.id}
+                                            key={`${deckNo}-${card.id}`}
                                             variants={CARD_VARIANTS}
                                             initial="initial"
                                             animate="animate"
@@ -943,7 +944,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     ))
                                     : playerCards.map((card, i) => (
                                         <motion.div
-                                            key={card.id}
+                                            key={`${deckNo}-${card.id}`}
                                             variants={CARD_VARIANTS}
                                             initial="initial"
                                             animate="animate"
