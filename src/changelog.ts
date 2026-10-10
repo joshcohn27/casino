@@ -29,6 +29,8 @@ export const CHANGELOG: ChangeEntry[] = [
             ["new", "Blazing 7s: a $5 progressive that pays on 7s in your two cards and the dealer's up card. Three 7s of diamonds win the whole jackpot."],
             ["new", "TriLux, King's Bounty, Lucky Ladies, Match the Dealer and Fortune side bets, each with its pay table on the felt."],
             ["new", "Holding two 7s on a Blazing 7s bet? The dealer's card stays face down until you choose to turn it over."],
+            ["new", "The Blazing 7s jackpot grows as other players bet, and now and then one of them wins it."],
+            ["improved", "Double Down Madness: the Double Ladder lights up the step your hand is on."],
             ["fixed", "Double Down Madness: the rules and the pay table now show the Push 22 payout correctly as 11 to 1."],
         ],
     },

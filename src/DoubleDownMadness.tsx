@@ -1032,16 +1032,33 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         </InfoPanel>
 
                         <InfoPanel title="Double Ladder">
-                            <div className="space-y-2">
-                                {[
-                                    { label: "Base bet", amount: baseBet },
-                                    { label: "1st double", amount: baseBet },
-                                    { label: "2nd double", amount: baseBet * 2 },
-                                    { label: "3rd double", amount: baseBet * 4 },
-                                    { label: "4th double", amount: baseBet * 8 },
-                                ].map(({ label, amount }) => (
-                                    <Row key={label} label={label} value={formatMoney(amount)} />
-                                ))}
+                            {/* The step the hand is on is lit, the steps already taken stay bright, and
+                                the ones still to come are dim. A step taken shows what was actually bet. */}
+                            <div className="space-y-1" data-testid="double-ladder">
+                                {Array.from({ length: Math.max(5, doubleWagers.length + 1) }, (_, step) => {
+                                    const inHand = stage !== "betting";
+                                    const taken = inHand && step <= doubleWagers.length;
+                                    const current = inHand && step === doubleWagers.length;
+                                    const ordinal = ["1st", "2nd", "3rd"][step - 1] ?? `${step}th`;
+                                    const amount = step === 0 ? baseBet : taken ? doubleWagers[step - 1] : baseBet * Math.pow(2, step - 1);
+                                    return (
+                                        <div
+                                            key={step}
+                                            data-ladder-step={step}
+                                            data-current={current ? "true" : undefined}
+                                            className={`flex items-center justify-between gap-2 rounded-[2px] border-l-[3px] px-2 py-1 text-sm transition-colors ${
+                                                current ? "border-gold bg-amber-300/12" : "border-transparent"
+                                            }`}
+                                        >
+                                            <span className={current ? "font-bold text-amber-100" : taken ? "text-white" : "text-zinc-400"}>
+                                                {step === 0 ? "Base bet" : `${ordinal} double`}
+                                            </span>
+                                            <span className={current ? "font-bold text-gold" : taken ? "font-semibold text-white" : "font-semibold text-zinc-400"}>
+                                                {formatMoney(amount)}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </InfoPanel>
 
