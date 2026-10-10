@@ -69,6 +69,41 @@ body {
   html[data-font="large"] h3 { font-size: 18px; }
 }
 
+/* Home page title. Change the size and color here. */
+:root {
+  --home-title-size: 36px;         /* phone */
+  --home-title-color: #ffffff;
+  --home-subtitle-color: #a8a8a8;
+  --home-rule-color: #d63343;
+}
+@media (min-width: 40rem) {
+  :root { --home-title-size: 48px; }  /* desktop */
+}
+@layer components {
+  .home-title {
+    font-size: var(--home-title-size);
+    font-weight: 700;              /* Arial has no 800 weight, so bold is 700 */
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--home-title-color);
+  }
+  .home-subtitle {
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--home-subtitle-color);
+  }
+  /* a short red rule under the subtitle */
+  .home-subtitle::after {
+    content: "";
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin-top: 16px;
+    background: var(--home-rule-color);
+  }
+}
+
 /* A small square-cornered tag, sized to its text. Outlined by default; New is solid red. */
 @layer components {
   .tag {

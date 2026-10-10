@@ -314,10 +314,10 @@ export default function Casino() {
             >
                 <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
                     <div className="mb-8 border-b border-room-line pb-6">
-                        <h1 className="text-room-text">
+                        <h1 className="home-title">
                             Cohn Casino
                         </h1>
-                        <p className="mt-2 text-lg font-semibold text-room-text">
+                        <p className="home-subtitle mt-2">
                             A collection of casino table games
                         </p>
                         <p className="mt-4 max-w-[62ch] text-base leading-6 text-room-muted">
