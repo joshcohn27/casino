@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.0.2",
+        date: "2026-10-09",
+        title: "Pai Gow hand names",
+        changes: [
+            ["improved", "Pai Gow Poker: your hand names now read High then Low, the same order as the dealer's."],
+        ],
+    },
+    {
         version: "4.0.1",
         date: "2026-10-09",
         title: "Card backs",

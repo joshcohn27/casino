@@ -1435,18 +1435,18 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     })}
                                 </div>
 
-                                {/* Hand names */}
+                                {/* Hand names: High then Low, the same order as the dealer */}
                                 <div className="flex min-h-[16px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px]">
                                     {playerReady && (
                                         <>
                                             <span>
-                                                <span className="font-bold text-white/75">Low </span>
-                                                <span className="font-semibold text-amber-100">{currentFrontEval?.label ?? "pick 2 cards"}</span>
+                                                <span className="font-bold text-white/75">High </span>
+                                                <span className="font-semibold text-amber-100">{currentBackEval?.label ?? "-"}</span>
                                             </span>
                                             <span className="text-white/75">·</span>
                                             <span>
-                                                <span className="font-bold text-white/75">High </span>
-                                                <span className="font-semibold text-amber-100">{currentBackEval?.label ?? "-"}</span>
+                                                <span className="font-bold text-white/75">Low </span>
+                                                <span className="font-semibold text-amber-100">{currentFrontEval?.label ?? "pick 2 cards"}</span>
                                             </span>
                                         </>
                                     )}
