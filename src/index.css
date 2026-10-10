@@ -69,16 +69,20 @@ body {
   html[data-font="large"] h3 { font-size: 18px; }
 }
 
-/* A small rectangular tag: a colored word with a colored left edge */
-.tag {
-  display: inline-block;
-  border-left: 3px solid currentColor;
-  border-radius: 2px;
-  padding: 1px 8px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.4;
-  background: var(--color-panel-2);
+/* A small square-cornered tag: a word with a colored left edge.
+   It sits in the components layer so an edge color class can override the default. */
+@layer components {
+  .tag {
+    display: inline-block;
+    border-left: 3px solid var(--color-room-line-hover);
+    border-radius: 2px;
+    padding: 1px 8px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-room-text);
+    background: var(--color-room-deep);
+  }
 }
 
 

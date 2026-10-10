@@ -243,6 +243,8 @@ export default function Casino() {
     const navigate = (g: Game) => {
         setGame(g)
         setMobileMenuOpen(false)
+        // the What's New link sits in the footer, so start that page from the top
+        if (g === "changelog") window.scrollTo(0, 0)
     }
 
     const renderScreen = () => {
