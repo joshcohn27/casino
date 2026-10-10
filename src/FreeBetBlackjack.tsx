@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
-import PlayingCard from "./shared/Card";
+import HandRow from "./shared/HandRow";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
@@ -83,6 +83,12 @@ const SHUFFLE_PENETRATION = 0.85;
 const SHUFFLE_DELAY_MS = 2000;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 const PLAYER_TO_DEALER_DELAY_MS = 500;
+// Standing has no new card to look at, so the dealer starts almost at once
+const STAND_TO_DEALER_DELAY_MS = 120;
+// One dealer card: long enough for a card to land, or for the hole card to turn over
+const DEALER_CARD_MS = 480;
+// The deal goes player, dealer, player, dealer
+const DEAL_STEP_S = 0.13;
 
 const SIDE_MAX = 100;
 const SIDE_STEP = 2.5;
@@ -90,15 +96,6 @@ const SIDE_STEP = 2.5;
 // ─── UI constants ─────────────────────────────────────────────────────────────
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
-const CARD_VARIANTS = {
-    initial: { opacity: 0, y: -18, scale: 0.94 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-};
-const CARD_TRANSITION = (delay: number) => ({
-    duration: 0.32,
-    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-    delay,
-});
 
 
 // ─── Game pure functions (preserved) ─────────────────────────────────────────
@@ -380,27 +377,30 @@ function DealerLane({ cards, revealedCount, stage }: {
     return (
         <div className="flex flex-col items-center gap-2">
             <Chip>Dealer{revealed && t !== null ? ` · ${t}${isSoft(cards) ? " soft" : ""}` : ""}</Chip>
-            <div className="flex flex-wrap justify-center gap-2">
-                <AnimatePresence initial={false}>
-                    {cards.map((card, i) => (
-                        <motion.div
-                            key={card.id}
-                            variants={CARD_VARIANTS}
-                            initial="initial"
-                            animate="animate"
-                            transition={CARD_TRANSITION(i * 0.08)}
-                        >
-                            <PlayingCard card={toShared(card, i < revealedCount)} className={CARD_CLS} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+            <div className="relative w-[248px] sm:w-[288px]">
+                {cards.length === 0 && (
+                    <div className="absolute inset-0 flex justify-center gap-[6px]">
+                        {[0, 1].map((i) => (
+                            <div key={i} className={`${CARD_CLS} border border-dashed border-white/15 bg-white/5`} />
+                        ))}
+                    </div>
+                )}
+                <HandRow
+                    cards={cards.map((card) => toShared(card, true))}
+                    isFaceUp={(id) => cards.findIndex((card) => card.id === id) < revealedCount}
+                    size="md"
+                    slots={4}
+                    dealDelay={(i) => (i < 2 ? (i * 2 + 1) * DEAL_STEP_S : 0)}
+                />
             </div>
         </div>
     );
 }
 
-function HandBox({ hand, index, isActive, stage, dealerTotal }: {
+function HandBox({ hand, index, isActive, stage, dealerTotal, firstDeal }: {
     hand: HandState; index: number; isActive: boolean; stage: Stage; dealerTotal: number;
+    /** True for the opening two cards, which are dealt in turn with the dealer's. */
+    firstDeal: boolean;
 }) {
     const t = total(hand.cards);
     const bust = t > 21;
@@ -421,20 +421,14 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
                 <Chip>Hand {index + 1}</Chip>
                 {result && <Badge result={result} />}
             </div>
-            <div className="flex flex-wrap justify-center gap-1.5">
-                <AnimatePresence initial={false}>
-                    {hand.cards.map((card, i) => (
-                        <motion.div
-                            key={card.id}
-                            variants={CARD_VARIANTS}
-                            initial="initial"
-                            animate="animate"
-                            transition={CARD_TRANSITION(i * 0.08)}
-                        >
-                            <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+            <div className="w-[186px] sm:w-[216px]">
+                <HandRow
+                    cards={hand.cards.map((card) => toShared(card, true))}
+                    isFaceUp={() => true}
+                    size="md"
+                    slots={3}
+                    dealDelay={(i) => (firstDeal && i < 2 ? i * 2 * DEAL_STEP_S : 0)}
+                />
             </div>
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}
@@ -902,7 +896,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         if (allBusted) setMessage("All hands bust. Dealer reveals hole card.");
         else setMessage("Round complete.");
 
-        if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(1000); }
+        if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(650); }
 
         const finalized = finalHands.map((hand) => {
             const settled = settleHand({ ...hand, result: "Bust" }, dealer);
@@ -929,17 +923,17 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         let revealedCount = 1;
 
         setStage("dealer"); setMessage("Dealer reveals hole card."); setDealerRevealedCount(2); revealedCount = 2;
-        await wait(450);
+        await wait(DEALER_CARD_MS);
 
+        // dealer hit cards come out face up, one at a time
         while (total(nextDealer) < 17 || (total(nextDealer) === 17 && isSoft(nextDealer))) {
             const card = nextDeck.shift();
             if (!card) break;
             nextDealer.push(card);
-            setDealer([...nextDealer]); setDeck([...nextDeck]); setDealerRevealedCount(revealedCount);
-            await wait(140);
             revealedCount = nextDealer.length;
-            setDealerRevealedCount(revealedCount); setMessage("Dealer draws.");
-            await wait(360);
+            setDealer([...nextDealer]); setDeck([...nextDeck]); setDealerRevealedCount(revealedCount);
+            setMessage("Dealer draws.");
+            await wait(DEALER_CARD_MS);
         }
 
         const settledHands = handsInPlay.map((hand) => {
@@ -977,7 +971,9 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         nextDeck: Card[],
         tokenCount = freeBetTokens,
         currentActive = active,
-        snapshot: SideBetSnapshot
+        snapshot: SideBetSnapshot,
+        // how long to hold on the player's hand before the dealer plays
+        pauseMs = PLAYER_TO_DEALER_DELAY_MS,
     ) => {
         const nextIndex = currentActive + 1;
 
@@ -1009,7 +1005,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
         if (nextHands.some((hand) => total(hand.cards) <= 21)) {
             await waitForPaint();
-            await wait(PLAYER_TO_DEALER_DELAY_MS);
+            await wait(pauseMs);
             await dealerTurn(nextHands, nextDeck, tokenCount, snapshot);
             return;
         }
@@ -1159,7 +1155,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     };
 
     const stay = async () => {
-        await moveToNextHand(hands, deck, freeBetTokens, active, sideBetSnapshot);
+        await moveToNextHand(hands, deck, freeBetTokens, active, sideBetSnapshot, STAND_TO_DEALER_DELAY_MS);
     };
 
     const doubleDown = async () => {
@@ -1362,7 +1358,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                             />
 
                             {/* Bet circles: betting stage only */}
-                            <AnimatePresence>
+                            <AnimatePresence mode="popLayout" initial={false}>
                                 {stage === "betting" && (
                                     <motion.div
                                         key="bet-circles"
@@ -1413,6 +1409,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                 )}
                             </AnimatePresence>
 
+                            <motion.div layout="position" layoutDependency={stage} transition={{ layout: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }} className="flex w-full flex-col items-center gap-3">
                             {/* Free bet token counter */}
                             <div className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 transition-colors ${
                                 freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
@@ -1437,10 +1434,12 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                             isActive={i === active && stage === "player"}
                                             stage={stage}
                                             dealerTotal={dealerTotalNow}
+                                            firstDeal={hands.length === 1}
                                         />
                                     ))}
                                 </div>
                             )}
+                            </motion.div>
 
                         </div>
                     </div>

@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.4",
+        date: "2026-10-10",
+        title: "Smoother Free Bet and Double Down Madness",
+        changes: [
+            ["improved", "Free Bet Blackjack: cards are dealt in turn, a Hit card arrives right away, and the dealer starts as soon as you stay."],
+            ["improved", "Free Bet Blackjack and Double Down Madness: cards slide over to make room for a new one instead of jumping."],
+            ["improved", "Free Bet Blackjack and Double Down Madness: the table glides into place when a hand is dealt instead of hopping."],
+        ],
+    },
+    {
         version: "4.1.3",
         date: "2026-10-10",
         title: "Smoother Blackjack",

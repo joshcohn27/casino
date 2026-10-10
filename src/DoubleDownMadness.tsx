@@ -172,7 +172,12 @@ const CARD_VARIANTS = {
     animate: { opacity: 1, y: 0, scale: 1 },
 };
 
-const CARD_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
+const CARD_TRANSITION = {
+    duration: 0.32,
+    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    // resting cards slide over to make room for a new one
+    layout: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+};
 
 function Chip({ children }: { children: React.ReactNode }) {
     return (
@@ -1012,7 +1017,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* ── Center column ─────────────────────────────────────── */}
-                    <div className="flex min-w-0 flex-1 flex-col items-center gap-4">
+                    <div className="relative flex min-w-0 flex-1 flex-col items-center gap-4">
 
                         {/* Table label */}
                         <div className="flex flex-col items-center gap-1 select-none">
@@ -1059,6 +1064,8 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     {dealerCards.map((card, index) => (
                                         <motion.div
                                             key={card.id}
+                                            layout="position"
+                                            layoutDependency={dealerCards.length}
                                             variants={CARD_VARIANTS}
                                             initial="initial"
                                             animate="animate"
@@ -1075,7 +1082,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         </div>
 
                         {/* Bet circles — only during betting */}
-                        <AnimatePresence>
+                        <AnimatePresence mode="popLayout" initial={false}>
                             {stage === "betting" && (
                                 <motion.div
                                     key="bet-circles"
@@ -1113,6 +1120,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             )}
                         </AnimatePresence>
 
+                        <motion.div layout="position" layoutDependency={stage} transition={{ layout: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }} className="flex w-full flex-col items-center gap-4">
                         {/* Message */}
                         <p className="text-sm font-semibold text-zinc-100/70">{message}</p>
 
@@ -1129,6 +1137,8 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     {playerCards.map((card) => (
                                         <motion.div
                                             key={card.id}
+                                            layout="position"
+                                            layoutDependency={playerCards.length}
                                             variants={CARD_VARIANTS}
                                             initial="initial"
                                             animate="animate"
@@ -1155,6 +1165,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 ))}
                             </div>
                         )}
+                        </motion.div>
 
                     </div>
 
