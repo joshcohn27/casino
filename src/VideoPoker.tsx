@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react"
 import { defaultBet } from "./shared/settings"
+import { useHandRecorder } from "./shared/sessionContext"
 import VideoPokerBonus from "./VideoPokerBonus"
 import VideoPokerDeuces from "./VideoPokerDeuces"
 
@@ -342,6 +343,7 @@ function DenomBadge({
 }
 
 export default function VideoPoker({ bankroll, setBankroll }: Props) {
+    const recordHand = useHandRecorder()
     const [game, setGame] = useState<"jacks" | "bonus" | "deuces">("jacks")
     const [stage, setStage] = useState<Stage>("ready")
     const [bet, setBet] = useState(() => defaultBet("videopoker", "credits"))
@@ -408,6 +410,7 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
         if (result.payout > 0) {
             setBankroll((current) => current + result.payout)
         }
+        recordHand(totalBet, result.payout - totalBet)
     }
 
     const onDealDraw = () => {

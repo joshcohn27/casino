@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { useHandRecorder } from "./sessionContext";
 import { AnimatePresence, motion } from "motion/react";
 import { CHIP_COLORS, formatMoney, type ChipDenomination } from "./money";
 
@@ -165,6 +166,19 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
     className?: string;
 }) {
     const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
+
+    // Count the hand for the session when its result first shows. If the figures move after
+    // that (a bonus settled a moment later), the same hand is corrected, not counted again.
+    const recordHand = useHandRecorder();
+    const counted = useRef<{ bet: number; net: number } | null>(null);
+    useEffect(() => {
+        if (!showResult) { counted.current = null; return; }
+        const last = counted.current;
+        if (!last) recordHand(pendingBet, net);
+        else if (last.bet !== pendingBet || last.net !== net) recordHand(pendingBet - last.bet, net - last.net, true);
+        counted.current = { bet: pendingBet, net };
+    }, [showResult, pendingBet, net, recordHand]);
+
     return (
         <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-6 px-6"} ${className}`} data-bet-bar>
             {[

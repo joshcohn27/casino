@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.3.0",
+        date: "2026-10-10",
+        title: "Session stats",
+        changes: [
+            ["new", "Every table now shows your session in the top left: hands played, your average bet, and how much you are up or down."],
+            ["new", "A session lasts for as long as you stay at one game. It starts over when you play a hand at a different game, or when you close the site and come back."],
+        ],
+    },
+    {
         version: "4.2.0",
         date: "2026-10-10",
         title: "Side Bet Blackjack",

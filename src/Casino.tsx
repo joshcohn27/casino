@@ -8,6 +8,8 @@ import { VERSION } from "./changelog"
 import { GAMES, HOME_GAMES, NAV_GROUPS, gameAtPath } from "./games"
 import { DEFAULT_BANKROLL, useBankroll } from "./shared/bankrollContext"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
+import { TableContext } from "./shared/sessionContext"
+import SessionBadge from "./shared/SessionBadge"
 
 // the site used to reopen the last table from this key. Pages have URLs now, so it is cleared.
 const OLD_SELECTED_GAME_KEY = "casino-selected-game"
@@ -430,10 +432,13 @@ export default function Casino() {
 
             {/* Tables: each one you have opened stays here, hidden unless it is the page you are on */}
             {GAMES.filter((g) => heldTables.includes(g.id)).map((g) => (
-                <div key={g.id} hidden={g.id !== table?.id} data-table={g.id}>
-                    <Suspense fallback={<div className="min-h-screen bg-room" />}>
-                        <g.component bankroll={bankroll} setBankroll={setBankroll} />
-                    </Suspense>
+                <div key={g.id} hidden={g.id !== table?.id} data-table={g.id} className="relative">
+                    <TableContext.Provider value={{ id: g.id, active: g.id === table?.id }}>
+                        <SessionBadge />
+                        <Suspense fallback={<div className="min-h-screen bg-room" />}>
+                            <g.component bankroll={bankroll} setBankroll={setBankroll} />
+                        </Suspense>
+                    </TableContext.Provider>
                 </div>
             ))}
 
