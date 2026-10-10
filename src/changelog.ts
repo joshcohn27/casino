@@ -21,6 +21,17 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "3.2.0",
+        date: "2026-10-09",
+        title: "Links to every page",
+        changes: [
+            ["new", "Every table and page has its own link, so you can bookmark a game or send it to a friend."],
+            ["new", "Your browser's back and forward buttons now move between pages."],
+            ["improved", "Refreshing keeps you on the page you were on."],
+            ["improved", "Your seat is held: leave a table in the middle of a hand and the hand is still there when you come back."],
+        ],
+    },
+    {
         version: "3.1.0",
         date: "2026-10-09",
         title: "Version number and What's New",
