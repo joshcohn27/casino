@@ -32,6 +32,8 @@ const STAND_TO_DEALER_DELAY_MS = 120;
 const DEALER_CARD_MS = 480;
 // The deal goes player, dealer, player, dealer, one card at a time
 const DEAL_CARD_MS = 380;
+// How long the second dealer card takes to slide under the first, and again to slide back
+const DEALER_SCOOP_MS = 180;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
@@ -148,8 +150,10 @@ function TableLabel() {
     );
 }
 
-function DealerLane({ cards, revealedCount, stage }: {
+function DealerLane({ cards, revealedCount, stage, scoop }: {
     cards: Card[]; revealedCount: number; stage: Stage;
+    /** The dealer is sliding one card under the other to turn it over: the first card, or the hole card. */
+    scoop: "first" | "hole" | null;
 }) {
     const revealed = stage === "dealer" || stage === "done";
     const t = cards.length ? total(cards) : null;
@@ -170,6 +174,12 @@ function DealerLane({ cards, revealedCount, stage }: {
                     size="md"
                     slots={4}
                     dealDelay={() => 0}
+                    slotStyle={(id) =>
+                        scoop === "first" && id === cards[1]?.id ? { transform: "translateX(calc(var(--cw) * -0.6))", zIndex: 5 }
+                        : scoop === "hole" && id === cards[0]?.id ? { transform: "translateX(calc(var(--cw) * 0.6))", zIndex: 5 }
+                        : undefined}
+                    // each card turns over away from the card that slid under it
+                    flipDirection={(id) => (id === cards[0]?.id ? -1 : 1)}
                 />
             </div>
         </div>
@@ -358,6 +368,16 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const [bets, setBets] = useState<number[]>([]);
     const [active, setActive] = useState(0);
     const [dealerRevealedCount, setDealerRevealedCount] = useState(1);
+    // true for the moment the dealer uses the second card to flip the first
+    const [dealerScoop, setDealerScoop] = useState<"first" | "hole" | null>(null);
+    // the dealer slides the up card under the hole card and turns the hole card over
+    const revealHole = async () => {
+        setDealerScoop("hole");
+        await wait(DEALER_SCOOP_MS);
+        setDealerRevealedCount(2);
+        await wait(DEALER_SCOOP_MS);
+        setDealerScoop(null);
+    };
     const [bet, setBet] = useState(() => defaultBet("blackjack", "main"));
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Place chips and press Deal.");
@@ -405,7 +425,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
         setRoundReturned(0);
         setRoundNet(-wagered);
-        if (dealer.length > 0) { setDealerRevealedCount(dealer.length); await wait(650); }
+        if (dealer.length > 0) { await revealHole(); await wait(400); }
         setStage("done");
         setMessage(allBusted ? "All hands bust. Dealer does not draw." : "Round complete.");
     };
@@ -424,9 +444,9 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
         setStage("dealer");
         setMessage("Dealer reveals hole card.");
-        setDealerRevealedCount(2);
+        await revealHole();
         revealedCount = 2;
-        await wait(DEALER_CARD_MS);
+        await wait(DEALER_CARD_MS - DEALER_SCOOP_MS);
 
         // dealer hit cards come out face up, one at a time
         while (total(nextDealer) < 17) {
@@ -565,10 +585,10 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         const dealerHand = [nextDeck[2], nextDeck[3]];
         nextDeck = nextDeck.slice(4);
 
-        setDeck(nextDeck); setDealerRevealedCount(1);
+        setDeck(nextDeck); setDealerRevealedCount(0);
         setBets([wager]); setActive(0);
 
-        // player, dealer, player, dealer. The dealer's second card stays face down.
+        // player, dealer, player, dealer. Both dealer cards come out face down.
         setStage("dealing");
         setMessage("Dealing...");
         setDealer([]); setHands([[playerHand[0]]]);
@@ -579,12 +599,19 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         await wait(DEAL_CARD_MS);
         setDealer(dealerHand);
         await wait(DEAL_CARD_MS);
+        // the dealer slides the second card under the first and turns the first one over
+        setDealerScoop("first");
+        await wait(DEALER_SCOOP_MS);
+        setDealerRevealedCount(1);
+        await wait(DEALER_SCOOP_MS);
+        setDealerScoop(null);
+        await wait(DEAL_CARD_MS - 80);
 
         const dealerBJ = total(dealerHand) === 21;
         const playerBJ = total(playerHand) === 21;
 
         if (dealerBJ) {
-            setDealerRevealedCount(2);
+            await revealHole();
             if (playerBJ) {
                 setRoundReturned(wager); setRoundNet(0);
                 setBankroll((b) => b + wager);
@@ -598,7 +625,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
         if (playerBJ) {
             const returned = wager * 2.5;
-            setDealerRevealedCount(2);
+            await revealHole();
             setRoundReturned(returned); setRoundNet(returned - wager);
             setBankroll((b) => b + returned);
             setStage("done"); setMessage("Blackjack pays 3 to 2."); return;
@@ -749,7 +776,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
                     <TableLabel />
 
-                    <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} />
+                    <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} scoop={dealerScoop} />
 
                     <BetBar
                         pendingBet={totalWagered > 0 ? totalWagered : bet}

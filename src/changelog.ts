@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.6",
+        date: "2026-10-10",
+        title: "Real-table dealing at every blackjack table",
+        changes: [
+            ["improved", "Free Bet Blackjack and Double Down Madness: your cards are stacked the way a dealer lays them, double-down cards are laid sideways, and the deal comes out one card at a time."],
+            ["improved", "Blackjack: both dealer cards come out face down, then the dealer slides the second card under the first to flip it over."],
+            ["improved", "Blackjack: when it is the dealer's turn, the dealer uses the up card to flip the hole card."],
+        ],
+    },
+    {
         version: "4.1.5",
         date: "2026-10-10",
         title: "Blackjack dealt like a real table",

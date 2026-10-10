@@ -143,9 +143,14 @@ interface Props {
     card: Card;
     className?: string;
     style?: React.CSSProperties;
+    /**
+     * Which way the card turns over. 1 (the default) lifts its left edge, -1 lifts its right
+     * edge: the way it goes when a card is slid under that side to flip it.
+     */
+    flipDirection?: 1 | -1;
 }
 
-export default function PlayingCard({ card, className = '', style }: Props) {
+export default function PlayingCard({ card, className = '', style, flipDirection = 1 }: Props) {
     return (
         <div
             className={`relative shrink-0 [perspective:600px] ${className}`}
@@ -154,7 +159,7 @@ export default function PlayingCard({ card, className = '', style }: Props) {
             data-face-up={card.faceUp ? "true" : "false"}
         >
             <motion.div
-                animate={{ rotateY: card.faceUp ? 180 : 0 }}
+                animate={{ rotateY: card.faceUp ? 180 * flipDirection : 0 }}
                 transition={{ duration: 0.42, ease: 'easeInOut' }}
                 style={{ transformStyle: 'preserve-3d' }}
                 className="relative h-full w-full rounded-[inherit]"

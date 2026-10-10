@@ -36,10 +36,14 @@ export interface HandRowProps {
     testId?: string;
     /** Seconds before each card starts its deal, by position. Defaults to a quick left-to-right ripple. */
     dealDelay?: (index: number) => number;
+    /** Extra placement for one card, for a moment: for example sliding it under its neighbor. */
+    slotStyle?: (id: string) => React.CSSProperties | undefined;
+    /** Which way a card turns over: -1 lifts its right edge instead of its left. */
+    flipDirection?: (id: string) => 1 | -1;
 }
 
 export default function HandRow({
-    cards, order, isFaceUp, emphasis, onCardClick, canClick, cardLabel, size = "sm", slots, testId, dealDelay,
+    cards, order, isFaceUp, emphasis, onCardClick, canClick, cardLabel, size = "sm", slots, testId, dealDelay, slotStyle, flipDirection,
 }: HandRowProps) {
     // cards are keyed by deck as well as by name, so a card dealt two hands running is a new card
     const deckNo = useContext(DeckContext);
@@ -65,11 +69,12 @@ export default function HandRow({
                     top: 0,
                     left: `calc(50% - var(--cw) / 2 + ${col - (count - 1) / 2} * ${step})`,
                     zIndex: 10 + col,
-                    transition: `left 0.4s ${SLOT_EASE}`,
+                    transition: `left 0.4s ${SLOT_EASE}, transform 0.18s ease-out`,
+                    ...(slotStyle ? slotStyle(card.id) : undefined),
                 };
                 const face = (
                     <div className={`transition-opacity duration-300 ${dim ? "opacity-45" : "opacity-100"}`}>
-                        <PlayingCard card={{ ...card, faceUp }} className={cfg.card} />
+                        <PlayingCard card={{ ...card, faceUp }} className={cfg.card} flipDirection={flipDirection ? flipDirection(card.id) : 1} />
                     </div>
                 );
                 return (

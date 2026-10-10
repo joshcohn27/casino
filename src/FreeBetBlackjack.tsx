@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import HandRow from "./shared/HandRow";
+import BlackjackHand from "./shared/BlackjackHand";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
@@ -19,6 +20,8 @@ type Card = {
     suit: Suit;
     value: number;
     id: string;
+    /** A double-down card, laid sideways. */
+    sideways?: boolean;
 };
 
 type Props = {
@@ -26,7 +29,7 @@ type Props = {
     setBankroll: React.Dispatch<React.SetStateAction<number>>;
 };
 
-type Stage = "betting" | "player" | "dealer" | "done";
+type Stage = "betting" | "dealing" | "player" | "dealer" | "done";
 type DoubleType = "none" | "paid" | "free";
 
 type HandBet = {
@@ -87,8 +90,8 @@ const PLAYER_TO_DEALER_DELAY_MS = 500;
 const STAND_TO_DEALER_DELAY_MS = 120;
 // One dealer card: long enough for a card to land, or for the hole card to turn over
 const DEALER_CARD_MS = 480;
-// The deal goes player, dealer, player, dealer
-const DEAL_STEP_S = 0.13;
+// The deal goes player, dealer, player, dealer, one card at a time
+const DEAL_CARD_MS = 380;
 
 const SIDE_MAX = 100;
 const SIDE_STEP = 2.5;
@@ -390,17 +393,15 @@ function DealerLane({ cards, revealedCount, stage }: {
                     isFaceUp={(id) => cards.findIndex((card) => card.id === id) < revealedCount}
                     size="md"
                     slots={4}
-                    dealDelay={(i) => (i < 2 ? (i * 2 + 1) * DEAL_STEP_S : 0)}
+                    dealDelay={() => 0}
                 />
             </div>
         </div>
     );
 }
 
-function HandBox({ hand, index, isActive, stage, dealerTotal, firstDeal }: {
+function HandBox({ hand, index, isActive, stage, dealerTotal }: {
     hand: HandState; index: number; isActive: boolean; stage: Stage; dealerTotal: number;
-    /** True for the opening two cards, which are dealt in turn with the dealer's. */
-    firstDeal: boolean;
 }) {
     const t = total(hand.cards);
     const bust = t > 21;
@@ -421,15 +422,7 @@ function HandBox({ hand, index, isActive, stage, dealerTotal, firstDeal }: {
                 <Chip>Hand {index + 1}</Chip>
                 {result && <Badge result={result} />}
             </div>
-            <div className="w-[186px] sm:w-[216px]">
-                <HandRow
-                    cards={hand.cards.map((card) => toShared(card, true))}
-                    isFaceUp={() => true}
-                    size="md"
-                    slots={3}
-                    dealDelay={(i) => (firstDeal && i < 2 ? i * 2 * DEAL_STEP_S : 0)}
-                />
-            </div>
+            <BlackjackHand cards={hand.cards.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
@@ -589,6 +582,7 @@ function FreeBetBar({
     const isDone    = stage === "done";
     const isPlayer  = stage === "player";
     const isDealer  = stage === "dealer";
+    const isDealing = stage === "dealing";
 
     const canClear = isBetting;
     const canDeal  = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= buyIn;
@@ -653,6 +647,17 @@ function FreeBetBar({
                                 {isFreeSplitAction ? "Free Split" : "Split"}
                             </button>
                         </SlideBtn>
+                    )}
+
+                    {isDealing && (
+                        <motion.span
+                            key="dealing-msg"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-sm italic text-white/75"
+                        >
+                            Dealing…
+                        </motion.span>
                     )}
 
                     {isDealer && (
@@ -1090,9 +1095,21 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             splitDepth: 0, result: "", settlementText: [], totalReturn: 0, netProfit: 0,
         };
 
-        setDeck(nextDeck); setDealer(dealerHand); setDealerRevealedCount(1);
-        setHands([openingHand]); setActive(0); setFreeBetTokens(0);
+        setDeck(nextDeck); setDealerRevealedCount(1);
+        setActive(0); setFreeBetTokens(0);
         setRoundBreakdown({ totalReturned: 0, totalNet: 0, lines: [], sideBets: [] });
+
+        // player, dealer, player, dealer. The dealer's second card stays face down.
+        setStage("dealing");
+        setMessage("Dealing...");
+        setDealer([]); setHands([{ ...openingHand, cards: [playerHand[0]] }]);
+        await wait(DEAL_CARD_MS);
+        setDealer([dealerHand[0]]);
+        await wait(DEAL_CARD_MS);
+        setHands([openingHand]);
+        await wait(DEAL_CARD_MS);
+        setDealer(dealerHand);
+        await wait(DEAL_CARD_MS);
 
         const dealerBJ = isBlackjack(dealerHand);
         const playerBJ = isBlackjack(playerHand);
@@ -1170,8 +1187,9 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         const nextHands = [...hands];
         nextHands[active] = { ...nextHands[active], doubleType: freeDouble ? "free" : "paid" };
         const nextDeck = [...deck];
-        const card = nextDeck.shift();
-        if (!card) return;
+        const drawn = nextDeck.shift();
+        if (!drawn) return;
+        const card: Card = { ...drawn, sideways: true };
         nextHands[active] = { ...nextHands[active], cards: [...nextHands[active].cards, card] };
         setHands(nextHands); setDeck(nextDeck); setFreeBetTokens(nextTokenCount);
 
@@ -1434,7 +1452,6 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                             isActive={i === active && stage === "player"}
                                             stage={stage}
                                             dealerTotal={dealerTotalNow}
-                                            firstDeal={hands.length === 1}
                                         />
                                     ))}
                                 </div>

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
 import PlayingCard from "./shared/Card";
+import BlackjackHand from "./shared/BlackjackHand";
 import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
@@ -40,6 +41,7 @@ type Props = {
 
 type Stage =
     | "betting"
+    | "dealing"
     | "insurance"
     | "player"
     | "dealer"
@@ -57,6 +59,8 @@ const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.82;
 const RESHUFFLE_REMAINING = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 const SHUFFLE_DELAY_MS = 1800;
+// The deal comes out one card at a time: player, dealer, dealer
+const DEAL_CARD_MS = 380;
 
 const BET_STORAGE_KEY = "double-down-madness-main-bet";
 const PUSH22_STORAGE_KEY = "double-down-madness-push22-bet";
@@ -337,6 +341,7 @@ function DDMBar({
     const isPlayer = stage === "player";
     const isDealer = stage === "dealer";
     const isInsurance = stage === "insurance";
+    const isDealing = stage === "dealing";
 
     const canDeal = isBetting && !isShuffling && bet >= MIN_BET && bankroll >= clampMainBet(bet) + sideBet;
     const canClear = isBetting;
@@ -407,6 +412,17 @@ function DDMBar({
                                 {doubleWagersCount > 0 ? "Re-Double" : "Double"}
                             </button>
                         </SlideBtn>
+                    )}
+
+                    {isDealing && (
+                        <motion.span
+                            key="dealing-msg"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-sm italic text-white/75"
+                        >
+                            Dealing…
+                        </motion.span>
                     )}
 
                     {isDealer && (
@@ -644,9 +660,17 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         const currentPlayer = [p1.card];
 
         setDeck(d2.nextDeck);
-        setDealerCards(currentDealer);
-        setPlayerCards(currentPlayer);
         setDealerRevealCount(1);
+
+        // one card to the player, then the dealer's two. The dealer's second stays face down.
+        setStage("dealing");
+        setMessage("Dealing...");
+        setPlayerCards(currentPlayer);
+        await wait(DEAL_CARD_MS);
+        setDealerCards([currentDealer[0]]);
+        await wait(DEAL_CARD_MS);
+        setDealerCards(currentDealer);
+        await wait(DEAL_CARD_MS);
 
         if (currentDealer[0].rank === "A") {
             setInsuranceOffered(true);
@@ -1132,29 +1156,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     ? ` · ${playerTotal}${isSoft(playerCards) ? " soft" : ""}${resultLabel ? ` · ${resultLabel}` : ""}`
                                     : ""}
                             </Chip>
-                            <div className="flex min-h-[100px] flex-wrap justify-center gap-2">
-                                <AnimatePresence initial={false}>
-                                    {playerCards.map((card) => (
-                                        <motion.div
-                                            key={card.id}
-                                            layout="position"
-                                            layoutDependency={playerCards.length}
-                                            variants={CARD_VARIANTS}
-                                            initial="initial"
-                                            animate="animate"
-                                            transition={CARD_TRANSITION}
-                                            className={card.sideways ? "mx-2 sm:mx-5" : undefined}
-                                        >
-                                            <div style={card.sideways ? { transform: "rotate(90deg)" } : undefined}>
-                                                <PlayingCard
-                                                    card={toShared(card, true)}
-                                                    className={CARD_CLS}
-                                                />
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
+                            <BlackjackHand cards={playerCards.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
                         </div>
 
                         {/* Round detail lines (below lg where right col is hidden) */}
