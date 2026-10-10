@@ -90,19 +90,19 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 16, scale: 0.98 }}
                         transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-line-gold bg-panel text-text"
+                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-[#945c71] bg-[#290b16] text-text"
                     >
-                        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
+                        <div className="flex items-center justify-between border-b border-[#945c71] px-4 py-3 sm:px-5 sm:py-4">
                             <div>
                                 <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
                                 <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">I Luv Suits Rules</div>
                             </div>
-                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink">×</button>
+                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#945c71] bg-[#421224] text-xl font-bold text-text transition-colors hover:bg-[#56172e] active:bg-[#290b16]">×</button>
                         </div>
                         <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                             <div className="space-y-4 text-base leading-6 text-text">
                                 {RULES_SECTIONS.map(([title, items]) => (
-                                    <div key={title} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                                    <div key={title} className="rounded-[4px] border border-[#945c71] bg-[#421224] p-4">
                                         <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                         <div className="space-y-1">{items.map((s) => <div key={s}>{s}</div>)}</div>
                                     </div>

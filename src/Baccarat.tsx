@@ -304,7 +304,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 >
                     <div className="absolute inset-0 bg-black/70" />
                     <motion.div
-                        className="relative w-full max-w-md rounded-[4px] border border-amber-300/20 bg-panel text-white"
+                        className="relative w-full max-w-md rounded-[4px] border border-[#a35c5c] bg-[#300b0b] text-white"
                         initial={{ opacity: 0, scale: 0.92, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.92, y: 16 }}

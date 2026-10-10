@@ -225,14 +225,14 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close rules modal" />
                 <motion.div initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-line-gold bg-panel text-text"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-[#5a718a] bg-[#0a1623] text-text"
                 >
-                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-[#5a718a] px-4 py-3 sm:px-5 sm:py-4">
                         <div>
                             <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
                             <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">Ultimate Texas Hold&apos;em Rules</div>
                         </div>
-                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink">×</button>
+                        <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#5a718a] bg-[#102439] text-xl font-bold text-text transition-colors hover:bg-[#152e4a] active:bg-[#0a1623]">×</button>
                     </div>
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                         <div className="space-y-4 text-base leading-6 text-text">
@@ -242,7 +242,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                 ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• Dealer also qualifies with Ace-King high.", "• If dealer doesn't qualify and you win, Ante pushes and Play wins 1 to 1."]],
                                 ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
-                                <div key={title as string} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                                <div key={title as string} className="rounded-[4px] border border-[#5a718a] bg-[#102439] p-4">
                                     <div className="mb-2 text-sm font-extrabold text-amber-200">{title as string}</div>
                                     <div className="space-y-1">{(items as string[]).map(s => <div key={s}>{s}</div>)}</div>
                                 </div>

@@ -4,8 +4,8 @@ import { BTN_BASE } from "./shared/money";
 type Props = { onBack: () => void };
 
 const KIND_LABEL: Record<ChangeKind, string> = { new: "New", improved: "Improved", fixed: "Fixed" };
-// the left edge of the tag tells the kinds apart: red, white, gray
-const KIND_STYLE: Record<ChangeKind, string> = { new: "border-l-room-accent", improved: "border-l-room-text", fixed: "border-l-room-line-hover" };
+// red means New and nothing else on this page: every other kind is a plain outlined tag
+const KIND_STYLE: Record<ChangeKind, string> = { new: "tag-new", improved: "", fixed: "" };
 const BTN_PLAIN = `${BTN_BASE} border-room-line bg-room-deep text-room-text hover:bg-room-raised active:bg-room-panel`;
 
 export default function WhatsNew({ onBack }: Props) {
@@ -29,7 +29,7 @@ export default function WhatsNew({ onBack }: Props) {
                             key={entry.version}
                             data-version={entry.version}
                             data-testid="release-card"
-                            className={`rounded-[4px] border bg-room-panel p-4 ${i === 0 ? "border-room-line border-l-4 border-l-room-accent" : "border-room-line"}`}
+                            className={`rounded-[4px] border bg-room-panel p-4 ${i === 0 ? "border-room-line-hover" : "border-room-line"}`}
                         >
                             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                                 <h2 className="text-room-text">
@@ -40,11 +40,13 @@ export default function WhatsNew({ onBack }: Props) {
                                     {formatChangeDate(entry.date)}{i === 0 ? " · Latest" : ""}
                                 </span>
                             </div>
-                            <ul className="mt-4 space-y-2">
+                            <ul className="mt-4 space-y-3">
                                 {entry.changes.map(([kind, text]) => (
-                                    <li key={text} className="flex items-start gap-3 text-base leading-6 text-room-text">
-                                        <span className={`tag w-[92px] shrink-0 ${KIND_STYLE[kind]}`} data-testid="tag">
-                                            {KIND_LABEL[kind]}
+                                    <li key={text} className="flex flex-col items-start gap-1 text-base leading-6 text-room-text sm:flex-row sm:gap-3">
+                                        <span className="shrink-0 sm:w-[88px]">
+                                            <span className={`tag ${KIND_STYLE[kind]}`} data-testid="tag">
+                                                {KIND_LABEL[kind]}
+                                            </span>
                                         </span>
                                         <span>{text}</span>
                                     </li>

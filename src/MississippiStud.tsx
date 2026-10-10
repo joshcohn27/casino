@@ -423,7 +423,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-white/10 bg-zinc-950 p-6">
+            <div className="relative max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-[4px] border border-[#5a9471] bg-[#0a2916] p-6">
                 <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-gold-soft">
                         Mississippi Stud Rules

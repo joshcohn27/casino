@@ -663,7 +663,7 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
             <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-4" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
                 <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close"/>
                 <motion.div initial={{opacity:0,y:20,scale:0.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:0.98}} transition={{duration:0.2,ease:"easeOut"}}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[760px] overflow-hidden rounded-[4px] border border-amber-300/20 bg-panel text-white"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[760px] overflow-hidden rounded-[4px] border border-[#5b9471] bg-[#0a2916] text-white"
                 >
                     <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                         <div>
@@ -686,7 +686,7 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
                             ["Payouts", ["Straight up 35 to 1","Split 17 to 1","Street 11 to 1","Corner 8 to 1","Dozen / Column 2 to 1","Red/Black · Even/Odd · 1-18/19-36  1 to 1"]],
                             ["House Rules", ["American wheel — 38 pockets (0, 00, 1–36).","0 and 00 are green; not red/black, odd/even, or high/low.","Payouts include return of the original wager plus profit.","Six-line bets are not offered on this layout."]],
                         ] as [string, string[]][]).map(([title, items]) => (
-                            <div key={title} className="rounded-[4px] border border-line bg-panel-2 p-4">
+                            <div key={title} className="rounded-[4px] border border-[#5b9471] bg-[#114224] p-4">
                                 <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                 <div className="space-y-1">{items.map(s=><div key={s}>• {s}</div>)}</div>
                             </div>

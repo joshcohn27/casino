@@ -69,19 +69,23 @@ body {
   html[data-font="large"] h3 { font-size: 18px; }
 }
 
-/* A small square-cornered tag: a word with a colored left edge.
-   It sits in the components layer so an edge color class can override the default. */
+/* A small square-cornered tag, sized to its text. Outlined by default; New is solid red. */
 @layer components {
   .tag {
     display: inline-block;
-    border-left: 3px solid var(--color-room-line-hover);
+    border: 1px solid var(--color-room-line-hover);
     border-radius: 2px;
-    padding: 1px 8px;
-    font-size: 14px;
+    padding: 4px 8px;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.4;
-    color: var(--color-room-text);
-    background: var(--color-room-deep);
+    line-height: 14px;
+    color: #d0d0d0;
+    background: transparent;
+  }
+  .tag-new {
+    border-color: var(--color-room-red);
+    color: #ffffff;
+    background: var(--color-room-red);
   }
 }
 

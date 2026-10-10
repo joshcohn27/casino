@@ -530,9 +530,9 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.98 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[4px] border border-amber-200/20 bg-panel text-white"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[820px] overflow-hidden rounded-[4px] border border-[#a35c5c] bg-[#300b0b] text-white"
                 >
-                    <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="flex items-center justify-between border-b border-[#a35c5c] px-4 py-3 sm:px-5 sm:py-4">
                         <div>
                             <div className="text-[13px] font-extrabold text-amber-200/90">
                                 Game Info
@@ -543,7 +543,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-line bg-panel-2 text-xl font-bold text-text transition-colors hover:bg-line active:bg-ink"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#a35c5c] bg-[#4f1212] text-xl font-bold text-text transition-colors hover:bg-[#661717] active:bg-[#300b0b]"
                             aria-label="Close rules modal"
                         >
                             ×
@@ -553,7 +553,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                         <div className="grid gap-3 text-sm leading-6 text-amber-50 sm:grid-cols-2">
                             {sections.map((section) => (
-                                <div key={section.title} className="rounded-[4px] border border-white/10 bg-white/[0.055] p-4">
+                                <div key={section.title} className="rounded-[4px] border border-[#a35c5c] bg-[#4f1212] p-4">
                                     <div className="mb-2 text-sm font-extrabold text-amber-200">
                                         {section.title}
                                     </div>
