@@ -59,7 +59,7 @@ const SHOE_SIZE = SHOE_DECKS * 52;
 const SHUFFLE_PENETRATION = 0.82;
 const RESHUFFLE_REMAINING = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 const SHUFFLE_DELAY_MS = 1800;
-// The deal comes out one card at a time: player, dealer, dealer
+// The deal comes out one card at a time: dealer's up card, the player's card, dealer's down card
 const DEAL_CARD_MS = 380;
 
 const BET_STORAGE_KEY = "double-down-madness-main-bet";
@@ -321,7 +321,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function DDMBar({
     stage, isShuffling, bet, sideBet, bankroll,
-    canDouble, canHit, canStand, canTakeInsurance,
+    canDouble, doubleForLess, canHit, canStand, canTakeInsurance,
     doubleWagersCount, canDealFromDone,
     selectedChip, onChipSelect,
     onClear, onDeal, onChangeBet, onTakeInsurance, onNoInsurance,
@@ -329,7 +329,7 @@ function DDMBar({
 }: {
     stage: Stage; isShuffling: boolean;
     bet: number; sideBet: number; bankroll: number;
-    canDouble: boolean; canHit: boolean; canStand: boolean; canTakeInsurance: boolean;
+    canDouble: boolean; doubleForLess: boolean; canHit: boolean; canStand: boolean; canTakeInsurance: boolean;
     doubleWagersCount: number; canDealFromDone: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
     onClear: () => void; onDeal: () => void; onChangeBet: () => void;
@@ -409,7 +409,7 @@ function DDMBar({
                                 onClick={onDouble}
                                 disabled={!canDouble}
                             >
-                                {doubleWagersCount > 0 ? "Re-Double" : "Double"}
+                                {doubleForLess ? "Double for Less" : doubleWagersCount > 0 ? "Re-Double" : "Double"}
                             </button>
                         </SlideBtn>
                     )}
@@ -525,7 +525,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const canTakeInsurance = stage === "insurance" && insuranceOffered;
     const canHit = stage === "player" && playerTotal < 21;
     const canStand = stage === "player" && playerTotal < 21;
-    const canDouble = stage === "player" && playerTotal < 21 && bankroll >= nextDoubleAmount;
+    // A double can be for less than the full step: with a short balance, whatever is left goes on
+    const canDouble = stage === "player" && playerTotal < 21 && bankroll > 0;
+    const doubleForLess = canDouble && bankroll < nextDoubleAmount;
 
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
@@ -662,12 +664,13 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         setDeck(d2.nextDeck);
         setDealerRevealCount(1);
 
-        // one card to the player, then the dealer's two. The dealer's second stays face down.
+        // the dealer's first card comes out face up, then the player's card, then the dealer's
+        // second card face down
         setStage("dealing");
         setMessage("Dealing...");
-        setPlayerCards(currentPlayer);
-        await wait(DEAL_CARD_MS);
         setDealerCards([currentDealer[0]]);
+        await wait(DEAL_CARD_MS);
+        setPlayerCards(currentPlayer);
         await wait(DEAL_CARD_MS);
         setDealerCards(currentDealer);
         await wait(DEAL_CARD_MS);
@@ -841,20 +844,22 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
     const doubleDown = async () => {
         if (stage !== "player") return;
-        if (bankroll < nextDoubleAmount) {
+        // the full step, or the rest of the balance if that is less
+        const doubleAmount = Math.min(nextDoubleAmount, bankroll);
+        if (doubleAmount <= 0) {
             setMessage("Not enough bankroll to double.");
             return;
         }
 
-        setBankroll((b) => b - nextDoubleAmount);
-        setDoubleWagers((prev) => [...prev, nextDoubleAmount]);
+        setBankroll((b) => b - doubleAmount);
+        setDoubleWagers((prev) => [...prev, doubleAmount]);
 
         const drawn = drawOne(deck);
         if (!drawn.card) return;
 
         const sidewaysCard = { ...drawn.card, sideways: true };
         const nextPlayer = [...playerCards, sidewaysCard];
-        const nextMainRisk = totalRiskOnMain + nextDoubleAmount;
+        const nextMainRisk = totalRiskOnMain + doubleAmount;
 
         setDeck(drawn.nextDeck);
         setPlayerCards(nextPlayer);
@@ -988,6 +993,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         sideBet={sideBet}
                         bankroll={bankroll}
                         canDouble={canDouble}
+                        doubleForLess={doubleForLess}
                         canHit={canHit}
                         canStand={canStand}
                         canTakeInsurance={canTakeInsurance}
@@ -1035,6 +1041,15 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 ].map(({ label, amount }) => (
                                     <Row key={label} label={label} value={formatMoney(amount)} />
                                 ))}
+                            </div>
+                        </InfoPanel>
+
+                        <InfoPanel title="Push 22">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2 text-sm">
+                                    <span className="text-zinc-400">Dealer finishes on 22</span>
+                                    <span className="font-bold text-gold">12 to 1</span>
+                                </div>
                             </div>
                         </InfoPanel>
 

@@ -219,13 +219,13 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
 //   done    → Clear · Change Bet · Deal · Double & Deal
 
 function BlackjackBar({
-    stage, isShuffling, bet, bankroll, canDouble, canSplit, isResolvingAction,
+    stage, isShuffling, bet, bankroll, canDouble, doubleForLess, canSplit, isResolvingAction,
     selectedChip, onChipSelect,
     onClear, onChangeBet, onDeal, onDoubleAndDeal,
     onHit, onStay, onDouble, onSplit,
 }: {
     stage: Stage; isShuffling: boolean; bet: number; bankroll: number;
-    canDouble: boolean; canSplit: boolean; isResolvingAction: boolean;
+    canDouble: boolean; doubleForLess: boolean; canSplit: boolean; isResolvingAction: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
     onClear: () => void; onChangeBet: () => void; onDeal: () => void; onDoubleAndDeal: () => void;
     onHit: () => void; onStay: () => void; onDouble: () => void; onSplit: () => void;
@@ -311,7 +311,7 @@ function BlackjackBar({
                     )}
                     {isPlayer && (
                         <SlideBtn key="double">
-                            <button className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>Double</button>
+                            <button className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>{doubleForLess ? "Double for Less" : "Double"}</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
@@ -662,10 +662,11 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         if (isResolvingAction) return;
         setIsResolvingAction(true);
         try {
-            const wager = bets[active];
-            if (bankroll < wager) return;
+            // the full bet again, or the rest of the balance if that is less
+            const wager = Math.min(bets[active], bankroll);
+            if (wager <= 0) return;
             setBankroll((b) => b - wager);
-            const nextBets = [...bets]; nextBets[active] *= 2; setBets(nextBets);
+            const nextBets = [...bets]; nextBets[active] += wager; setBets(nextBets);
             const nextDeck = [...deck]; const drawn = nextDeck.shift(); if (!drawn) return;
             const card: Card = { ...drawn, sideways: true };
             const nextHands = [...hands]; nextHands[active] = [...nextHands[active], card];
@@ -729,7 +730,9 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const canSplit =
         stage === "player" && activeHand.length === 2 && hands.length < MAX_HANDS &&
         activeHand[0]?.value === activeHand[1]?.value && bankroll >= (bets[active] ?? 0);
-    const canDouble = stage === "player" && activeHand.length === 2 && bankroll >= (bets[active] ?? 0);
+    // A double can be for less than the bet: with a short balance, whatever is left goes on the hand
+    const canDouble = stage === "player" && activeHand.length === 2 && bankroll > 0;
+    const doubleForLess = canDouble && bankroll < (bets[active] ?? 0);
     const dealerT = dealer.length ? total(dealer) : 0;
     const dealerBusted = dealerT > 21;
 
@@ -757,6 +760,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                         bet={bet}
                         bankroll={bankroll}
                         canDouble={canDouble}
+                        doubleForLess={doubleForLess}
                         canSplit={canSplit}
                         isResolvingAction={isResolvingAction}
                         selectedChip={selectedChip}

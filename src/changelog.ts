@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.7",
+        date: "2026-10-10",
+        title: "Double for less",
+        changes: [
+            ["new", "Blackjack, Free Bet Blackjack and Double Down Madness: if you cannot cover a full double, the button becomes Double for Less and puts in the rest of your balance."],
+            ["improved", "Double Down Madness: the dealer's up card is dealt first, then your card, then the dealer's face-down card."],
+            ["improved", "Double Down Madness: the Push 22 payout is now shown on the table."],
+        ],
+    },
+    {
         version: "4.1.6",
         date: "2026-10-10",
         title: "Real-table dealing at every blackjack table",

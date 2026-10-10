@@ -41,6 +41,8 @@ type HandState = {
     cards: Card[];
     baseBet: HandBet;
     doubleType: DoubleType;
+    /** What a paid double cost. Less than the base bet when the player doubled for less. */
+    doubleAmount?: number;
     splitDepth: number;
     result: string;
     settlementText: string[];
@@ -233,7 +235,7 @@ function getHandOutcomeLabel(
 
 function getHandMoneyAtRisk(hand: HandState) {
     const baseRisk = hand.baseBet.isFree ? 0 : hand.baseBet.amount;
-    const doubleRisk = hand.doubleType === "paid" ? hand.baseBet.amount : 0;
+    const doubleRisk = hand.doubleType === "paid" ? (hand.doubleAmount ?? hand.baseBet.amount) : 0;
     return baseRisk + doubleRisk;
 }
 
@@ -246,6 +248,7 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
     const result = getHandOutcomeLabel(handTotal, dealerTotal, dealerHas22, busted, dealerBusted);
 
     const baseAmount = hand.baseBet.amount;
+    const doubleAmount = hand.doubleAmount ?? baseAmount;
     const basePaid = !hand.baseBet.isFree;
     const paidDouble = hand.doubleType === "paid";
     const freeDouble = hand.doubleType === "free";
@@ -273,8 +276,8 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
             lines.push(`Free split win: ${formatMoney(baseAmount)} profit.`);
         }
         if (paidDouble) {
-            totalReturn += baseAmount * 2;
-            lines.push(`Paid double return: ${formatMoney(baseAmount * 2)}.`);
+            totalReturn += doubleAmount * 2;
+            lines.push(`Paid double return: ${formatMoney(doubleAmount * 2)}.`);
         }
         if (freeDouble) {
             totalReturn += baseAmount;
@@ -291,8 +294,8 @@ function settleHand(hand: HandState, dealerCards: Card[]) {
             lines.push("Free split hand pushes. Free token removed.");
         }
         if (paidDouble) {
-            totalReturn += baseAmount;
-            lines.push(`Paid double push: ${formatMoney(baseAmount)} returned.`);
+            totalReturn += doubleAmount;
+            lines.push(`Paid double push: ${formatMoney(doubleAmount)} returned.`);
         }
         if (freeDouble) {
             lines.push("Free double pushes. Free token removed.");
@@ -409,7 +412,9 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
     const betTag = hand.baseBet.isFree ? "Free" : "Paid";
     const doubleSuffix =
         hand.doubleType === "free" ? " + Free ×2" :
-        hand.doubleType === "paid" ? " + Paid ×2" : "";
+        hand.doubleType === "paid"
+            ? (hand.doubleAmount !== undefined && hand.doubleAmount < hand.baseBet.amount ? ` + ${formatMoney(hand.doubleAmount)} double` : " + Paid ×2")
+            : "";
 
     void dealerTotal;
     void stage;
@@ -565,13 +570,13 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function FreeBetBar({
     stage, isShuffling, bet, buyIn, bankroll,
-    canDouble, canSplit, isFreeDouble, isFreeSplitAction, isResolvingAction,
+    canDouble, doubleForLess, canSplit, isFreeDouble, isFreeSplitAction, isResolvingAction,
     canDealFromDone,
     selectedChip, onChipSelect,
     onClear, onChangeBet, onDeal, onHit, onStay, onDouble, onSplit,
 }: {
     stage: Stage; isShuffling: boolean; bet: number; buyIn: number; bankroll: number;
-    canDouble: boolean; canSplit: boolean; isFreeDouble: boolean; isFreeSplitAction: boolean;
+    canDouble: boolean; doubleForLess: boolean; canSplit: boolean; isFreeDouble: boolean; isFreeSplitAction: boolean;
     isResolvingAction: boolean;
     canDealFromDone: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
@@ -632,7 +637,7 @@ function FreeBetBar({
                                 onClick={onDouble}
                                 disabled={!canDouble || isResolvingAction}
                             >
-                                {isFreeDouble ? "Free Double" : "Double"}
+                                {isFreeDouble ? "Free Double" : doubleForLess ? "Double for Less" : "Double"}
                             </button>
                         </SlideBtn>
                     )}
@@ -1179,13 +1184,14 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         if (!activeHand) return;
         if (activeHand.cards.length !== 2) return;
         const freeDouble = isHardFreeDouble(activeHand.cards);
-        const cost = freeDouble ? 0 : activeHand.baseBet.amount;
-        if (bankroll < cost) return;
+        // a paid double costs the bet again, or the rest of the balance if that is less
+        const cost = freeDouble ? 0 : Math.min(activeHand.baseBet.amount, bankroll);
+        if (!freeDouble && cost <= 0) return;
         if (cost > 0) setBankroll((b) => b - cost);
 
         const nextTokenCount = freeDouble ? freeBetTokens + 1 : freeBetTokens;
         const nextHands = [...hands];
-        nextHands[active] = { ...nextHands[active], doubleType: freeDouble ? "free" : "paid" };
+        nextHands[active] = { ...nextHands[active], doubleType: freeDouble ? "free" : "paid", doubleAmount: freeDouble ? undefined : cost };
         const nextDeck = [...deck];
         const drawn = nextDeck.shift();
         if (!drawn) return;
@@ -1212,7 +1218,8 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
     const canDouble =
         stage === "player" && !!activeHand && activeHand.cards.length === 2 &&
-        (isHardFreeDouble(activeHand.cards) || bankroll >= activeHand.baseBet.amount);
+        (isHardFreeDouble(activeHand.cards) || bankroll > 0);
+    const doubleForLess = canDouble && !!activeHand && !isHardFreeDouble(activeHand.cards) && bankroll < activeHand.baseBet.amount;
 
     // ── UI handlers ───────────────────────────────────────────────────────────
 
@@ -1331,6 +1338,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                         buyIn={buyIn}
                         bankroll={bankroll}
                         canDouble={canDouble}
+                        doubleForLess={doubleForLess}
                         canSplit={canSplit}
                         isFreeDouble={isFreeDouble}
                         isFreeSplitAction={isFreeSplitAction}
