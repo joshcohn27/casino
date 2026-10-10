@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ActionBar from "./shared/ActionBar";
 import { type ChipDenomination, formatMoney } from "./shared/money";
+import { useHandRecorder } from "./shared/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -703,6 +704,7 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
 interface Props { bankroll:number; setBankroll: React.Dispatch<React.SetStateAction<number>>; }
 
 export default function Roulette({bankroll, setBankroll}: Props) {
+    const recordHand = useHandRecorder();
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(5);
     const [bets,         setBets]         = useState<Record<string,number>>({});
     const [message,      setMessage]      = useState("Click the layout to place bets, then spin.");
@@ -778,6 +780,7 @@ export default function Roulette({bankroll, setBankroll}: Props) {
             });
             const net=totalReturn-totalBet, color=getNumberColor(result);
             setBankroll(b=>b+totalReturn);
+            recordHand(totalBet, net);
             setLastResult(result);
             setRecentResults(prev=>[result,...prev].slice(0,15));
             setSpinSummary({result,color,totalBet,totalReturn,net,winningBets,losingBets});

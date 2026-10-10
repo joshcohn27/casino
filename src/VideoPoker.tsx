@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react"
 import { defaultBet } from "./shared/settings"
+import { useHandRecorder } from "./shared/sessionContext"
 import VideoPokerBonus from "./VideoPokerBonus"
 import VideoPokerDeuces from "./VideoPokerDeuces"
 
@@ -35,9 +36,7 @@ type Stage = "ready" | "dealt" | "drawn"
 type PayoutKey =
     | "royalFlush"
     | "straightFlush"
-    | "fourAces"
-    | "four234"
-    | "four5k"
+    | "fourKind"
     | "fullHouse"
     | "flush"
     | "straight"
@@ -59,9 +58,7 @@ const DENOM_VALUES = [1, 2, 5, 10, 25] as const
 const PAY_TABLE: { key: PayoutKey; label: string; pays: [number, number, number, number, number] }[] = [
     { key: "royalFlush", label: "ROYAL FLUSH", pays: [250, 500, 750, 1000, 4000] },
     { key: "straightFlush", label: "STRAIGHT FLUSH", pays: [50, 100, 150, 200, 250] },
-    { key: "fourAces", label: "4 ACES", pays: [80, 160, 240, 320, 400] },
-    { key: "four234", label: "4 2s, 3s, 4s", pays: [40, 80, 120, 160, 200] },
-    { key: "four5k", label: "4 5s THRU KINGS", pays: [25, 50, 75, 100, 125] },
+    { key: "fourKind", label: "4 OF A KIND", pays: [25, 50, 75, 100, 125] },
     { key: "fullHouse", label: "FULL HOUSE", pays: [7, 14, 21, 28, 35] },
     { key: "flush", label: "FLUSH", pays: [5, 10, 15, 20, 25] },
     { key: "straight", label: "STRAIGHT", pays: [4, 8, 12, 16, 20] },
@@ -174,18 +171,10 @@ function evaluateHand(hand: Card[], creditsBet: number, denom: number): EvalResu
         return { key: "straightFlush", label: "STRAIGHT FLUSH", payout: payoutFor("straightFlush") }
     }
 
+    // Jacks or Better pays every four of a kind the same. The extra for aces and for 2s to 4s
+    // belongs to Bonus Poker.
     if (isFour) {
-        const fourRank = groups[0][0]
-
-        if (fourRank === 14) {
-            return { key: "fourAces", label: "4 ACES", payout: payoutFor("fourAces") }
-        }
-
-        if (fourRank === 2 || fourRank === 3 || fourRank === 4) {
-            return { key: "four234", label: "4 2s, 3s, 4s", payout: payoutFor("four234") }
-        }
-
-        return { key: "four5k", label: "4 5s THRU KINGS", payout: payoutFor("four5k") }
+        return { key: "fourKind", label: "4 OF A KIND", payout: payoutFor("fourKind") }
     }
 
     if (isFullHouse) {
@@ -354,6 +343,7 @@ function DenomBadge({
 }
 
 export default function VideoPoker({ bankroll, setBankroll }: Props) {
+    const recordHand = useHandRecorder()
     const [game, setGame] = useState<"jacks" | "bonus" | "deuces">("jacks")
     const [stage, setStage] = useState<Stage>("ready")
     const [bet, setBet] = useState(() => defaultBet("videopoker", "credits"))
@@ -420,6 +410,7 @@ export default function VideoPoker({ bankroll, setBankroll }: Props) {
         if (result.payout > 0) {
             setBankroll((current) => current + result.payout)
         }
+        recordHand(totalBet, result.payout - totalBet)
     }
 
     const onDealDraw = () => {

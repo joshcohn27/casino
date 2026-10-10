@@ -21,6 +21,34 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.3.0",
+        date: "2026-10-10",
+        title: "Session stats",
+        changes: [
+            ["new", "Every table now shows your session in the top left: hands played, your average bet, and how much you are up or down."],
+            ["new", "A session lasts for as long as you stay at one game. It starts over when you play a hand at a different game, or when you close the site and come back."],
+        ],
+    },
+    {
+        version: "4.2.0",
+        date: "2026-10-10",
+        title: "Side Bet Blackjack",
+        changes: [
+            ["new", "New game: Side Bet Blackjack. Classic blackjack with six side bets you can mix and match."],
+            ["new", "Blazing 7s: a $5 progressive that pays on 7s in your two cards and the dealer's up card. Three 7s of diamonds win the whole jackpot."],
+            ["new", "TriLux, King's Bounty, Lucky Ladies, Match the Dealer and Fortune side bets, each with its pay table on the felt."],
+            ["new", "Holding two 7s on a Blazing 7s bet? The dealer's card stays face down until you choose to turn it over."],
+            ["new", "The Blazing 7s jackpot grows as other players bet, and now and then one of them wins it."],
+            ["improved", "Double Down Madness: the Double Ladder lights up the step your hand is on."],
+            ["fixed", "Double Down Madness: the rules and the pay table now show the Push 22 payout correctly as 11 to 1."],
+            ["fixed", "Three Card Poker: when you and the dealer both have a pair, the higher pair now wins. A-2-3 is now the lowest straight."],
+            ["fixed", "Ultimate Texas Hold'em: the dealer needs a pair or better to qualify. Ace-King high no longer counts."],
+            ["fixed", "Ultimate Texas Hold'em: when the dealer doesn't qualify, your Ante comes back even if the dealer has the better hand, unless you folded."],
+            ["fixed", "Video Poker: Jacks or Better now pays every four of a kind the same, as the real game does."],
+            ["fixed", "Double Down Madness: the message now says how the hand ended."],
+        ],
+    },
+    {
         version: "4.1.7",
         date: "2026-10-10",
         title: "Double for less",
