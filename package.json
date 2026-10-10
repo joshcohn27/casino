@@ -1,7 +1,7 @@
 {
   "name": "ultimate-texas-holdem",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "motion": "^12.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-router": "^7.18.4",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
