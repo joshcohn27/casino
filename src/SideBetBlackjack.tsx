@@ -14,8 +14,10 @@ import {
     BLAZING_BET, BLAZING_TABLE, TRILUX_TABLE, KINGS_BOUNTY_TABLE, LUCKY_LADIES_TABLE, MATCH_DEALER_TABLE, FORTUNE_TABLE,
     BLAZING_CONTRIBUTION, BLAZING_METER_SEED,
     blazing7s, trilux, kingsBounty, luckyLadies, matchDealer, fortune,
-    readBlazingMeter, writeBlazingMeter, growBlazingMeter,
+    type BlazingOtherHit,
+    readBlazingMeter, writeBlazingMeter, growBlazingMeter, simulateBlazingPlayers,
 } from "./sideBetLogic";
+import { makeRng, ambientHands } from "./shared/progressiveMeter";
 
 // Side Bet Blackjack: classic blackjack (six decks, blackjack pays 3 to 2, dealer stands on
 // all 17s) with six side bets. Every side bet is decided by the first cards dealt: your two
@@ -52,8 +54,10 @@ const DEAL_CARD_MS = 380;
 const DEALER_SCOOP_MS = 180;
 // How long a side bet payout sits on its spot before it is picked up
 const SIDE_PAYOUT_SHOWN_MS = 2600;
-// How often the jackpot meter ticks up on its own while the table is open
-const METER_TICK_MS = 4000;
+// How often other players' bets are added to the jackpot while the table is open
+const METER_TICK_MS = 2500;
+// How long the notice stays up when another player wins from the jackpot
+const OTHER_HIT_NOTICE_MS = 9000;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const FELT_COLOR = "#0d4f4a";
@@ -476,10 +480,23 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
     const [meter, setMeter] = useState<number>(readBlazingMeter);
     const meterRef = useRef(meter);
     useEffect(() => { meterRef.current = meter; writeBlazingMeter(meter); }, [meter]);
+    // Other players: every few seconds a few simulated bets feed the jackpot, and each one has
+    // the real chance of winning it. They use their own random numbers, never the shoe's.
+    const [otherHit, setOtherHit] = useState<BlazingOtherHit | null>(null);
     useEffect(() => {
-        const id = window.setInterval(() => setMeter((m) => growBlazingMeter(m, 0.5 + Math.random() * 2.5)), METER_TICK_MS);
+        const rng = makeRng(Date.now());
+        const id = window.setInterval(() => {
+            const next = simulateBlazingPlayers(meterRef.current, ambientHands(), rng);
+            setMeter(next.meter);
+            if (next.hit) setOtherHit(next.hit);
+        }, METER_TICK_MS);
         return () => window.clearInterval(id);
     }, []);
+    useEffect(() => {
+        if (!otherHit) return;
+        const id = window.setTimeout(() => setOtherHit(null), OTHER_HIT_NOTICE_MS);
+        return () => window.clearTimeout(id);
+    }, [otherHit]);
 
     // set by the Reveal Dealer Card button, to let the deal carry on
     const revealWaiter = useRef<(() => void) | null>(null);
@@ -987,6 +1004,17 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
 
                     {/* Center column */}
                     <div className="relative flex w-full flex-col items-center gap-3 py-2 lg:flex-1">
+
+                        {otherHit && (
+                            <div
+                                data-testid="other-hit"
+                                className="rounded-[4px] border border-red-400/30 bg-black/70 px-3 py-1.5 text-center text-[12px] font-semibold text-red-200 lg:absolute lg:right-0 lg:top-2 lg:z-10 lg:max-w-[230px]"
+                            >
+                                {otherHit.kind === "jackpot"
+                                    ? `Another player hit three 7s of diamonds and took the ${formatMoney(otherHit.amount)} jackpot. The meter has reset.`
+                                    : `Another player hit three suited 7s for ${formatMoney(otherHit.amount)}.`}
+                            </div>
+                        )}
 
                         <DealerLane cards={dealer} revealedCount={dealerRevealedCount} stage={stage} scoop={dealerScoop} />
 

@@ -202,8 +202,9 @@ export function fortune(player: SideCard[], dealerUp: SideCard): SideOutcome | n
 }
 
 // ─── the Blazing 7s jackpot meter ─────────────────────────────────────────────
-// Kept in the browser so it carries on between visits. It grows a little from every $5 bet,
-// and on its own while the table is open, standing in for the other tables linked to it.
+// Kept in the browser so it carries on between visits. It grows from every $5 bet, and from
+// simulated bets by other people while the table is open, standing in for the other tables
+// linked to it. Those players can also win it.
 
 export const BLAZING_METER_KEY = "blazing7s-progressive-meter";
 export const BLAZING_METER_SEED = 50000;
@@ -227,4 +228,40 @@ export function writeBlazingMeter(value: number): void {
 export function growBlazingMeter(meter: number, amount: number): number {
     const next = cents(meter + amount);
     return next > BLAZING_METER_CAP ? BLAZING_METER_SEED : next;
+}
+
+// ─── other players ────────────────────────────────────────────────────────────
+// Out of the 5,013,320 ways to draw three cards from six decks:
+const THREE_CARD_DEALS = 5013320;
+const THREE_DIAMOND_SEVENS = 20;   // wins the whole jackpot
+const THREE_SUITED_SEVENS = 60;    // clubs, hearts or spades: wins 10% of it
+
+export type BlazingOtherHit = { kind: "jackpot" | "suited"; amount: number };
+
+/**
+ * Play `hands` Blazing 7s bets by other people. Each one feeds the meter, and each has the real
+ * chance of three 7s of diamonds (the whole jackpot, back to the seed) or three suited 7s (10%).
+ * Returns the meter afterwards and the biggest hit, if there was one.
+ */
+export function simulateBlazingPlayers(meter: number, hands: number, rng: () => number): { meter: number; hit: BlazingOtherHit | null } {
+    let m = meter;
+    let hit: BlazingOtherHit | null = null;
+    for (let i = 0; i < hands; i++) {
+        m += BLAZING_CONTRIBUTION;
+        const roll = rng() * THREE_CARD_DEALS;
+        if (roll < THREE_DIAMOND_SEVENS) {
+            hit = { kind: "jackpot", amount: cents(m) };
+            m = BLAZING_METER_SEED;
+        } else if (roll < THREE_DIAMOND_SEVENS + THREE_SUITED_SEVENS) {
+            const amount = cents(m * 0.1);
+            if (!hit || hit.kind !== "jackpot") hit = { kind: "suited", amount };
+            m = Math.max(BLAZING_METER_SEED, m - amount);
+        }
+    }
+    // reached the cap without being hit: another player takes it
+    if (m >= BLAZING_METER_CAP) {
+        hit = { kind: "jackpot", amount: BLAZING_METER_CAP };
+        m = BLAZING_METER_SEED;
+    }
+    return { meter: cents(m), hit };
 }
