@@ -803,7 +803,7 @@ function PaiGowBar({
     canRebet: boolean;
     dealerSetting: boolean;
     playerReady: boolean;
-    /** Dealer has Ace-high: the table finishes the hand itself, so there is nothing to press. */
+    /** Dealer has Ace-high: once the player's cards are up the table sets them and ends the hand. */
     autoFinishing: boolean;
     onRevealAll: () => void;
     onChipSelect: (c: ChipDenomination) => void;
@@ -828,7 +828,7 @@ function PaiGowBar({
                             <button className={BTN_GOLD} onClick={onDeal}>Deal</button>
                         </SlideBtn>
                     )}
-                    {stage === "setting" && !autoFinishing && !playerReady && (
+                    {stage === "setting" && !playerReady && (
                         <SlideBtn key="reveal">
                             <button className={BTN_GOLD} onClick={onRevealAll} disabled={dealerSetting}>Reveal Cards</button>
                         </SlideBtn>
@@ -1062,7 +1062,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setNet(null);
         setRoundReturned(0);
         setMessage(getHighPaiGowInfo(d).aceHigh
-            ? "Dealer has Ace-high pai gow. Main bet pushes."
+            ? "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards."
             : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
     }
 
@@ -1124,16 +1124,13 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setMessage("Showdown complete.");
     }
 
-    // Dealer Ace-high pushes the main bet, so there is nothing for the player to decide. Once the
-    // dealer's hand is set, the player's cards turn over, are set the best way, and the hand ends.
+    // Dealer Ace-high pushes the main bet, so there is nothing for the player to decide. The player
+    // still turns their own cards over. Once all seven are up, the hand is set for them and ends.
     const autoFinishing = stage === "setting" && !!dealerAceHighInfo?.aceHigh;
     useEffect(() => {
-        if (!autoFinishing || revealStep < DEALER_SET) return;
+        if (!autoFinishing || revealStep < DEALER_SET || !playerSorted) return;
         let id: number;
-        if (!playerSorted) {
-            if (peeled.length > 0) return;
-            id = window.setTimeout(revealAll, 700);
-        } else if (selectedFrontIds.length !== 2) {
+        if (selectedFrontIds.length !== 2) {
             // set the way the dealer would: nothing rides on it, so it should simply look right
             id = window.setTimeout(() => setSelectedFrontIds(evaluateDealerHouseWay(playerCards).front.map((c) => c.id)), 600);
         } else {
@@ -1141,7 +1138,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         }
         return () => window.clearTimeout(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoFinishing, revealStep, playerSorted, peeled.length, selectedFrontIds]);
+    }, [autoFinishing, revealStep, playerSorted, selectedFrontIds]);
 
     function handleChangeBet() {
         setPlayerCards([]);
@@ -1241,7 +1238,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         : dealerSetting ? "Dealer is setting their hand..."
         : !playerReady || autoFinishing
             ? (dealerAceHighInfo?.aceHigh
-                ? "Dealer has Ace-high pai gow. Main bet pushes."
+                ? (playerReady ? "Dealer has Ace-high pai gow. Main bet pushes." : "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards.")
                 : "Tap your cards to turn them over, or press Reveal Cards.")
         : message;
 
@@ -1461,7 +1458,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         const style = lowCol >= 0
                                             ? slotStyle(0, lowCol, 2, PLAYER_ROW_STEP, 10 + lowCol)
                                             : slotStyle(1, rowCol, playerRowCards.length, PLAYER_ROW_STEP, 20 + rowCol);
-                                        const canClick = stage === "setting" && !dealerSetting && !autoFinishing && (!isPeeled || playerReady);
+                                        const canClick = stage === "setting" && !dealerSetting && (!isPeeled || (playerReady && !autoFinishing));
                                         return (
                                             <div key={card.id} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
                                                 <motion.button

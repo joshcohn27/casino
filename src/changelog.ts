@@ -21,12 +21,20 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.0.4",
+        date: "2026-10-09",
+        title: "Pai Gow Ace-high reveal",
+        changes: [
+            ["improved", "Pai Gow Poker: on a dealer Ace-high you still turn over your own cards. Once all seven are up, the hand finishes."],
+        ],
+    },
+    {
         version: "4.0.3",
         date: "2026-10-09",
         title: "Pai Gow dealer fixes",
         changes: [
             ["fixed", "Pai Gow Poker: the dealer now keeps a straight or flush together instead of breaking it up to play high cards in the Low hand."],
-            ["improved", "Pai Gow Poker: when the dealer has Ace-high, the main bet pushes and the hand finishes by itself. Your cards are turned over and set for you."],
+            ["improved", "Pai Gow Poker: when the dealer has Ace-high, the main bet pushes. Turn over your cards and the hand finishes by itself, with your hand set for you."],
             ["improved", "Pai Gow Poker: the table now reads \"Dealer Ace High Pushes\"."],
         ],
     },
