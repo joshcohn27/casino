@@ -113,7 +113,7 @@ const CARD_TRANSITION = (delay: number) => ({
 
 function Chip({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex rounded-full border border-amber-300/25 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-100">
+        <div className="inline-flex rounded-[2px] border border-amber-300/25 bg-black/30 px-3 py-1 text-sm font-bold text-amber-100">
             {children}
         </div>
     );
@@ -128,7 +128,7 @@ const BADGE: Record<string, string> = {
 
 function Badge({ result }: { result: string }) {
     return (
-        <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${BADGE[result] ?? ""}`}>
+        <span className={`rounded-[2px] border px-2.5 py-0.5 text-sm font-bold ${BADGE[result] ?? ""}`}>
             {result}
         </span>
     );
@@ -137,15 +137,14 @@ function Badge({ result }: { result: string }) {
 function TableLabel() {
     return (
         <div className="flex flex-col items-center gap-1 select-none">
-            <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                style={{ fontFamily: 'Georgia, serif', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+            <h1 className="text-2xl font-bold text-gold-soft">
                 Blackjack
             </h1>
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
                 <span>BLACKJACK PAYS 3 to 2</span>
-                <span className="text-white/20">·</span>
-                <span>DEALER DRAWS TO 16</span>
-                <span className="text-white/20">·</span>
+                <span className="text-white/75">·</span>
+                <span>Dealer draws to 16</span>
+                <span className="text-white/75">·</span>
                 <span>STANDS ON ALL 17s</span>
             </div>
         </div>
@@ -187,7 +186,7 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
     const bust = t > 21;
     const result = stage === "done" ? resultLabel(t, dealerTotal, bust, dealerBusted) : null;
     return (
-        <div className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition-colors duration-300
+        <div className={`flex flex-col items-center gap-2 rounded-[4px] border p-3 transition-colors duration-300
             ${isActive ? "border-amber-300/50 bg-amber-300/8 ring-2 ring-amber-300/20" : "border-white/10 bg-black/15"}`}
         >
             <div className="flex items-center gap-2">
@@ -212,7 +211,7 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
-            <div className="text-xs text-white/45">Bet {formatMoney(bet)}</div>
+            <div className="text-xs text-white/75">Bet {formatMoney(bet)}</div>
         </div>
     );
 }
@@ -248,7 +247,7 @@ function BlackjackBar({
     const canDoubleDeal = (isBetting || isDone) && !isShuffling && bet >= MIN_BET && bankroll >= bet * 2;
 
     return (
-        <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+        <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
 
             {/* Left: chip tray */}
             <div className="flex items-center">
@@ -332,7 +331,7 @@ function BlackjackBar({
                             key="dealer-msg"
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="text-sm italic text-white/40"
+                            className="text-sm italic text-white/75"
                         >
                             Dealer playing…
                         </motion.span>
@@ -696,11 +695,11 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     return (
         <>
             {isShuffling && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-                    <div className="rounded-[1.6rem] border border-amber-300/25 bg-black/65 px-10 py-8 text-center shadow-2xl">
-                        <div className="text-[11px] font-extrabold uppercase tracking-[0.28em] text-amber-200">Blackjack</div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                    <div className="rounded-[4px] border border-amber-300/25 bg-black/65 px-10 py-8 text-center">
+                        <div className="text-sm font-extrabold text-amber-200">Blackjack</div>
                         <div className="mt-2 text-3xl font-extrabold text-white">Shuffling Shoe</div>
-                        <div className="mt-2 text-sm text-amber-100/80">Please wait…</div>
+                        <div className="mt-2 text-sm text-amber-100">Please wait…</div>
                     </div>
                 </div>
             )}
@@ -745,7 +744,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                         showResult={stage === "done"}
                     />
 
-                    <p className="text-sm font-semibold text-amber-100/70">{message}</p>
+                    <p className="text-sm font-semibold text-amber-100">{message}</p>
 
                     <AnimatePresence>
                         {stage === "betting" && (

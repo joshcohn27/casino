@@ -4,9 +4,12 @@ import {
     factorySettings, loadSettings, saveSettings, sanitizeBet,
     type FontSize, loadFontSize, saveFontSize,
 } from "./shared/settings";
-import { formatMoney, BTN_NEUTRAL } from "./shared/money";
+import { formatMoney, BTN_BASE } from "./shared/money";
 
 type Props = { onBack: () => void };
+
+const BTN_PLAIN = `${BTN_BASE} border-room-line bg-room-deep text-room-text hover:bg-room-raised active:bg-room-panel`;
+const FIELD = "h-11 shrink-0 rounded-[4px] border border-room-line bg-room-deep text-right text-base font-bold text-room-text outline-none transition-colors focus:border-room-accent";
 
 // ─── Money field ──────────────────────────────────────────────────────────────
 
@@ -25,10 +28,10 @@ function BetInput({ gameId, field, value, onCommit }: {
         : `${formatMoney(field.min)} to ${formatMoney(field.max)}`;
 
     return (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-4">
             <label htmlFor={id} className="min-w-0">
-                <div className="text-sm font-bold text-white/90">{field.label}</div>
-                <div className="text-[11px] text-white/40">{field.choices ? "Choose one" : limits}</div>
+                <div className="text-base font-semibold text-room-text">{field.label}</div>
+                <div className="text-sm text-room-muted">{field.choices ? "Choose one" : limits}</div>
             </label>
             {field.choices ? (
                 <select
@@ -36,7 +39,7 @@ function BetInput({ gameId, field, value, onCommit }: {
                     value={value}
                     onChange={(e) => onCommit(sanitizeBet(field, e.target.value))}
                     data-setting={`${gameId}.${field.key}`}
-                    className="h-11 w-28 shrink-0 rounded-xl border border-white/15 bg-black/40 px-3 text-right text-sm font-extrabold text-amber-100 outline-none transition focus:border-amber-300/60"
+                    className={`${FIELD} w-28 px-3`}
                 >
                     {field.choices.map((c) => (
                         <option key={c} value={c}>{field.unit === "credits" ? c : formatMoney(c)}</option>
@@ -44,7 +47,7 @@ function BetInput({ gameId, field, value, onCommit }: {
                 </select>
             ) : (
                 <div className="relative w-28 shrink-0">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/40">$</span>
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-room-muted">$</span>
                     <input
                         id={id}
                         type="number"
@@ -57,7 +60,7 @@ function BetInput({ gameId, field, value, onCommit }: {
                         onBlur={commit}
                         onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                         data-setting={`${gameId}.${field.key}`}
-                        className="h-11 w-full rounded-xl border border-white/15 bg-black/40 pl-7 pr-3 text-right text-sm font-extrabold text-amber-100 outline-none transition focus:border-amber-300/60"
+                        className={`${FIELD} w-full pl-7 pr-3`}
                     />
                 </div>
             )}
@@ -71,10 +74,10 @@ function Toggle({ id, label, hint, on, onChange }: {
     id: string; label: string; hint: string; on: boolean; onChange: (on: boolean) => void;
 }) {
     return (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-                <div className="text-sm font-bold text-white/90">{label}</div>
-                <div className="text-[11px] text-white/40">{hint}</div>
+                <div className="text-base font-semibold text-room-text">{label}</div>
+                <div className="text-sm text-room-muted">{hint}</div>
             </div>
             <button
                 role="switch"
@@ -82,9 +85,10 @@ function Toggle({ id, label, hint, on, onChange }: {
                 aria-label={label}
                 onClick={() => onChange(!on)}
                 data-setting={id}
-                className={`relative h-11 w-[68px] shrink-0 rounded-full border transition ${on ? "border-red-300/60 bg-red-500/70" : "border-white/15 bg-black/40"}`}
+                className={`flex h-11 w-[84px] shrink-0 overflow-hidden rounded-[4px] border-2 text-sm font-bold transition-colors ${on ? "border-room-accent" : "border-room-line"}`}
             >
-                <span className={`absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-white shadow transition-all ${on ? "left-[32px]" : "left-[3px]"}`} />
+                <span className={`flex flex-1 items-center justify-center ${on ? "bg-room-deep text-room-muted" : "bg-room-raised text-room-text"}`}>Off</span>
+                <span className={`flex flex-1 items-center justify-center ${on ? "bg-room-red text-room-text" : "bg-room-deep text-room-muted"}`}>On</span>
             </button>
         </div>
     );
@@ -117,43 +121,41 @@ export default function Settings({ onBack }: Props) {
     };
 
     return (
-        <div className="min-h-[calc(100vh-88px)] bg-[radial-gradient(circle_at_top,_#243042_0%,_#0b1220_45%,_#040816_100%)] px-4 py-8 text-white">
+        <div className="min-h-[calc(100vh-88px)] bg-room px-4 py-8 text-room-text sm:px-6">
             <div className="mx-auto max-w-5xl">
-                <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                <div className="mb-6 flex flex-col items-center gap-4 border-b border-room-line pb-4 text-center">
                     <div>
-                        <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90">Settings</div>
-                        <h1 className="mt-1 text-2xl font-extrabold text-amber-50 sm:text-3xl" style={{ fontFamily: "Georgia, serif" }}>
-                            Display and Default Bets
-                        </h1>
-                        <p className="mt-2 max-w-[60ch] text-sm leading-6 text-white/55">
+                        <h1 className="text-room-text">Settings</h1>
+                        <p className="mx-auto mt-2 max-w-[62ch] text-base leading-6 text-room-muted">
                             Text size, and the chips each table starts with when you sit down. Changes save as you make them.
                             You can still change or clear your bets at the table.
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <span className={`text-xs font-bold text-emerald-300 transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
+                    <div className="relative flex items-center gap-2">
+                        <span className={`absolute right-full top-1/2 mr-3 -translate-y-1/2 text-sm font-bold text-room-text transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
                             Saved
                         </span>
-                        <button className={BTN_NEUTRAL} onClick={resetAll}>Reset to defaults</button>
-                        <button className={BTN_NEUTRAL} onClick={onBack}>Back</button>
+                        <button className={BTN_PLAIN} onClick={resetAll}>Reset to defaults</button>
+                        <button className={BTN_PLAIN} onClick={onBack}>Back</button>
                     </div>
                 </div>
 
-                <section className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4" data-settings-game="display">
-                    <h2 className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">Display</h2>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* Display sits apart from the bet cards: a gold edge marks it as the site-wide setting */}
+                <section className="mb-4 rounded-[4px] border border-room-line border-l-4 border-l-room-accent bg-room-panel p-4" data-settings-game="display">
+                    <h2 className="mb-4 text-room-text">Display</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="min-w-0">
-                            <div className="text-sm font-bold text-white/90">Text size</div>
-                            <div className="text-[11px] text-white/40">Large makes labels, pay tables and messages bigger on every page</div>
+                            <div className="text-base font-semibold text-room-text">Text size</div>
+                            <div className="text-sm text-room-muted">Large makes labels, pay tables and messages bigger on every page</div>
                         </div>
-                        <div className="flex shrink-0 overflow-hidden rounded-xl border border-white/15" role="group" aria-label="Text size">
+                        <div className="flex shrink-0 overflow-hidden rounded-[4px] border-2 border-room-line" role="group" aria-label="Text size">
                             {(["normal", "large"] as const).map((size) => (
                                 <button
                                     key={size}
                                     onClick={() => chooseFont(size)}
                                     aria-pressed={fontSize === size}
                                     data-setting={`display.font.${size}`}
-                                    className={`h-11 px-5 text-sm font-extrabold capitalize transition ${fontSize === size ? "bg-amber-400 text-black" : "bg-black/40 text-white/70 hover:bg-white/10"}`}
+                                    className={`h-11 px-5 text-sm font-bold capitalize transition-colors ${fontSize === size ? "bg-room-red text-room-text" : "bg-room-deep text-room-text hover:bg-room-raised"}`}
                                 >
                                     {size}
                                 </button>
@@ -164,9 +166,9 @@ export default function Settings({ onBack }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {GAME_SETTINGS.map((game) => (
-                        <section key={game.id} className="rounded-2xl border border-white/10 bg-white/5 p-4" data-settings-game={game.id}>
-                            <h2 className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{game.name}</h2>
-                            <div className="space-y-3">
+                        <section key={game.id} className="rounded-[4px] border border-room-line bg-room-panel p-4" data-settings-game={game.id}>
+                            <h2 className="mb-4 text-room-text">{game.name}</h2>
+                            <div className="space-y-4">
                                 {game.bets.map((field) => (
                                     <BetInput
                                         key={field.key}
@@ -191,7 +193,7 @@ export default function Settings({ onBack }: Props) {
                     ))}
                 </div>
 
-                <p className="mt-6 text-center text-[11px] text-white/35">
+                <p className="mt-6 text-sm text-room-muted">
                     Roulette has no default bet: you place chips on the layout each spin.
                 </p>
             </div>

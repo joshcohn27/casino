@@ -21,6 +21,22 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.0.0",
+        date: "2026-10-09",
+        title: "A new look, and links to every page",
+        changes: [
+            ["improved", "A cleaner look across the whole site: flat colors, squared-off buttons and one plain typeface, with no glows or gradients."],
+            ["improved", "Home, Settings, Feedback and What's New are now near-black with red buttons, and the menu bar matches on every page."],
+            ["improved", "Text is larger and easier to read, and labels are no longer in small capital letters."],
+            ["improved", "Playing cards have a bigger number in the corner, and payouts in the pay tables stand out in bold gold."],
+            ["improved", "Each table's rules pop-up now matches the color of its felt."],
+            ["new", "Every table and page has its own link, so you can bookmark a game or send it to a friend."],
+            ["new", "Your browser's back and forward buttons now move between pages."],
+            ["improved", "Refreshing keeps you on the page you were on."],
+            ["improved", "Your seat is held: leave a table in the middle of a hand and the hand is still there when you come back."],
+        ],
+    },
+    {
         version: "3.1.0",
         date: "2026-10-09",
         title: "Version number and What's New",

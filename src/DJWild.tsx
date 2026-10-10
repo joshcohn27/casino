@@ -112,26 +112,26 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         <AnimatePresence>
             {open && (
                 <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <button className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} aria-label="Close rules modal" />
+                    <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close rules modal" />
                     <motion.div
                         initial={{ opacity: 0, y: 24, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 16, scale: 0.98 }}
                         transition={{ duration: 0.22, ease: "easeOut" }}
-                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,_rgba(7,20,14,0.98),_rgba(3,10,7,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.6)]"
+                        className="relative z-[101] max-h-[88dvh] w-full max-w-[860px] overflow-hidden rounded-[4px] border border-[#725a94] bg-[#160a29] text-text"
                     >
-                        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                        <div className="flex items-center justify-between border-b border-[#725a94] px-4 py-3 sm:px-5 sm:py-4">
                             <div>
-                                <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90 sm:text-[11px]">Help</div>
-                                <div className="mt-1 text-lg font-extrabold text-amber-50 sm:text-2xl">DJ Wild Rules</div>
+                                <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
+                                <div className="mt-1 text-xl font-bold tracking-[-0.01em] text-gold-soft">DJ Wild Rules</div>
                             </div>
-                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-bold text-white/85 transition hover:bg-white/10">×</button>
+                            <button onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#725a94] bg-[#251042] text-xl font-bold text-text transition-colors hover:bg-[#2f1556] active:bg-[#160a29]">×</button>
                         </div>
                         <div className="max-h-[calc(88dvh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                            <div className="space-y-4 text-sm leading-6 text-emerald-50/90">
+                            <div className="space-y-4 text-base leading-6 text-text">
                                 {RULES_SECTIONS.map(([title, items]) => (
-                                    <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title}</div>
+                                    <div key={title} className="rounded-[4px] border border-[#725a94] bg-[#251042] p-4">
+                                        <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                         <div className="space-y-1">{items.map((s) => <div key={s}>{s}</div>)}</div>
                                     </div>
                                 ))}
@@ -158,9 +158,9 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
 }) {
     return (
         <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">{title}</div>
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">{title}</div>
             {headers && (
-                <div className="flex items-center justify-between gap-2 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/30">
+                <div className="flex items-center justify-between gap-2 px-1.5 text-[13px] font-bold text-white/75">
                     <span>{headers[0]}</span>
                     <span>{headers[1]}</span>
                 </div>
@@ -169,8 +169,8 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{text}</span>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{text}</span>
                     </div>
                 );
             })}
@@ -178,12 +178,12 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/45"}>{hand}</span>
-                        <span className={`shrink-0 font-bold ${hit ? "text-amber-300" : "text-white/35"}`}>{(mult ?? 0).toLocaleString()}{unit}</span>
+                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`shrink-0 font-bold text-gold`}>{(mult ?? 0).toLocaleString()}{unit}</span>
                     </div>
                 );
             })}
-            {note && <p className="mt-1 px-1.5 text-[10px] leading-snug text-white/40" data-testid="payout-note">{note}</p>}
+            {note && <p className="mt-1 px-1.5 text-[10px] leading-snug text-white/75" data-testid="payout-note">{note}</p>}
         </div>
     );
 }
@@ -193,15 +193,16 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
 function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatural: boolean }) {
     // laid out like the table felt: every cell reads "x to 1", and a hand that can only be
     // made with wild cards shows its one payout in both columns
-    const cell = (value: number | undefined, lit: boolean) => (
-        <span className={`w-[62px] shrink-0 whitespace-nowrap text-right font-bold tabular-nums ${lit ? "text-amber-300" : "text-white/35"}`}>
+    // on the winning row, the column that did not pay drops back to white
+    const cell = (value: number | undefined, dim: boolean) => (
+        <span className={`w-[62px] shrink-0 whitespace-nowrap text-right font-bold tabular-nums ${dim ? "text-white/75" : "text-gold"}`}>
             {(value ?? 0).toLocaleString()} to 1
         </span>
     );
     return (
         <div className="flex flex-col gap-1 pt-2" data-testid="trips-table">
-            <div className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200/70">Trips Pays</div>
-            <div className="flex items-center justify-between gap-1 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/30">
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">Trips Pays</div>
+            <div className="flex items-center justify-between gap-1 px-1.5 text-[13px] font-bold text-white/75">
                 <span className="flex-1">Hand</span>
                 <span className="w-[62px] shrink-0 text-right">Natural</span>
                 <span className="w-[62px] shrink-0 text-right">Wild</span>
@@ -212,9 +213,9 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
                 const natural = TRIPS_NATURAL_PAYTABLE[hand] ?? wild;
                 return (
                     <div key={hand} data-trips-row={hand} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={`flex-1 ${hit ? "font-extrabold text-amber-100" : "text-white/45"}`}>{hand}</span>
-                        {cell(natural, hit && hitNatural)}
-                        {cell(wild, hit && !hitNatural)}
+                        <span className={`flex-1 ${hit ? "font-extrabold text-amber-100" : "text-white/75"}`}>{hand}</span>
+                        {cell(natural, hit && !hitNatural)}
+                        {cell(wild, hit && hitNatural)}
                     </div>
                 );
             })}
@@ -477,7 +478,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                 bankroll={bankroll}
                 hideHeader
                 actionBar={
-                    <div className="flex flex-col gap-2 border-t border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
+                    <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
                         <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
                         <div className="flex min-h-[46px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
@@ -533,28 +534,27 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                 <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-0.5">
                     <div className="flex items-center gap-2">
                         <h1
-                            className="text-center text-xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                            style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                            className="text-center text-2xl font-bold text-gold-soft"
                         >
                             DJ Wild
                         </h1>
                         <button
                             onClick={() => setShowRules(true)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                             aria-label="Show rules"
                         >
                             i
                         </button>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                        <span>DEUCES AND THE JOKER ARE WILD</span>
-                        <span className="text-white/20">·</span>
-                        <span>PLAY 2x OR FOLD</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Deuces and the Joker are wild</span>
+                        <span className="text-white/75">·</span>
+                        <span>Play 2x or fold</span>
                     </div>
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[10px] font-bold tracking-[0.12em] text-white/25">
-                        <span>BLIND PAYS ON STRAIGHT OR BETTER</span>
-                        <span className="text-white/15">·</span>
-                        <span>DEALER ALWAYS QUALIFIES</span>
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm font-semibold text-white/75">
+                        <span>Blind pays on straight or better</span>
+                        <span className="text-white/75">·</span>
+                        <span>Dealer always qualifies</span>
                     </div>
                 </div>
 
@@ -581,24 +581,16 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 data-testid="progressive-light"
                                 data-lit={progressiveLit ? "true" : "false"}
                                 className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition ${isBetting ? "cursor-pointer" : "cursor-default"} ${
-                                    progressiveLit ? "border-red-300/70" : "border-white/20 hover:border-white/40"
+                                    progressiveLit ? "border-white" : "border-white/45 hover:border-white"
                                 }`}
-                                style={{
-                                    background: progressiveLit
-                                        ? "radial-gradient(circle at 50% 45%, #ffb4b4 0%, #ff2a2a 38%, #b00000 72%, #5a0000 100%)"
-                                        : "radial-gradient(circle at 50% 45%, #4a1414 0%, #2a0a0a 60%, #140505 100%)",
-                                    boxShadow: progressiveLit
-                                        ? `0 0 18px 4px rgba(255,40,40,0.55), inset 0 0 8px rgba(255,255,255,0.35)${progressiveWon ? ", 0 0 30px 10px rgba(251,191,36,0.55)" : ""}`
-                                        : "inset 0 2px 6px rgba(0,0,0,0.7)",
-                                }}
+                                style={{ background: progressiveLit ? "#ef2a2a" : "#3a0f0f", outline: progressiveWon ? "3px solid #fbbf24" : undefined, outlineOffset: 2 }}
                             >
-                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/30"}`}>${PROGRESSIVE_BET}</span>
+                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/75"}`}>${PROGRESSIVE_BET}</span>
                             </button>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/45">Progressive</span>
+                                <span className="text-[13px] font-extrabold text-white/75">Progressive</span>
                                 <span
-                                    className="rounded-md border border-red-500/25 bg-black/60 px-2 py-0.5 font-mono text-sm font-bold tabular-nums text-red-400"
-                                    style={{ textShadow: "0 0 8px rgba(255,60,60,0.6)" }}
+                                    className="rounded-[4px] border border-red-500/25 bg-black/60 px-2 py-0.5 text-sm font-bold tabular-nums text-red-400"
                                     data-testid="progressive-meter"
                                 >
                                     {formatMoney(meter)}
@@ -616,11 +608,11 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                     exit={{ opacity: 0 }}
                                     transition={{ type: "spring", stiffness: 300, damping: 18 }}
                                     data-testid="progressive-win"
-                                    className="w-full rounded-xl border border-amber-300/60 bg-amber-400/15 px-3 py-2 text-center shadow-[0_0_28px_rgba(251,191,36,0.35)]"
+                                    className="w-full rounded-[4px] border border-amber-300/60 bg-amber-400/15 px-3 py-2 text-center"
                                 >
-                                    <div className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-200">Progressive Win</div>
+                                    <div className="text-[13px] font-extrabold text-amber-200">Progressive Win</div>
                                     <div className="text-xl font-extrabold text-amber-100">{formatMoney(result.progressiveReturn)}</div>
-                                    <div className="text-[11px] font-semibold text-amber-100/70">{progressiveRow(result.playerHand)?.label}</div>
+                                    <div className="text-[11px] font-semibold text-amber-100">{progressiveRow(result.playerHand)?.label}</div>
                                 </motion.div>
                             )}
                             {otherHit && !progressiveWon && (
@@ -630,7 +622,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
                                     data-testid="other-hit"
-                                    className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-center text-[11px] font-semibold text-red-200"
+                                    className="w-full rounded-[4px] border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-center text-[11px] font-semibold text-red-200"
                                 >
                                     {otherHit.kind === "jackpot"
                                         ? `Another player hit Five Wilds and took the ${formatMoney(otherHit.amount)} jackpot. The meter has reset.`
@@ -676,7 +668,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 onSelect={() => setSelectedZone("ante")}
                                 onRemove={() => removeLastChip("ante")}
                             />
-                            <span className="pb-10 text-base font-bold text-white/50">=</span>
+                            <span className="pb-10 text-base font-bold text-white/90">=</span>
                             <BetSpot
                                 testId="blind"
                                 label="Blind" sublabel="matches ante"
@@ -710,7 +702,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 data-testid="result-lines"
                             >
                                 {result.lines.map((line, i) => (
-                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/55"}`}>{line}</p>
+                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
                                 ))}
                             </motion.div>
                         )}
@@ -721,7 +713,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
 
                         {/* Dealer */}
                         <div className="flex w-full flex-col items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Dealer</span>
+                            <span className="text-[13px] font-bold text-white/75">Dealer</span>
                             {dealerCards.length > 0 ? (
                                 <HandRow
                                     testId="dealer-cards"
@@ -733,7 +725,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[80px] sm:h-[94px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100/65" data-testid="dealer-hand">
+                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="dealer-hand">
                                 {dealerSorted && dealerHand ? dealerHand.label : ""}
                             </span>
                         </div>
@@ -756,10 +748,10 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[80px] sm:h-[94px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100/65" data-testid="player-hand">
+                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="player-hand">
                                 {playerReady && playerHand ? playerHand.label : ""}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Player</span>
+                            <span className="text-[13px] font-bold text-white/75">Player</span>
                             <div className="flex min-h-[28px] items-center">
                                 <AnimatePresence>
                                     {suggestion && (
@@ -769,13 +761,13 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0 }}
                                             data-testid="suggestion"
-                                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-extrabold ${
+                                            className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
                                                 suggestion === "play"
                                                     ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                                                     : "border-red-400/30 bg-red-500/10 text-red-300"
                                             }`}
                                         >
-                                            <span className="text-[10px] uppercase tracking-[0.15em] opacity-70">Suggest</span>
+                                            <span className="text-[13px] opacity-70">Suggest</span>
                                             <span>{suggestion === "play" ? "Play" : "Fold"}</span>
                                         </motion.div>
                                     )}
@@ -783,7 +775,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             </div>
                         </div>
 
-                        <p className="text-center text-sm font-semibold text-amber-50/60" data-testid="message">{message}</p>
+                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
                     </div>
 
                     {/* Right column - payout tables, desktop only */}

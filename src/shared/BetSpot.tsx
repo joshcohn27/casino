@@ -90,11 +90,13 @@ export default function BetSpot({
     const interactive = canBet && !isLocked;
     const selected = interactive && isSelected;
 
-    const ring = isWinner ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
-        : selected ? "border-white/90 shadow-[0_0_18px_rgba(255,255,255,0.35)]"
-        : "border-white/30";
-    const bg = isWinner ? "bg-amber-300/10"
-        : selected ? "bg-white/10"
+    // Painted table markings: a dashed line on the felt. The highlighted spot gets a solid
+    // white line, a winning one a solid gold line. No glow.
+    const ring = isWinner ? "border-[3px] border-solid border-gold"
+        : selected ? "border-[3px] border-solid border-white"
+        : "border-2 border-dashed border-white/45";
+    const bg = isWinner ? "bg-black/35"
+        : selected ? "bg-black/35"
         : "bg-black/20";
 
     const stack = chips.length > 0
@@ -103,16 +105,16 @@ export default function BetSpot({
 
     const inner: React.ReactNode = label ? (
         <>
-            <span className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-white/80">{label}</span>
-            {sublabel && <span className="mt-0.5 text-[10px] font-normal text-white/45">{sublabel}</span>}
+            <span className="text-center text-[13px] font-bold leading-tight text-white">{label}</span>
+            {sublabel && <span className="mt-0.5 text-[12px] leading-tight text-white/80">{sublabel}</span>}
             {totalBet > 0 && (
-                <span className="mt-1 text-[10px] font-extrabold text-amber-200">{formatMoney(totalBet)}</span>
+                <span className="mt-0.5 text-[12px] font-bold text-gold-soft">{formatMoney(totalBet)}</span>
             )}
         </>
     ) : totalBet > 0 ? (
-        <span className="text-sm font-extrabold text-amber-100">{formatMoney(totalBet)}</span>
+        <span className="text-sm font-bold text-gold-soft">{formatMoney(totalBet)}</span>
     ) : (
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/25">{emptyText ?? "-"}</span>
+        <span className="text-[13px] font-bold text-white/70">{emptyText ?? "-"}</span>
     );
 
     return (
@@ -136,7 +138,7 @@ export default function BetSpot({
                 onClick={onSelect}
                 disabled={!interactive}
                 aria-pressed={selected}
-                className={`relative flex flex-col items-center justify-center border-2 border-dashed backdrop-blur-sm transition-all duration-200 ${ring} ${bg} ${interactive ? "cursor-pointer" : "cursor-default"}`}
+                className={`relative flex flex-col items-center justify-center transition-colors duration-150 ${ring} ${bg} ${interactive ? "cursor-pointer hover:bg-black/40" : "cursor-default"}`}
                 style={{
                     width: dim, height: dim,
                     transform: diamond ? "rotate(45deg)" : undefined,
@@ -164,7 +166,7 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
 }) {
     const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
     return (
-        <div className={`flex items-center rounded-xl border border-white/10 bg-black/30 py-2.5 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-6 px-6"} ${className}`} data-bet-bar>
+        <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-6 px-6"} ${className}`} data-bet-bar>
             {[
                 { label: "Bet", val: pendingBet > 0 ? formatMoney(pendingBet) : "-", color: "text-white" },
                 { label: "Returned", val: showResult ? formatMoney(returned) : "-", color: "text-white" },
@@ -172,10 +174,10 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
             ].map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
                     <div className="text-center">
-                        <div className={`text-[10px] font-bold uppercase text-white/45 ${compact ? "tracking-[0.12em]" : "tracking-[0.2em]"}`}>{label}</div>
-                        <div className={`mt-0.5 text-sm font-extrabold ${color}`} data-bet-bar-value={label}>{val}</div>
+                        <div className="text-sm text-text-muted">{label}</div>
+                        <div className={`text-base font-bold ${color}`} data-bet-bar-value={label}>{val}</div>
                     </div>
-                    {i < arr.length - 1 && <div className="h-6 w-px bg-white/10" />}
+                    {i < arr.length - 1 && <div className="h-8 w-px bg-line" />}
                 </React.Fragment>
             ))}
         </div>

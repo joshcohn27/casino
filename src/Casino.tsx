@@ -1,73 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import UltimateTexasHoldem from "./UltimateTexasHoldem"
-import Blackjack from "./Blackjack"
-import FreeBetBlackjack from "./FreeBetBlackjack"
-import DoubleDownMadness from "./DoubleDownMadness"
-import Roulette from "./Roulette"
-import BaccaratTable from "./Baccarat"
-import VideoPoker from "./VideoPoker"
-import PaiGowPoker from "./PaiGow"
-import ThreeCardPoker from "./ThreeCardPoker"
-import MississippiStud from "./MississippiStud"
-import ILuvSuits from "./ILuvSuits"
-import DJWild from "./DJWild"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
+import { Link, Route, Routes, useLocation, useNavigate } from "react-router"
 import Feedback from "./Feedback"
 import Settings from "./Settings"
 import WhatsNew from "./WhatsNew"
+import NotFound from "./NotFound"
 import { VERSION } from "./changelog"
+import { GAMES, HOME_GAMES, NAV_GROUPS, gameAtPath } from "./games"
+import { DEFAULT_BANKROLL, useBankroll } from "./shared/bankrollContext"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
 
-type Game =
-    | "home"
-    | "uth"
-    | "blackjack"
-    | "freebetblackjack"
-    | "doubledownmadness"
-    | "roulette"
-    | "baccarat"
-    | "videopoker"
-    | "paigow"
-    | "threecardpoker"
-    | "mississippistud"
-    | "iluvsuits"
-    | "djwild"
-    | "feedback"
-    | "settings"
-    | "changelog"
-
-const DEFAULT_BANKROLL = 1000
-const STORAGE_BANKROLL_KEY = "casino-bankroll"
-const STORAGE_GAME_KEY = "casino-selected-game"
-
-function readStoredNumber(key: string, fallback: number) {
-    if (typeof window === "undefined") return fallback
-    const raw = window.localStorage.getItem(key)
-    const parsed = raw ? Number(raw) : fallback
-    return Number.isFinite(parsed) ? parsed : fallback
-}
-
-function readStoredGame(): Game {
-    if (typeof window === "undefined") return "home"
-    const raw = window.localStorage.getItem(STORAGE_GAME_KEY)
-    return raw === "uth" ||
-        raw === "blackjack" ||
-        raw === "freebetblackjack" ||
-        raw === "doubledownmadness" ||
-        raw === "roulette" ||
-        raw === "baccarat" ||
-        raw === "videopoker" ||
-        raw === "paigow" ||
-        raw === "threecardpoker" ||
-        raw === "mississippistud" ||
-        raw === "iluvsuits" ||
-        raw === "djwild" ||
-        raw === "feedback" ||
-        raw === "settings" ||
-        raw === "changelog" ||
-        raw === "home"
-        ? raw
-        : "home"
-}
+// the site used to reopen the last table from this key. Pages have URLs now, so it is cleared.
+const OLD_SELECTED_GAME_KEY = "casino-selected-game"
 
 function formatMoney(value: number) {
     return new Intl.NumberFormat("en-US", {
@@ -80,23 +23,21 @@ function formatMoney(value: number) {
 
 function NavButton({
     active,
-    onClick,
+    to,
     children,
 }: {
     active: boolean
-    onClick: () => void
+    to: string
     children: React.ReactNode
 }) {
     return (
-        <button
-            onClick={onClick}
-            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                : "border-white/15 bg-white/8 text-white hover:bg-white/14"
-                }`}
+        <Link
+            to={to}
+            aria-current={active ? "page" : undefined}
+            className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-text" : "border-transparent text-room-muted hover:text-room-text"}`}
         >
             {children}
-        </button>
+        </Link>
     )
 }
 
@@ -112,29 +53,23 @@ function NavDropdown({
     const [open, setOpen] = useState(false)
 
     return (
-        <div className="group relative">
+        <div className="group relative" data-nav-group={label} data-active={active ? "true" : "false"}>
             <button
                 onClick={() => setOpen((prev) => !prev)}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${active
-                    ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                    : "border-white/15 bg-white/8 text-white hover:bg-white/14"
-                    }`}
+                className={`border-b-2 px-1 py-2 text-[15px] font-semibold transition-colors ${active ? "border-room-accent text-room-text" : "border-transparent text-room-muted hover:text-room-text"}`}
             >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5">
                     {label}
-                    <span className="text-[10px]">▼</span>
+                    <span className="text-[11px]">▾</span>
                 </span>
             </button>
 
             <div
-                className={`absolute left-0 top-full z-50 mt-2 min-w-[240px] rounded-2xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur transition-all
-                ${open
-                        ? "visible translate-y-0 opacity-100"
-                        : "invisible translate-y-1 opacity-0"
-                    }
-                group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}
+                className={`absolute left-0 top-full z-50 min-w-[240px] rounded-[4px] border border-room-line bg-room-panel p-1
+                ${open ? "visible" : "invisible"}
+                group-hover:visible`}
             >
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col">
                     {children}
                 </div>
             </div>
@@ -144,96 +79,130 @@ function NavDropdown({
 
 function DropdownItem({
     active,
-    onClick,
+    to,
     children,
 }: {
     active: boolean
-    onClick: () => void
+    to: string
     children: React.ReactNode
 }) {
     return (
-        <button
-            onClick={onClick}
-            className={`rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${active
-                ? "bg-amber-400 text-black"
-                : "text-white hover:bg-white/10"
+        <Link
+            to={to}
+            aria-current={active ? "page" : undefined}
+            className={`border-l-2 px-3 py-2 text-left text-[15px] transition-colors ${active
+                ? "border-room-accent bg-room-raised font-semibold text-room-text"
+                : "border-transparent text-room-text hover:bg-room-raised"
                 }`}
         >
             {children}
-        </button>
+        </Link>
+    )
+}
+
+function MenuItem({
+    active,
+    to,
+    children,
+}: {
+    active: boolean
+    to: string
+    children: React.ReactNode
+}) {
+    return (
+        <Link
+            to={to}
+            aria-current={active ? "page" : undefined}
+            className={`border-l-2 px-3 py-2.5 text-left text-base transition-colors ${active
+                ? "border-room-accent bg-room-raised font-semibold text-room-text"
+                : "border-transparent text-room-text hover:bg-room-raised"}`}
+        >
+            {children}
+        </Link>
     )
 }
 
 function GameCard({
     title,
     subtitle,
-    feltColor,
-    onClick,
+    to,
     bankroll,
     label = "Table Game",
 }: {
     title: string
     subtitle: string
-    feltColor: string
-    onClick: () => void
+    to: string
     bankroll: string
     label?: string
 }) {
     return (
-        <button
-            onClick={onClick}
-            className="group relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/30 p-6 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-white/22 hover:bg-black/38"
+        <Link
+            to={to}
+            className="group relative overflow-hidden rounded-[4px] border border-room-line bg-room-panel p-6 pl-7 text-left transition-colors hover:border-room-line-hover"
+            data-testid="game-card"
         >
-            <div className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: feltColor }} />
-
-            <div className="relative flex h-full flex-col justify-between gap-8">
+            <div className="relative flex h-full flex-col justify-between gap-6">
                 <div>
-                    <div className="mb-3 inline-flex rounded-full border border-white/12 bg-white/6 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-100/90">
-                        {label}
-                    </div>
-
-                    <div className="text-3xl font-extrabold tracking-[0.02em] text-white">{title}</div>
-                    <div className="mt-3 max-w-[48ch] text-sm leading-6 text-white/72">{subtitle}</div>
+                    <h3 className="text-room-text">{title}</h3>
+                    <div className="mt-1 text-sm font-semibold text-room-text">{label}</div>
+                    <div className="mt-4 max-w-[52ch] text-base leading-6 text-room-muted">{subtitle}</div>
                 </div>
 
                 <div className="flex items-end justify-between gap-4">
                     <div>
-                        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200/90">Shared bankroll</div>
-                        <div className="mt-1 text-xl font-extrabold text-amber-100">{bankroll}</div>
+                        <div className="text-sm text-room-muted">Shared bankroll</div>
+                        <div className="text-lg font-bold text-room-text">{bankroll}</div>
                     </div>
 
-                    <div className="rounded-full border border-amber-200/20 bg-amber-300/12 px-4 py-2 text-sm font-bold text-amber-100 transition group-hover:bg-amber-300/20">
-                        Enter →
+                    <div className="rounded-[4px] border border-room-red-pressed bg-room-red px-4 py-2 text-sm font-bold text-room-text transition-colors group-hover:bg-room-red-hover">
+                        Play
                     </div>
                 </div>
             </div>
-        </button>
+        </Link>
     )
 }
 
 export default function Casino() {
-    const [game, setGame] = useState<Game>(() => readStoredGame())
-    const [bankroll, setBankroll] = useState<number>(() => readStoredNumber(STORAGE_BANKROLL_KEY, DEFAULT_BANKROLL))
-    const [bankrollInput, setBankrollInput] = useState(() => String(readStoredNumber(STORAGE_BANKROLL_KEY, DEFAULT_BANKROLL)))
+    const { bankroll, setBankroll } = useBankroll()
+    const [bankrollInput, setBankrollInput] = useState(() => String(bankroll))
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+    const location = useLocation()
+    const navigateTo = useNavigate()
+    // "/blackjack/" and "/blackjack" are the same page
+    const pathname = location.pathname.replace(/\/+$/, "") || "/"
+    const table = gameAtPath(pathname)
+
+    // Your seat is held: a table you have opened stays in the background when you go to
+    // another page, so a hand in progress is still there when you come back.
+    const [seated, setSeated] = useState<string[]>(() => (table ? [table.id] : []))
     useEffect(() => {
-        window.localStorage.setItem(STORAGE_BANKROLL_KEY, String(bankroll))
-    }, [bankroll])
+        if (table) setSeated((prev) => (prev.includes(table.id) ? prev : [...prev, table.id]))
+    }, [table])
+    const heldTables = table && !seated.includes(table.id) ? [...seated, table.id] : seated
+
+    useEffect(() => {
+        window.localStorage.removeItem(OLD_SELECTED_GAME_KEY)
+    }, [])
+
+    // every page starts at the top, and the phone menu closes once you have picked a page
+    useEffect(() => {
+        window.scrollTo(0, 0)
+        setMobileMenuOpen(false)
+    }, [pathname])
 
     // A wager at any table feeds the DJ Wild progressive meter a little, standing in for the
-    // other players who would be building a real jackpot. DJ Wild looks after its own meter.
+    // other players who would be building a real jackpot. DJ Wild looks after its own meter,
+    // both when you are sitting at it and while its seat is being held in the background.
     const lastBankroll = useRef(bankroll)
+    const djWildSeated = heldTables.includes("djwild")
     useEffect(() => {
         const wagered = lastBankroll.current - bankroll
         lastBankroll.current = bankroll
-        if (wagered > 0 && game !== "djwild" && game !== "home" && game !== "feedback" && game !== "settings" && game !== "changelog") feedMeterFromWager(wagered)
+        if (wagered > 0 && table && !djWildSeated) feedMeterFromWager(wagered)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bankroll])
-
-    useEffect(() => {
-        window.localStorage.setItem(STORAGE_GAME_KEY, game)
-    }, [game])
 
     useEffect(() => {
         setBankrollInput(String(bankroll))
@@ -254,320 +223,126 @@ export default function Casino() {
         setBankroll(Math.floor(value))
     }
 
-    const navigate = (g: Game) => {
-        setGame(g)
-        setMobileMenuOpen(false)
-    }
+    const goHome = () => navigateTo("/")
 
-    const renderScreen = () => {
-        if (game === "uth") {
-            return <UltimateTexasHoldem bankroll={bankroll} setBankroll={setBankroll} />
-        }
+    const home = (
+        <div
+            className="min-h-screen bg-room text-room-text"
+        >
+            <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
+                <div className="mb-8 border-b border-room-line pb-6 text-center">
+                    <h1 className="home-title">
+                        Cohn Casino
+                    </h1>
+                    <p className="home-subtitle mt-2">
+                        A collection of casino table games
+                    </p>
+                    <p className="mx-auto mt-4 max-w-[62ch] text-base leading-6 text-room-muted">
+                        A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
+                        with a shared bankroll that carries across every table. No real money, no ads, no accounts.
+                    </p>
+                </div>
 
-        if (game === "blackjack") {
-            return <Blackjack bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "freebetblackjack") {
-            return <FreeBetBlackjack bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "doubledownmadness") {
-            return <DoubleDownMadness bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "roulette") {
-            return <Roulette bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "baccarat") {
-            return <BaccaratTable bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "videopoker") {
-            return <VideoPoker bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "paigow") {
-            return <PaiGowPoker bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "threecardpoker") {
-            return <ThreeCardPoker bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "mississippistud") {
-            return <MississippiStud bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "iluvsuits") {
-            return <ILuvSuits bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "djwild") {
-            return <DJWild bankroll={bankroll} setBankroll={setBankroll} />
-        }
-
-        if (game === "feedback") {
-            return <Feedback onBack={() => setGame("home")} />
-        }
-
-        if (game === "settings") {
-            return <Settings onBack={() => setGame("home")} />
-        }
-
-        if (game === "changelog") {
-            return <WhatsNew onBack={() => setGame("home")} />
-        }
-
-        return (
-            <div
-                className="min-h-screen text-white"
-                style={{ background: "radial-gradient(circle at top, #0f1a0f, #050d05 50%, #020502 100%)" }}
-            >
-                <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-12">
-                    <div className="mb-14 text-center">
-                        <h1
-                            className="text-6xl font-bold md:text-7xl"
-                            style={{
-                                fontFamily: "Georgia, serif",
-                                background: "linear-gradient(135deg, #f59e0b, #fbbf24, #d97706)",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                backgroundClip: "text",
-                            }}
-                        >
-                            Cohn Casino
-                        </h1>
-                        <p className="mt-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/50">
-                            A collection of casino table games
-                        </p>
-                        <p className="mx-auto mt-5 max-w-[60ch] text-base leading-7 text-white/65">
-                            A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
-                            with a shared bankroll that carries across every table. No real money, no ads, no accounts.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {HOME_GAMES.map((g) => (
                         <GameCard
-                            title="Blackjack"
-                            subtitle="6-deck shoe · Blackjack pays 3 to 2 · Dealer stands on all 17s · Split up to 4 hands · Double after split · Reshuffles at 85% penetration"
-                            feltColor="#1f7a45"
-                            onClick={() => setGame("blackjack")}
+                            key={g.id}
+                            title={g.title}
+                            subtitle={g.subtitle}
+                            to={g.path}
                             bankroll={bankrollDisplay}
+                            label={g.cardLabel}
                         />
-                        <GameCard
-                            title="Free Bet Blackjack"
-                            subtitle="Free doubles on hard 9, 10, and 11 · Free splits on pairs through 9s and aces · Dealer 22 pushes all live hands · Push 22 side bet pays 11 to 1 · Pot of Gold side bet pays by free-bet token count"
-                            feltColor="#7f1d1d"
-                            onClick={() => setGame("freebetblackjack")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Double Down Madness"
-                            subtitle="One-card blackjack with aggressive re-doubling · Push 22 side bet · Configurable blackjack pay · Insurance available"
-                            feltColor="#18181b"
-                            onClick={() => setGame("doubledownmadness")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Ultimate Texas Hold'em"
-                            subtitle="Bet 4x or 3x preflop · 2x on the flop · 1x or fold on the river · Dealer qualifies with pair or better · Blind pays on straight or better · Trips and 6 Card Bonus side bets available"
-                            feltColor="#1a3a5c"
-                            onClick={() => setGame("uth")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Pai Gow Poker"
-                            subtitle="7 cards set into a 5-card back hand and 2-card front hand · Joker plays as semi-wild · Fortune and Ace High side bets · Dealer qualifies with Ace-high low hand"
-                            feltColor="#1a5c2e"
-                            onClick={() => setGame("paigow")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Three Card Poker"
-                            subtitle="3-card hands · Trips beats straights · Dealer qualifies with Queen-high · Pair Plus side bet pays up to 40 to 1 · 6 Card Bonus uses best 5 of all 6 cards"
-                            feltColor="#0c4a6e"
-                            onClick={() => setGame("threecardpoker")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Mississippi Stud"
-                            subtitle="No dealer hand · Pair of 6s or better pays · Bet 1× or 3× at each of 3 streets · 3 Card Bonus side bet"
-                            feltColor="#1a6b3a"
-                            onClick={() => setGame("mississippistud")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="I Luv Suits"
-                            subtitle="7 cards · Longest flush wins · Play up to 3x with a 6-card flush · Dealer qualifies with a 3-card flush, 9 high · Flush Rush and Super Flush Rush side bets"
-                            feltColor="#6b1d3a"
-                            onClick={() => setGame("iluvsuits")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="DJ Wild"
-                            subtitle="Deuces and the Joker are wild · Play 2x or fold · Dealer always qualifies · Blind pays up to 1,000 to 1 · Trips pays more on natural hands"
-                            feltColor="#3b1a6b"
-                            onClick={() => setGame("djwild")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Baccarat"
-                            subtitle="EZ Baccarat — banker pushes on any 3-card 7 · Player pays 1 to 1 · Tie pays 8 to 1 · Dragon 7 side bet pays 40 to 1 · Panda 8 side bet pays 25 to 1 · 8-deck shoe"
-                            feltColor="#7f1d1d"
-                            onClick={() => setGame("baccarat")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Roulette"
-                            subtitle="American wheel with 38 pockets · Straight up pays 35 to 1 · Proximity-based bet inference for splits, streets, and corners · Full outside bet support · Recent results tracker"
-                            feltColor="#1b6b3a"
-                            onClick={() => setGame("roulette")}
-                            bankroll={bankrollDisplay}
-                        />
-                        <GameCard
-                            title="Video Poker"
-                            subtitle="Jacks or Better · Bonus Poker · Deuces Wild · Choose your game and variant from the bar-top machine"
-                            feltColor="#0f172a"
-                            onClick={() => setGame("videopoker")}
-                            bankroll={bankrollDisplay}
-                            label="Video Poker"
-                        />
-                    </div>
+                    ))}
+                </div>
 
-                    <div className="mt-10 rounded-[1.5rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-200">
-                                    Bankroll
-                                </div>
-                                <div className="mt-1 text-3xl font-extrabold text-amber-100">{bankrollDisplay}</div>
+                <div className="mt-8 rounded-[4px] border border-room-line bg-room-panel p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="text-sm text-room-muted">
+                                Bankroll
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <input
-                                    type="number"
-                                    min={0}
-                                    step={5}
-                                    value={bankrollInput}
-                                    onChange={(e) => setBankrollInput(e.target.value)}
-                                    className="w-[140px] rounded-full border border-white/15 bg-white/8 px-4 py-2 text-white outline-none"
-                                />
-                                <button
-                                    onClick={applyBankroll}
-                                    className="rounded-full border border-emerald-200 bg-emerald-400 px-5 py-2 text-sm font-bold text-black shadow-lg transition hover:scale-[1.02]"
-                                >
-                                    Set
-                                </button>
-                                <button
-                                    onClick={resetBankroll}
-                                    className="rounded-full border border-red-300/40 bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]"
-                                >
-                                    Reset to $1,000
-                                </button>
-                            </div>
+                            <div className="text-3xl font-bold text-room-text">{bankrollDisplay}</div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <input
+                                type="number"
+                                min={0}
+                                step={5}
+                                value={bankrollInput}
+                                onChange={(e) => setBankrollInput(e.target.value)}
+                                className="h-11 w-[140px] rounded-[4px] border border-room-line bg-room-deep px-3 text-base text-room-text outline-none focus:border-room-accent"
+                            />
+                            <button
+                                onClick={applyBankroll}
+                                className="h-11 rounded-[4px] border px-5 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
+                            >
+                                Set
+                            </button>
+                            <button
+                                onClick={resetBankroll}
+                                className="h-11 rounded-[4px] border px-5 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
+                            >
+                                Reset to $1,000
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <div className="mt-8 text-center">
-                        <p className="text-xs text-white/35">
-                            Purely for entertainment · No real money · Bankroll saves locally in your browser
-                        </p>
-                    </div>
+                <div className="mt-8">
+                    <p className="text-sm text-room-muted">
+                        Purely for entertainment · No real money · Bankroll saves locally in your browser
+                    </p>
                 </div>
             </div>
-        )
-    }
-
-    const blackjackActive =
-        game === "blackjack" ||
-        game === "freebetblackjack" ||
-        game === "doubledownmadness"
-
-    const pokerActive =
-        game === "uth" ||
-        game === "videopoker" ||
-        game === "paigow" ||
-        game === "threecardpoker" ||
-        game === "mississippistud" ||
-        game === "iluvsuits" ||
-        game === "djwild"
+        </div>
+    )
 
     return (
-        <div className="min-h-screen bg-black text-white">
-            <div className="sticky top-0 z-50 border-b border-amber-300/15 bg-black/70 px-4 py-3 backdrop-blur-xl">
-                <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
+        <div className="min-h-screen bg-page text-text">
+            <div className="sticky top-0 z-50 border-b border-room-line bg-room-panel px-4 sm:px-6" data-testid="site-nav">
+                <div className="mx-auto flex min-h-[56px] max-w-[1600px] flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2">
 
                     {/* Mobile-only site title — acts as Home link */}
-                    <button
-                        onClick={() => navigate("home")}
-                        className="text-sm font-extrabold text-amber-200 sm:hidden"
-                        style={{ fontFamily: "Georgia, serif" }}
+                    <Link
+                        to="/"
+                        className="text-lg font-bold text-room-text sm:hidden"
                     >
                         Cohn Casino
-                    </button>
+                    </Link>
 
                     {/* Nav links — hidden on mobile, shown sm: and above */}
-                    <div className="hidden sm:flex flex-wrap items-center gap-2">
-                        <NavButton active={game === "home"} onClick={() => navigate("home")}>Home</NavButton>
+                    <div className="hidden sm:flex flex-wrap items-center gap-x-5 gap-y-1">
+                        <NavButton active={pathname === "/"} to="/">Home</NavButton>
 
-                        <NavDropdown label="Blackjack" active={blackjackActive}>
-                            <DropdownItem active={game === "blackjack"} onClick={() => navigate("blackjack")}>
-                                Classic Blackjack
-                            </DropdownItem>
-                            <DropdownItem active={game === "freebetblackjack"} onClick={() => navigate("freebetblackjack")}>
-                                Free Bet Blackjack
-                            </DropdownItem>
-                            <DropdownItem active={game === "doubledownmadness"} onClick={() => navigate("doubledownmadness")}>
-                                Double Down Madness
-                            </DropdownItem>
-                        </NavDropdown>
+                        {NAV_GROUPS.map((group) => (
+                            <NavDropdown
+                                key={group.id}
+                                label={group.label}
+                                active={pathname === group.base || pathname.startsWith(group.base + "/")}
+                            >
+                                {GAMES.filter((g) => g.group === group.id).map((g) => (
+                                    <DropdownItem key={g.id} active={pathname === g.path} to={g.path}>
+                                        {g.navLabel ?? g.title}
+                                    </DropdownItem>
+                                ))}
+                            </NavDropdown>
+                        ))}
 
-                        <NavDropdown label="Poker Games" active={pokerActive}>
-                            <DropdownItem active={game === "uth"} onClick={() => navigate("uth")}>
-                                Ultimate Texas Hold'em
-                            </DropdownItem>
-                            <DropdownItem active={game === "paigow"} onClick={() => navigate("paigow")}>
-                                Pai Gow Poker
-                            </DropdownItem>
-                            <DropdownItem active={game === "threecardpoker"} onClick={() => navigate("threecardpoker")}>
-                                Three Card Poker
-                            </DropdownItem>
-                            <DropdownItem active={game === "mississippistud"} onClick={() => navigate("mississippistud")}>
-                                Mississippi Stud
-                            </DropdownItem>
-                            <DropdownItem active={game === "iluvsuits"} onClick={() => navigate("iluvsuits")}>
-                                I Luv Suits
-                            </DropdownItem>
-                            <DropdownItem active={game === "djwild"} onClick={() => navigate("djwild")}>
-                                DJ Wild
-                            </DropdownItem>
-                            <DropdownItem active={game === "videopoker"} onClick={() => navigate("videopoker")}>
-                                Video Poker
-                            </DropdownItem>
-                        </NavDropdown>
+                        {GAMES.filter((g) => g.group === "table").map((g) => (
+                            <NavButton key={g.id} active={pathname === g.path} to={g.path}>{g.navLabel ?? g.title}</NavButton>
+                        ))}
 
-                        <NavButton active={game === "roulette"} onClick={() => navigate("roulette")}>Roulette</NavButton>
-                        <NavButton active={game === "baccarat"} onClick={() => navigate("baccarat")}>Baccarat</NavButton>
+                        <NavButton active={pathname === "/feedback"} to="/feedback">Give Feedback</NavButton>
 
-                        <button
-                            onClick={() => navigate("feedback")}
-                            className={`rounded-full border px-4 py-2 text-sm font-bold transition ${game === "feedback"
-                                ? "border-amber-200 bg-amber-400 text-black shadow-lg"
-                                : "border-amber-200/40 bg-amber-300/12 text-amber-100 hover:bg-amber-300/20"
-                                }`}
-                        >
-                            Give Feedback
-                        </button>
-
-                        <NavButton active={game === "settings"} onClick={() => navigate("settings")}>Settings</NavButton>
+                        <NavButton active={pathname === "/settings"} to="/settings">Settings</NavButton>
                     </div>
 
                     {/* Bankroll controls — hidden on mobile, shown sm: and above */}
                     <div className="hidden sm:flex flex-wrap items-center gap-2">
-                        <div className="rounded-full border border-amber-300/18 bg-black/35 px-4 py-2">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-200">Bankroll</div>
-                            <div className="text-lg font-extrabold text-white">{bankrollDisplay}</div>
+                        <div className="mr-2 flex items-baseline gap-2">
+                            <span className="text-sm text-room-muted">Bankroll</span>
+                            <span className="text-xl font-bold text-room-text" data-testid="nav-bankroll">{bankrollDisplay}</span>
                         </div>
 
                         <input
@@ -576,19 +351,19 @@ export default function Casino() {
                             step={5}
                             value={bankrollInput}
                             onChange={(e) => setBankrollInput(e.target.value)}
-                            className="w-[120px] rounded-full border border-white/15 bg-white/8 px-3 py-2 text-white outline-none"
+                            className="h-9 w-[110px] rounded-[4px] border border-room-line bg-room-deep px-3 text-[15px] text-room-text outline-none focus:border-room-accent"
                         />
 
                         <button
                             onClick={applyBankroll}
-                            className="rounded-full border border-emerald-200 bg-emerald-400 px-4 py-2 text-sm font-bold text-black shadow-lg"
+                            className="h-9 rounded-[4px] border px-4 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
                         >
                             Set
                         </button>
 
                         <button
                             onClick={resetBankroll}
-                            className="rounded-full border border-red-300/40 bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg"
+                            className="h-9 rounded-[4px] border px-4 text-sm font-bold transition-colors border-room-red-pressed bg-room-red text-room-text hover:bg-room-red-hover active:bg-room-red-pressed"
                         >
                             Reset
                         </button>
@@ -596,7 +371,7 @@ export default function Casino() {
 
                     {/* Hamburger button — mobile only */}
                     <button
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white sm:hidden"
+                        className="flex h-10 w-10 items-center justify-center rounded-[4px] border border-room-line bg-room-deep text-room-text sm:hidden"
                         onClick={() => setMobileMenuOpen(o => !o)}
                         aria-label="Toggle menu"
                     >
@@ -604,9 +379,9 @@ export default function Casino() {
                             <span className="text-lg font-bold">×</span>
                         ) : (
                             <span className="flex flex-col gap-[5px] items-center justify-center">
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
-                                <span className="block h-[2px] w-5 rounded bg-white"/>
+                                <span className="block h-[2px] w-5 bg-room-text"/>
+                                <span className="block h-[2px] w-5 bg-room-text"/>
+                                <span className="block h-[2px] w-5 bg-room-text"/>
                             </span>
                         )}
                     </button>
@@ -614,171 +389,78 @@ export default function Casino() {
 
                 {/* Mobile dropdown menu — hidden on sm: and above */}
                 {mobileMenuOpen && (
-                    <div className="border-t border-white/10 bg-black/90 backdrop-blur-xl sm:hidden">
-                        <div className="mx-auto flex max-w-[1600px] flex-col gap-1 px-4 py-3">
+                    <div className="-mx-4 border-t border-room-line bg-room-panel sm:hidden">
+                        <div className="mx-auto flex max-w-[1600px] flex-col px-4 py-2">
 
-                            <button
-                                onClick={() => navigate("home")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "home"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Home
-                            </button>
+                            <MenuItem active={pathname === "/"} to="/">Home</MenuItem>
 
-                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-                                Blackjack
-                            </div>
-                            <button
-                                onClick={() => navigate("blackjack")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "blackjack"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Classic Blackjack
-                            </button>
-                            <button
-                                onClick={() => navigate("freebetblackjack")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "freebetblackjack"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Free Bet Blackjack
-                            </button>
-                            <button
-                                onClick={() => navigate("doubledownmadness")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "doubledownmadness"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Double Down Madness
-                            </button>
+                            {NAV_GROUPS.map((group) => (
+                                <div key={group.id} className="contents">
+                                    <div className="px-3 pt-1 text-sm font-semibold text-room-muted">
+                                        {group.menuLabel}
+                                    </div>
+                                    {GAMES.filter((g) => g.group === group.id).map((g) => (
+                                        <MenuItem key={g.id} active={pathname === g.path} to={g.path}>
+                                            {g.navLabel ?? g.title}
+                                        </MenuItem>
+                                    ))}
+                                </div>
+                            ))}
 
-                            <div className="px-3 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-                                Poker
-                            </div>
-                            <button
-                                onClick={() => navigate("uth")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "uth"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Ultimate Texas Hold'em
-                            </button>
-                            <button
-                                onClick={() => navigate("paigow")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "paigow"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Pai Gow Poker
-                            </button>
-                            <button
-                                onClick={() => navigate("threecardpoker")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "threecardpoker"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Three Card Poker
-                            </button>
-                            <button
-                                onClick={() => navigate("mississippistud")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "mississippistud"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Mississippi Stud
-                            </button>
-                            <button
-                                onClick={() => navigate("iluvsuits")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "iluvsuits"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                I Luv Suits
-                            </button>
-                            <button
-                                onClick={() => navigate("djwild")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "djwild"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                DJ Wild
-                            </button>
-                            <button
-                                onClick={() => navigate("videopoker")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "videopoker"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Video Poker
-                            </button>
+                            <div className="my-1 h-px bg-room-line"/>
 
-                            <div className="my-1 h-px bg-white/10"/>
+                            {GAMES.filter((g) => g.group === "table").map((g) => (
+                                <MenuItem key={g.id} active={pathname === g.path} to={g.path}>
+                                    {g.navLabel ?? g.title}
+                                </MenuItem>
+                            ))}
 
-                            <button
-                                onClick={() => navigate("roulette")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "roulette"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Roulette
-                            </button>
-                            <button
-                                onClick={() => navigate("baccarat")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "baccarat"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Baccarat
-                            </button>
+                            <div className="my-1 h-px bg-room-line"/>
 
-                            <div className="my-1 h-px bg-white/10"/>
+                            <MenuItem active={pathname === "/feedback"} to="/feedback">Give Feedback</MenuItem>
 
-                            <button
-                                onClick={() => navigate("feedback")}
-                                className="rounded-xl border border-amber-200/40 bg-amber-300/12 px-3 py-2.5 text-left text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
-                            >
-                                Give Feedback
-                            </button>
+                            <MenuItem active={pathname === "/settings"} to="/settings">Settings</MenuItem>
 
-                            <button
-                                onClick={() => navigate("settings")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "settings"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                Settings
-                            </button>
-
-                            <button
-                                onClick={() => navigate("changelog")}
-                                className={`rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${game === "changelog"
-                                    ? "bg-amber-400 text-black"
-                                    : "text-white hover:bg-white/10"}`}
-                            >
-                                What&apos;s New
-                            </button>
+                            <MenuItem active={pathname === "/whats-new"} to="/whats-new">What&apos;s New</MenuItem>
 
                         </div>
                     </div>
                 )}
             </div>
 
-            {renderScreen()}
+            {/* Tables: each one you have opened stays here, hidden unless it is the page you are on */}
+            {GAMES.filter((g) => heldTables.includes(g.id)).map((g) => (
+                <div key={g.id} hidden={g.id !== table?.id} data-table={g.id}>
+                    <Suspense fallback={<div className="min-h-screen bg-room" />}>
+                        <g.component bankroll={bankroll} setBankroll={setBankroll} />
+                    </Suspense>
+                </div>
+            ))}
 
-            {(game === "home" || game === "settings" || game === "feedback" || game === "changelog") && (
-                <footer className="border-t border-white/10 bg-black px-4 py-4 text-center text-[11px] font-semibold tracking-[0.08em] text-white/40" data-testid="site-footer">
+            {/* Pages. A table's URL renders nothing here: the table itself is in the list above. */}
+            <Routes>
+                <Route path="/" element={home} />
+                <Route path="/settings" element={<Settings onBack={goHome} />} />
+                <Route path="/feedback" element={<Feedback onBack={goHome} />} />
+                <Route path="/whats-new" element={<WhatsNew onBack={goHome} />} />
+                {GAMES.map((g) => (
+                    <Route key={g.id} path={g.path} element={null} />
+                ))}
+                <Route path="*" element={<NotFound />} />
+            </Routes>
+
+            {!table && (
+                <footer className="border-t border-room-line bg-room-panel px-4 py-4 text-sm text-room-muted sm:px-6" data-testid="site-footer">
+                    <div className="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span>Cohn Casino</span>
-                    <span className="mx-2 text-white/20">·</span>
-                    <span data-testid="site-version">v{VERSION}</span>
-                    <span className="mx-2 text-white/20">·</span>
-                    <button
-                        onClick={() => navigate("changelog")}
-                        className="font-bold text-amber-200/80 underline decoration-amber-200/30 underline-offset-2 transition hover:text-amber-100"
+                    <span className="text-base font-bold text-room-text" data-testid="site-version">v{VERSION}</span>
+                    <Link
+                        to="/whats-new"
+                        className="border-b-2 border-transparent font-semibold text-room-text transition-colors hover:border-room-accent"
                     >
                         What&apos;s New
-                    </button>
+                    </Link>
+                    </div>
                 </footer>
             )}
         </div>

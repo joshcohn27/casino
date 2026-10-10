@@ -27,18 +27,11 @@ export interface TableShellProps {
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 /**
- * Builds a radial felt gradient from a single hex color.
- * The color blooms from the top-center and fades to near-black.
- * Assumes a 6-digit hex (#rrggbb) so we can append an alpha byte.
+ * The felt is one flat color: the game's own felt color, deepened so white table print
+ * stays easy to read on it.
  */
 function feltGradient(hex: string): string {
-    return [
-        `radial-gradient(ellipse at 50% -10%,`,
-        `  ${hex} 0%,`,
-        `  ${hex}99 28%,`,   // ~60 % opacity mid
-        `  ${hex}33 55%,`,   // ~20 % opacity far
-        `  #040606 82%)`,    // near-black at edge
-    ].join('\n');
+    return `color-mix(in srgb, ${hex} 62%, #000)`;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -74,14 +67,14 @@ export default function TableShell({
         >
             {/* ── Header (opt-out with hideHeader when parent nav is present) ── */}
             {!hideHeader && (
-                <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-black/45 backdrop-blur-xl">
+                <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-black/45">
                     <div className="mx-auto flex max-w-[1700px] items-center gap-4 px-4 py-2.5">
 
                         {/* Left: bankroll */}
                         <div className="flex-1">
-                            <div className="inline-flex flex-col rounded-full border border-amber-300/20
+                            <div className="inline-flex flex-col rounded-[2px] border border-amber-300/20
                                             bg-black/30 px-4 py-1.5 leading-tight">
-                                <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-amber-200">
+                                <span className="text-[9px] font-bold text-amber-200">
                                     Bankroll
                                 </span>
                                 <span className="text-sm font-extrabold text-white sm:text-base">
@@ -91,8 +84,8 @@ export default function TableShell({
                         </div>
 
                         {/* Center: game name */}
-                        <h1 className="shrink-0 text-center text-base font-extrabold
-                                       tracking-[0.03em] text-amber-50 sm:text-xl">
+                        <h1 className="shrink-0 text-center text-base font-bold
+                                       text-amber-50 sm:text-2xl">
                             {gameName}
                         </h1>
 

@@ -39,7 +39,9 @@ export function popLastChip(amount: number, floor = 0): number {
     return Math.max(floor, amount - Number(chips[chips.length - 1]));
 }
 
-export const BTN_BASE = "rounded-xl px-4 py-3 text-sm font-extrabold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40";
-export const BTN_NEUTRAL = `${BTN_BASE} border border-white/20 bg-white/10 text-white hover:bg-white/16`;
-export const BTN_GOLD = `${BTN_BASE} border border-amber-200/70 bg-[linear-gradient(180deg,_#fde68a,_#f59e0b)] text-slate-950 hover:brightness-105`;
-export const BTN_GREEN = `${BTN_BASE} border border-emerald-300/60 bg-[linear-gradient(180deg,_#6ee7b7,_#059669)] text-slate-950 hover:brightness-105`;
+// Table buttons read like casino signage: squared off, solid, bold. No gradients or glow.
+// Hover darkens the fill, pressing darkens it again and drops the button by a pixel.
+export const BTN_BASE = "rounded-[4px] border-2 px-4 py-3 text-sm font-bold transition-colors active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
+export const BTN_NEUTRAL = `${BTN_BASE} border-[#3a4a66] bg-panel-2 text-text hover:bg-line active:bg-ink`;
+export const BTN_GOLD = `${BTN_BASE} border-gold-deep bg-gold text-ink hover:bg-gold-deep active:bg-[#d97706]`;
+export const BTN_GREEN = `${BTN_BASE} border-emerald-500 bg-emerald-400 text-ink hover:bg-emerald-500 active:bg-emerald-600`;

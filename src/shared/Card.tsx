@@ -33,7 +33,6 @@ function suitSrc(suit: string): string {
 }
 
 const RANK_FONT: React.CSSProperties = {
-    fontFamily: 'Georgia, "Palatino Linotype", Palatino, serif',
     fontWeight: 700,
 };
 
@@ -50,7 +49,7 @@ function Pip({ rank, color, flip = false }: {
 }) {
     return (
         <div style={{ color, transform: flip ? 'rotate(180deg)' : 'none' }}>
-            <span className="text-[18.5px] leading-none" style={RANK_FONT}>{rank}</span>
+            <span className="text-[20px] leading-none" style={RANK_FONT}>{rank}</span>
         </div>
     );
 }
@@ -72,12 +71,12 @@ function JokerPip({ flip }: { flip?: boolean }) {
 function JokerFace() {
     return (
         <div className="relative flex h-full w-full items-center justify-center rounded-[inherit]
-                        bg-[linear-gradient(145deg,_#fefce8,_#fde68a)]">
+                        bg-[#fef3c7]">
             <div className="absolute left-[5px] top-[4px]"><JokerPip /></div>
             <div className="absolute right-[5px] top-[4px]"><JokerPip /></div>
             <div className="absolute bottom-[4px] left-[5px]"><JokerPip flip /></div>
             <div className="absolute bottom-[4px] right-[5px]"><JokerPip flip /></div>
-            <span className="select-none text-[1.5em] drop-shadow-sm">🃏</span>
+            <span className="select-none text-[1.5em]">🃏</span>
         </div>
     );
 }
@@ -94,9 +93,7 @@ function Front({ card }: { card: Card }) {
     return (
         <div
             className="relative h-full w-full overflow-hidden rounded-[inherit] bg-white"
-            style={{
-                boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06), inset 0 1px 4px rgba(0,0,0,0.04)',
-            }}
+
         >
             {/* Top-left corner pip */}
             <div className="absolute left-[5px] top-[4px]">
@@ -165,7 +162,7 @@ export default function PlayingCard({ card, className = '', style }: Props) {
                     style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.20), 0 1px 3px rgba(0,0,0,0.14)',
+                        border: '1px solid rgba(0,0,0,0.45)',
                     }}
                 >
                     <Back />
@@ -178,7 +175,7 @@ export default function PlayingCard({ card, className = '', style }: Props) {
                         transform: 'rotateY(180deg)',
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.20), 0 1px 3px rgba(0,0,0,0.14)',
+                        border: '1px solid rgba(0,0,0,0.45)',
                     }}
                 >
                     <Front card={card} />

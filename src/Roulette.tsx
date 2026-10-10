@@ -312,15 +312,15 @@ function RouletteWheel({result, wheelRotation, ballRotation, spinning}: {
     const cx=150, cy=150, outer=138, inner=100;
     return (
         <div className="flex flex-col items-center">
-            <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80 mb-2">Wheel</div>
+            <div className="text-[13px] font-extrabold text-amber-200 mb-2">Wheel</div>
             <div className="relative flex h-[260px] w-[260px] items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,231,170,0.2),rgba(111,53,9,0.35)_30%,rgba(42,21,6,0.75)_60%,rgba(10,5,2,0.95)_100%)] shadow-[0_16px_40px_rgba(0,0,0,0.5)]"/>
+                <div className="absolute inset-0 rounded-full bg-panel"/>
                 <motion.div
                     animate={{rotate:wheelRotation}}
                     transition={{duration:spinning?4.8:0, ease:[0.16,1,0.3,1]}}
                     className="relative z-10"
                 >
-                    <svg viewBox="0 0 300 300" className="h-[244px] w-[244px] drop-shadow-[0_14px_28px_rgba(0,0,0,0.5)]">
+                    <svg viewBox="0 0 300 300" className="h-[244px] w-[244px]">
                         <defs>
                             <radialGradient id="wWood" cx="50%" cy="42%" r="70%">
                                 <stop offset="0%"   stopColor="#7a4718"/>
@@ -358,12 +358,12 @@ function RouletteWheel({result, wheelRotation, ballRotation, spinning}: {
                     transition={{duration:spinning?4.8:0, ease:[0.08,0.95,0.18,1]}}
                     className="pointer-events-none absolute inset-0 z-30"
                 >
-                    <div className="absolute left-1/2 top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 bg-[radial-gradient(circle_at_35%_35%,#fff,#d5d9e3)] shadow-[0_0_12px_rgba(255,255,255,0.5),0_2px_6px_rgba(0,0,0,0.4)]"
+                    <div className="absolute left-1/2 top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 bg-panel"
                         style={{transform:`translate(-50%,-50%) translateY(-${BALL_TRACK_RADIUS}px)`}}/>
                 </motion.div>
                 <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-                    <div className="rounded-full border border-white/15 bg-black/38 px-3 py-1.5 text-center backdrop-blur">
-                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/90">Result</div>
+                    <div className="rounded-[2px] border border-white/15 bg-black/38 px-3 py-1.5 text-center">
+                        <div className="text-[13px] font-bold text-amber-200/90">Result</div>
                         <div className={`mt-0.5 text-xl font-extrabold ${
                             result==null ? "text-white"
                             : getNumberColor(result)==="red" ? "text-red-300"
@@ -661,16 +661,16 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
     return (
         <AnimatePresence>
             <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-4" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                <button className="absolute inset-0 bg-black/70 backdrop-blur-[3px]" onClick={onClose} aria-label="Close"/>
+                <button className="absolute inset-0 bg-black/80" onClick={onClose} aria-label="Close"/>
                 <motion.div initial={{opacity:0,y:20,scale:0.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:0.98}} transition={{duration:0.2,ease:"easeOut"}}
-                    className="relative z-[101] max-h-[88dvh] w-full max-w-[760px] overflow-hidden rounded-[1.5rem] border border-amber-300/20 bg-[linear-gradient(180deg,rgba(7,20,14,0.98),rgba(3,10,7,0.98))] text-white shadow-[0_20px_70px_rgba(0,0,0,0.6)]"
+                    className="relative z-[101] max-h-[88dvh] w-full max-w-[760px] overflow-hidden rounded-[4px] border border-[#5b9471] bg-[#0a2916] text-white"
                 >
                     <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                         <div>
-                            <div className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-200/90">Help</div>
+                            <div className="text-[13px] font-extrabold text-amber-200/90">Help</div>
                             <div className="text-xl font-extrabold text-amber-50">Roulette Rules</div>
                         </div>
-                        <button onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg font-bold text-white/85 hover:bg-white/10">×</button>
+                        <button onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-[4px] border border-white/10 bg-white/5 text-lg font-bold text-white/85 hover:bg-white/10">×</button>
                     </div>
                     <div className="max-h-[calc(88dvh-72px)] overflow-y-auto px-5 py-4 space-y-3 text-sm leading-6 text-emerald-50/90">
                         {([
@@ -686,8 +686,8 @@ function RulesModal({open, onClose}: {open:boolean; onClose:()=>void}) {
                             ["Payouts", ["Straight up 35 to 1","Split 17 to 1","Street 11 to 1","Corner 8 to 1","Dozen / Column 2 to 1","Red/Black · Even/Odd · 1-18/19-36  1 to 1"]],
                             ["House Rules", ["American wheel — 38 pockets (0, 00, 1–36).","0 and 00 are green; not red/black, odd/even, or high/low.","Payouts include return of the original wager plus profit.","Six-line bets are not offered on this layout."]],
                         ] as [string, string[]][]).map(([title, items]) => (
-                            <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-amber-200">{title}</div>
+                            <div key={title} className="rounded-[4px] border border-[#5b9471] bg-[#114224] p-4">
+                                <div className="mb-2 text-sm font-extrabold text-amber-200">{title}</div>
                                 <div className="space-y-1">{items.map(s=><div key={s}>• {s}</div>)}</div>
                             </div>
                         ))}
@@ -819,32 +819,31 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                 <div className="mb-2 flex select-none flex-col items-center gap-1">
                     <div className="flex items-center gap-2">
                         <h1
-                            className="text-2xl font-extrabold uppercase tracking-[0.18em] text-amber-100/90"
-                            style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+                            className="text-2xl font-bold text-gold-soft"
                         >
                             Roulette
                         </h1>
                         <button
                             onClick={() => setShowRules(true)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/30 bg-black/25 text-[11px] font-extrabold text-amber-100 transition hover:bg-amber-300/15"
+                            className="flex h-7 w-7 items-center justify-center rounded-[4px] border border-gold-deep bg-ink text-sm font-bold text-gold-soft transition-colors hover:bg-panel-2 active:bg-black"
                             aria-label="Show rules"
                         >
                             i
                         </button>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.15em] text-white/35">
-                        <span>AMERICAN WHEEL</span>
-                        <span className="text-white/20">·</span>
-                        <span>38 POCKETS</span>
-                        <span className="text-white/20">·</span>
-                        <span>STRAIGHT UP PAYS 35 TO 1</span>
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-white/75">
+                        <span>American wheel</span>
+                        <span className="text-white/75">·</span>
+                        <span>38 pockets</span>
+                        <span className="text-white/75">·</span>
+                        <span>Straight up pays 35 to 1</span>
                     </div>
                 </div>
 
                 {/* Message bar */}
                 <div className="mb-3 flex items-center justify-between gap-3 px-1">
                     <p className="text-sm font-semibold text-amber-50">{message}</p>
-                    <div className="flex shrink-0 items-center gap-3 text-xs text-white/60">
+                    <div className="flex shrink-0 items-center gap-3 text-xs text-white/90">
                         <span>{activeBetCount} spot{activeBetCount!==1?"s":""}</span>
                         <span className="font-bold text-amber-200">{formatMoney(totalBet)}</span>
                     </div>
@@ -860,42 +859,42 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                         </div>
 
                         {/* Recent results */}
-                        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                            <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Recent</div>
+                        <div className="rounded-[4px] border border-white/10 bg-black/20 p-3">
+                            <div className="mb-2 text-[13px] font-extrabold text-amber-200">Recent</div>
                             <div className="flex flex-wrap gap-1.5">
                                 {recentResults.length===0
-                                    ? <span className="text-xs text-white/50">No spins yet.</span>
+                                    ? <span className="text-xs text-white/90">No spins yet.</span>
                                     : recentResults.map((n,i)=>{
                                         const c=getNumberColor(n);
-                                        return <div key={i} className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-extrabold ${c==="red"?"border-red-400/50 bg-red-500/20 text-red-100":c==="black"?"border-white/15 bg-slate-900/80 text-white":"border-emerald-400/40 bg-emerald-500/20 text-emerald-100"}`}>{n}</div>;
+                                        return <div key={i} className={`flex h-7 w-7 items-center justify-center rounded-[4px] border text-[11px] font-extrabold ${c==="red"?"border-red-400/50 bg-red-500/20 text-red-100":c==="black"?"border-white/15 bg-slate-900/80 text-white":"border-emerald-400/40 bg-emerald-500/20 text-emerald-100"}`}>{n}</div>;
                                     })}
                             </div>
                         </div>
 
                         {/* Settlement */}
                         {spinSummary && (
-                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                                <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Last Spin</div>
+                            <div className="rounded-[4px] border border-white/10 bg-black/20 p-3">
+                                <div className="mb-2 text-[13px] font-extrabold text-amber-200">Last Spin</div>
                                 <div className="mb-2 grid grid-cols-2 gap-2 text-xs">
-                                    <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-center">
-                                        <div className="text-white/55">Result</div>
+                                    <div className="rounded-[4px] border border-white/10 bg-white/5 p-2 text-center">
+                                        <div className="text-white/90">Result</div>
                                         <div className={`font-extrabold ${spinSummary.color==="red"?"text-red-300":spinSummary.color==="black"?"text-white":"text-emerald-300"}`}>{spinSummary.result}</div>
                                     </div>
-                                    <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-center">
-                                        <div className="text-white/55">Net</div>
+                                    <div className="rounded-[4px] border border-white/10 bg-white/5 p-2 text-center">
+                                        <div className="text-white/90">Net</div>
                                         <div className={`font-extrabold ${spinSummary.net>0?"text-emerald-300":spinSummary.net<0?"text-red-300":"text-amber-100"}`}>{formatMoney(spinSummary.net)}</div>
                                     </div>
                                 </div>
                                 <div className="max-h-[180px] space-y-1 overflow-y-auto">
                                     {spinSummary.winningBets.map(b=>(
-                                        <div key={b.id} className="flex items-center justify-between rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1.5 text-xs">
+                                        <div key={b.id} className="flex items-center justify-between rounded-[4px] border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1.5 text-xs">
                                             <span className="font-bold text-emerald-100">{b.label}</span>
                                             <span className="text-emerald-200">{formatMoney(b.returned)}</span>
                                         </div>
                                     ))}
                                     {spinSummary.losingBets.slice(0,7).map(b=>(
-                                        <div key={b.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs">
-                                            <span className="text-white/75">{b.label}</span>
+                                        <div key={b.id} className="flex items-center justify-between rounded-[4px] border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs">
+                                            <span className="text-white/90">{b.label}</span>
                                             <span className="text-red-300">−{formatMoney(b.amount)}</span>
                                         </div>
                                     ))}
@@ -904,10 +903,10 @@ export default function Roulette({bankroll, setBankroll}: Props) {
                         )}
 
                         {/* Payout table */}
-                        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                            <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-200/80">Payouts</div>
+                        <div className="rounded-[4px] border border-white/10 bg-black/20 p-3">
+                            <div className="mb-2 text-[13px] font-extrabold text-amber-200">Payouts</div>
                             {[["Straight","35 to 1"],["Split","17 to 1"],["Street","11 to 1"],["Corner","8 to 1"],["Dozen / Column","2 to 1"],["Even money","1 to 1"]].map(([b,p])=>(
-                                <div key={b} className="flex justify-between border-b border-white/5 py-1 text-xs text-white/75">
+                                <div key={b} className="flex justify-between border-b border-white/5 py-1 text-xs text-white/90">
                                     <span>{b}</span><span className="font-bold text-amber-100">{p}</span>
                                 </div>
                             ))}
@@ -916,8 +915,8 @@ export default function Roulette({bankroll, setBankroll}: Props) {
 
                     {/* ── Board ────────────────────────────────────────── */}
                     <div className="order-first min-w-0 flex-1 lg:order-last">
-                        <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-black/15 p-3">
-                            <div className="mb-2 text-center text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-200/70">
+                        <div className="w-full overflow-x-auto rounded-[4px] border border-white/10 bg-black/15 p-3">
+                            <div className="mb-2 text-center text-[13px] font-extrabold text-amber-200">
                                 Click number · edge for split · corner for corner · chip to remove
                             </div>
                             <div style={{ minWidth: "560px" }}>
