@@ -300,7 +300,8 @@ function isLegalSplit(back: FiveEval, front: FrontEval) {
     ) return true;
     if (back.category === "Pair") {
         if (front.category === "High Card") return true;
-        return (back.score[1] ?? 0) > (front.score[1] ?? 0);
+        // the same pair in both hands is legal: it is how four of a kind is split
+        return (back.score[1] ?? 0) >= (front.score[1] ?? 0);
     }
     if (back.category === "High Card") {
         if (front.category === "Pair") return false;
@@ -319,147 +320,143 @@ function buildSplit(front: Card[], allCards: Card[]): SplitEval {
     return { front, back, frontEval, backEval, scoreVector: [...backEval.score, ...frontEval.score] };
 }
 
-function getBackHouseWayTier(backEval: FiveEval) {
-    switch (backEval.category) {
-        case "Five Aces": case "Royal Flush": case "Straight Flush": case "Quads": return 4;
-        case "Full House": return 3;
-        case "Flush": case "Straight": case "Trips": return 2;
-        default: return 1;
-    }
+// ─── Dealer house way ────────────────────────────────────────────────────────
+// How the dealer sets seven cards. This follows the MGM Grand house way as published by
+// Wizard of Odds (wizardofodds.com/games/pai-gow-poker/house-way/mgm/). The joker is an ace
+// unless it fills a straight or flush.
+//
+//   No pair          highest card behind, next two in front
+//   One pair         pair behind, two highest others in front
+//   Two pair         low is 2-6, medium 7-10, high J-K.
+//                    low + low: keep together. low + medium, low + high, medium + medium:
+//                    split unless holding an ace. medium + high, high + high, aces + any: split.
+//   Three pair       highest pair in front
+//   Three of a kind  keep together, except aces: one ace in front
+//   Two threes       a pair from the higher three in front
+//   Straight/flush   keep it behind with the two highest cards that leave it whole in front.
+//                    With a pair: pair in front if the straight or flush survives.
+//                    With an ace and a pair of 10s to kings: ace in front, pair behind, unless
+//                    the straight or flush can be kept with the ace in front.
+//                    With two pair: two pair rules, but two low pairs play the straight or
+//                    flush unless an ace can go in front. With three of a kind: pair in front.
+//   Full house       pair in front, three behind. Exception: pair of 2s with an ace and king
+//                    plays ace-king in front. With two pair: higher pair in front.
+//   Four of a kind   2-6 keep together. 7-10 split unless an ace can go in front.
+//                    Jacks to aces split. With a pair or three as well: keep the four together
+//                    and play the pair in front, except four aces, which split unless the
+//                    pair is kings.
+//   Five aces        two aces in front, unless a pair of kings can go in front.
+
+/** A card's rank for setting the hand: the joker counts as an ace. */
+function houseValue(card: Card) {
+    return isJoker(card) ? 14 : valueOf(card);
 }
 
-function sortCardsByValueDesc(cards: Card[]) {
-    return [...cards].sort((a, b) => valueOf(b) - valueOf(a));
-}
+const MADE_HANDS = ["Straight", "Flush", "Straight Flush", "Royal Flush"];
 
-function groupNonJokerCardsByValue(cards: Card[]) {
-    const map = new Map<number, Card[]>();
-    for (const card of cards) {
-        if (isJoker(card)) continue;
-        const v = valueOf(card);
-        if (!map.has(v)) map.set(v, []);
-        map.get(v)!.push(card);
-    }
-    return [...map.entries()]
-        .map(([value, group]) => ({ value, cards: sortCardsByValueDesc(group), count: group.length }))
-        .sort((a, b) => { if (b.count !== a.count) return b.count - a.count; return b.value - a.value; });
-}
-
-function trySpecificDealerFront(front: Card[], allCards: Card[]) {
-    const split = buildSplit(front, allCards);
-    return isLegalSplit(split.backEval, split.frontEval) ? split : null;
-}
-
-function chooseBestLegalSplitForNoPair(cards: Card[]) {
-    const fronts = combinations(cards, 2);
-    let best: SplitEval | null = null;
-    let bestScore: number[] | null = null;
-    for (const front of fronts) {
-        const split = buildSplit(front, cards);
-        if (!isLegalSplit(split.backEval, split.frontEval)) continue;
-        const score = [
-            split.frontEval.category === "Pair" ? 1 : 0,
-            ...split.frontEval.score,
-            getBackHouseWayTier(split.backEval),
-            ...split.backEval.score,
-        ];
-        if (!best || !bestScore || compareVectors(score, bestScore) > 0) { best = split; bestScore = score; }
-    }
-    if (best) return best;
-    return buildSplit(cards.slice(0, 2), cards);
-}
-
-// No pair anywhere in the seven cards. A joker beside an ace counts as a pair of aces.
-function hasNoPair(cards: Card[]) {
-    const values = cards.filter((c) => !isJoker(c)).map((c) => valueOf(c));
-    if (new Set(values).size !== values.length) return false;
-    return !(cards.some(isJoker) && values.includes(14));
-}
-
-// A no-pair hand that holds a straight or flush keeps it in the High hand, with the two
-// highest cards that still leave it whole in the Low hand. Breaking it up to play high cards
-// in front hands the player the High hand almost every time.
-function keepMadeHandSplit(cards: Card[]): SplitEval | null {
-    let best: SplitEval | null = null; let bestScore: number[] | null = null;
+/** Every legal way to keep a straight, flush or better-of-that-family in the High hand, best Low hand first. */
+function madeHandSplits(cards: Card[]): SplitEval[] {
+    const out: { split: SplitEval; score: number[] }[] = [];
     for (const front of combinations(cards, 2)) {
         const split = buildSplit(front, cards);
-        if (!isLegalSplit(split.backEval, split.frontEval) || getBackHouseWayTier(split.backEval) < 2) continue;
-        const score = [...split.frontEval.score, ...split.backEval.score];
-        if (!best || !bestScore || compareVectors(score, bestScore) > 0) { best = split; bestScore = score; }
+        if (!MADE_HANDS.includes(split.backEval.category) || !isLegalSplit(split.backEval, split.frontEval)) continue;
+        out.push({ split, score: [...split.frontEval.score, ...split.backEval.score] });
     }
-    return best;
+    return out.sort((x, y) => compareVectors(y.score, x.score)).map((x) => x.split);
+}
+
+/** The two cards the house way puts in the Low hand. */
+function houseWayFront(cards: Card[]): Card[] {
+    const byRank = [...cards].sort((x, y) => houseValue(y) - houseValue(x) || (isJoker(x) ? 1 : 0) - (isJoker(y) ? 1 : 0));
+    const groupMap = new Map<number, Card[]>();
+    for (const card of byRank) groupMap.set(houseValue(card), [...(groupMap.get(houseValue(card)) ?? []), card]);
+    const groups = [...groupMap.entries()].map(([value, group]) => ({ value, cards: group }));
+    const ofSize = (n: number) => groups.filter((g) => g.cards.length === n).sort((x, y) => y.value - x.value);
+    const fives = ofSize(5), quads = ofSize(4), trips = ofSize(3), pairs = ofSize(2);
+    const singles = ofSize(1).map((g) => g.cards[0]);
+    const hasAce = singles.some((c) => houseValue(c) === 14);
+    const top2 = (list: Card[]) => list.slice(0, 2);
+    const made = madeHandSplits(cards);
+    const kings = pairs.find((p) => p.value === 13);
+
+    // five aces
+    if (fives.length > 0) return kings ? kings.cards : fives[0].cards.slice(0, 2);
+
+    // four of a kind
+    if (quads.length > 0) {
+        const four = quads[0];
+        if (four.value === 14) return kings ? kings.cards : four.cards.slice(0, 2);
+        if (trips.length > 0) return trips[0].cards.slice(0, 2);
+        if (pairs.length > 0) return pairs[0].cards;
+        if (four.value <= 6) return top2(singles);
+        if (four.value <= 10 && hasAce) return top2(singles);
+        return four.cards.slice(0, 2);
+    }
+
+    // full houses
+    if (trips.length === 2) return trips[0].cards.slice(0, 2);
+    if (trips.length === 1 && pairs.length === 2) return pairs[0].cards;
+    if (trips.length === 1 && pairs.length === 1) {
+        const king = singles.find((c) => houseValue(c) === 13);
+        const ace = singles.find((c) => houseValue(c) === 14);
+        if (pairs[0].value === 2 && ace && king) return [ace, king];
+        return pairs[0].cards;
+    }
+
+    // three of a kind
+    if (trips.length === 1) {
+        const three = trips[0];
+        const pairInFront = made.find((m) => m.frontEval.category === "Pair");
+        if (pairInFront) return pairInFront.front;
+        if (three.value === 14) return [three.cards[0], singles[0]];
+        return top2(singles);
+    }
+
+    // three pair
+    if (pairs.length === 3) return pairs[0].cards;
+
+    // two pair
+    if (pairs.length === 2) {
+        const [high, low] = pairs;
+        const size = (v: number) => (v <= 6 ? 0 : v <= 10 ? 1 : 2);
+        const bothLow = size(high.value) === 0;
+        if (bothLow && made.length > 0 && !hasAce) return made[0].front;
+        const split = high.value === 14
+            || (size(high.value) === 2 && size(low.value) >= 1)
+            || (!bothLow && !hasAce);
+        return split ? low.cards : top2(singles);
+    }
+
+    // one pair
+    if (pairs.length === 1) {
+        if (made.length > 0) {
+            if (made[0].frontEval.category === "Pair") return made[0].front;
+            if (hasAce && pairs[0].value >= 10 && pairs[0].value <= 13) {
+                const aceInFront = made.find((m) => m.front.some((c) => houseValue(c) === 14));
+                return aceInFront ? aceInFront.front : top2(singles);
+            }
+            return made[0].front;
+        }
+        return top2(singles);
+    }
+
+    // no pair
+    if (made.length > 0) return made[0].front;
+    return [byRank[1], byRank[2]];
 }
 
 function evaluateDealerHouseWay(cards: Card[]): SplitEval {
-    if (hasNoPair(cards)) {
-        const made = keepMadeHandSplit(cards);
-        if (made) return made;
+    const split = buildSplit(houseWayFront(cards), cards);
+    if (isLegalSplit(split.backEval, split.frontEval)) return split;
+    // The house can never set a foul hand. If a rule above would, fall back to the legal set
+    // with the best High hand.
+    let best: SplitEval | null = null;
+    for (const front of combinations(cards, 2)) {
+        const candidate = buildSplit(front, cards);
+        if (!isLegalSplit(candidate.backEval, candidate.frontEval)) continue;
+        if (!best || compareVectors(candidate.scoreVector, best.scoreVector) > 0) best = candidate;
     }
-    const jokerCount = cards.filter(isJoker).length;
-    if (jokerCount > 0) {
-        const frontCombos = combinations(cards, 2);
-        let best: SplitEval | null = null; let bestScore: number[] | null = null;
-        for (const front of frontCombos) {
-            const split = buildSplit(front, cards);
-            if (!isLegalSplit(split.backEval, split.frontEval)) continue;
-            const score = [split.frontEval.category === "Pair" ? 1 : 0, ...split.frontEval.score, getBackHouseWayTier(split.backEval), ...split.backEval.score];
-            if (!best || !bestScore || compareVectors(score, bestScore) > 0) { best = split; bestScore = score; }
-        }
-        return best ?? buildSplit(cards.slice(0, 2), cards);
-    }
-    const groups = groupNonJokerCardsByValue(cards);
-    const pairs = groups.filter((g) => g.count === 2);
-    const trips = groups.filter((g) => g.count === 3);
-    const quads = groups.filter((g) => g.count === 4);
-
-    if (quads.length === 0 && trips.length === 0 && pairs.length === 0) {
-        return chooseBestLegalSplitForNoPair(cards);
-    }
-    if (quads.length === 0 && trips.length === 0 && pairs.length === 1) {
-        const pairCards = pairs[0].cards;
-        const sideCards = sortCardsByValueDesc(cards.filter((c) => !pairCards.some((pc) => pc.id === c.id)));
-        const split = trySpecificDealerFront(sideCards.slice(0, 2), cards);
-        if (split) return split;
-    }
-    if (quads.length === 0 && trips.length === 0 && pairs.length === 2) {
-        const sortedPairs = [...pairs].sort((a, b) => b.value - a.value);
-        const highPair = sortedPairs[0].cards; const lowPair = sortedPairs[1].cards;
-        const splitLowPairFront = trySpecificDealerFront(lowPair, cards);
-        if (splitLowPairFront) return splitLowPairFront;
-        const sideCards = sortCardsByValueDesc(cards.filter((c) => !highPair.some((pc) => pc.id === c.id) && !lowPair.some((pc) => pc.id === c.id)));
-        const highCardFront = trySpecificDealerFront(sideCards.slice(0, 2), cards);
-        if (highCardFront) return highCardFront;
-    }
-    if (quads.length === 0 && trips.length === 0 && pairs.length === 3) {
-        const sortedPairs = [...pairs].sort((a, b) => b.value - a.value);
-        const split = trySpecificDealerFront(sortedPairs[2].cards, cards);
-        if (split) return split;
-    }
-    if (quads.length === 0 && trips.length === 1 && pairs.length === 0) {
-        const tripCards = trips[0].cards;
-        const sideCards = sortCardsByValueDesc(cards.filter((c) => !tripCards.some((tc) => tc.id === c.id)));
-        const split = trySpecificDealerFront(sideCards.slice(0, 2), cards);
-        if (split) return split;
-    }
-    if (quads.length === 0 && trips.length === 1 && pairs.length === 1) {
-        const pairCards = pairs[0].cards;
-        const splitPairFront = trySpecificDealerFront(pairCards, cards);
-        if (splitPairFront) return splitPairFront;
-        const tripCards = trips[0].cards;
-        const sideCards = sortCardsByValueDesc(cards.filter((c) => !tripCards.some((tc) => tc.id === c.id) && !pairCards.some((pc) => pc.id === c.id)));
-        const highCardFront = trySpecificDealerFront(sideCards.slice(0, 2), cards);
-        if (highCardFront) return highCardFront;
-    }
-    const frontCombos = combinations(cards, 2);
-    let best: SplitEval | null = null; let bestScore: number[] | null = null;
-    for (const front of frontCombos) {
-        const split = buildSplit(front, cards);
-        if (!isLegalSplit(split.backEval, split.frontEval)) continue;
-        const score = [split.frontEval.category === "Pair" ? 1 : 0, ...split.frontEval.score, getBackHouseWayTier(split.backEval), ...split.backEval.score];
-        if (!best || !bestScore || compareVectors(score, bestScore) > 0) { best = split; bestScore = score; }
-    }
-    if (!best) return buildSplit(cards.slice(0, 2), cards);
-    return best;
+    return best ?? split;
 }
 
 function evaluateBestSplit(cards: Card[]): { best: SplitEval; allBestFrontKeySet: Set<string> } {

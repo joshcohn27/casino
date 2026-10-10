@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.2",
+        date: "2026-10-10",
+        title: "Pai Gow house way",
+        changes: [
+            ["fixed", "Pai Gow Poker: the dealer now sets every hand the way a real casino does, following a published Las Vegas house way. Before, a dealer holding the joker could break up a pair of aces."],
+            ["fixed", "Pai Gow Poker: four of a kind can now be split into a pair in each hand."],
+        ],
+    },
+    {
         version: "4.1.1",
         date: "2026-10-10",
         title: "DJ Wild Trips pay table",
