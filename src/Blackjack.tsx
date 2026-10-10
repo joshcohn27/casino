@@ -6,14 +6,15 @@ import type { Card as SharedCard } from "./shared/cards";
 import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "./shared/money";
 import BetSpot, { BetBar } from "./shared/BetSpot";
 import HandRow from "./shared/HandRow";
+import BlackjackHand from "./shared/BlackjackHand";
 import { SlideBtn } from "./shared/SlideBtn";
 import { defaultBet } from "./shared/settings";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
-type Card = { rank: Rank; suit: Suit; value: number; id: string };
+type Card = { rank: Rank; suit: Suit; value: number; id: string; /** A double-down card, laid sideways. */ sideways?: boolean };
 type Props = { bankroll: number; setBankroll: React.Dispatch<React.SetStateAction<number>> };
-type Stage = "betting" | "player" | "dealer" | "done";
+type Stage = "betting" | "dealing" | "player" | "dealer" | "done";
 
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
 const RANKS: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
@@ -29,8 +30,8 @@ const PLAYER_TO_DEALER_DELAY_MS = 500;
 const STAND_TO_DEALER_DELAY_MS = 120;
 // One dealer card: long enough for a card to land, or for the hole card to turn over
 const DEALER_CARD_MS = 480;
-// The deal goes player, dealer, player, dealer
-const DEAL_STEP_S = 0.13;
+// The deal goes player, dealer, player, dealer, one card at a time
+const DEAL_CARD_MS = 380;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
@@ -168,18 +169,16 @@ function DealerLane({ cards, revealedCount, stage }: {
                     isFaceUp={(id) => cards.findIndex((card) => card.id === id) < revealedCount}
                     size="md"
                     slots={4}
-                    dealDelay={(i) => (i < 2 ? (i * 2 + 1) * DEAL_STEP_S : 0)}
+                    dealDelay={() => 0}
                 />
             </div>
         </div>
     );
 }
 
-function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted, firstDeal }: {
+function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted }: {
     hand: Card[]; bet: number; index: number; isActive: boolean;
     stage: Stage; dealerTotal: number; dealerBusted: boolean;
-    /** True for the opening two cards, which are dealt in turn with the dealer's. */
-    firstDeal: boolean;
 }) {
     const t = total(hand);
     const bust = t > 21;
@@ -192,15 +191,7 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted,
                 <Chip>Hand {index + 1}</Chip>
                 {result && <Badge result={result} />}
             </div>
-            <div className="w-[186px] sm:w-[216px]">
-                <HandRow
-                    cards={hand.map((card) => toShared(card, true))}
-                    isFaceUp={() => true}
-                    size="md"
-                    slots={3}
-                    dealDelay={(i) => (firstDeal && i < 2 ? i * 2 * DEAL_STEP_S : 0)}
-                />
-            </div>
+            <BlackjackHand cards={hand.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
@@ -233,6 +224,7 @@ function BlackjackBar({
     const isDone = stage === "done";
     const isPlayer = stage === "player";
     const isDealer = stage === "dealer";
+    const isDealing = stage === "dealing";
     const showChips = !isDealer; // hide chips only while dealer is playing
 
     const canClear = isBetting || isDone;
@@ -248,7 +240,7 @@ function BlackjackBar({
                     <ChipTray
                         selectedChip={selectedChip}
                         onSelect={onChipSelect}
-                        disabled={isPlayer || isShuffling}
+                        disabled={isPlayer || isDealing || isShuffling}
                     />
                 ) : (
                     <div className="w-px" /> // placeholder to keep grid stable
@@ -316,6 +308,18 @@ function BlackjackBar({
                         <SlideBtn key="split">
                             <button className={BTN_GOLD} onClick={onSplit} disabled={!canSplit || isResolvingAction}>Split</button>
                         </SlideBtn>
+                    )}
+
+                    {/* Dealing: subtle indicator */}
+                    {isDealing && (
+                        <motion.span
+                            key="dealing-msg"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-sm italic text-white/75"
+                        >
+                            Dealing…
+                        </motion.span>
                     )}
 
                     {/* Dealer: subtle indicator */}
@@ -561,8 +565,20 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         const dealerHand = [nextDeck[2], nextDeck[3]];
         nextDeck = nextDeck.slice(4);
 
-        setDeck(nextDeck); setDealer(dealerHand); setDealerRevealedCount(1);
-        setHands([playerHand]); setBets([wager]); setActive(0);
+        setDeck(nextDeck); setDealerRevealedCount(1);
+        setBets([wager]); setActive(0);
+
+        // player, dealer, player, dealer. The dealer's second card stays face down.
+        setStage("dealing");
+        setMessage("Dealing...");
+        setDealer([]); setHands([[playerHand[0]]]);
+        await wait(DEAL_CARD_MS);
+        setDealer([dealerHand[0]]);
+        await wait(DEAL_CARD_MS);
+        setHands([playerHand]);
+        await wait(DEAL_CARD_MS);
+        setDealer(dealerHand);
+        await wait(DEAL_CARD_MS);
 
         const dealerBJ = total(dealerHand) === 21;
         const playerBJ = total(playerHand) === 21;
@@ -623,7 +639,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
             if (bankroll < wager) return;
             setBankroll((b) => b - wager);
             const nextBets = [...bets]; nextBets[active] *= 2; setBets(nextBets);
-            const nextDeck = [...deck]; const card = nextDeck.shift(); if (!card) return;
+            const nextDeck = [...deck]; const drawn = nextDeck.shift(); if (!drawn) return;
+            const card: Card = { ...drawn, sideways: true };
             const nextHands = [...hands]; nextHands[active] = [...nextHands[active], card];
             setDeck(nextDeck); setHands(nextHands);
             if (total(nextHands[active]) > 21) setMessage(`Hand ${active + 1} busts after doubling.`);
@@ -778,7 +795,6 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                                     stage={stage}
                                     dealerTotal={dealerT}
                                     dealerBusted={dealerBusted}
-                                    firstDeal={hands.length === 1}
                                 />
                             ))}
                         </div>
