@@ -126,11 +126,9 @@ function evaluateBestFrom(cards: Card[]): BestFive {
     return best;
 }
 
+// The dealer needs a pair or better to qualify
 function dealerQualifies(cards: Card[]) {
-    const best = evaluateBestFrom(cards);
-    if (best.category !== "High Card") return true;
-    const top = [...best.score];
-    return top[1] === 14 && top[2] >= 13;
+    return evaluateBestFrom(cards).category !== "High Card";
 }
 
 function getAllSameSuit(cards: Card[]) { return cards.every(card => card.suit === cards[0].suit); }
@@ -239,8 +237,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                             {[
                                 ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5 to $25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
                                 ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, Ante, Blind, Play, and Trips lose immediately."]],
-                                ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• Dealer also qualifies with Ace-King high.", "• If dealer doesn't qualify and you win, Ante pushes and Play wins 1 to 1."]],
-                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Dealer wins: Ante, Blind, and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
+                                ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• If the dealer doesn't qualify, your Ante is returned whether you win or lose the hand.", "• Folding always loses the Ante."]],
+                                ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Qualifying dealer wins: Ante, Blind, and Play lose.", "• Dealer doesn't qualify but wins: Ante pushes, Blind and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
                                 <div key={title as string} className="rounded-[4px] border border-[#5a718a] bg-[#102439] p-4">
                                     <div className="mb-2 text-sm font-extrabold text-amber-200">{title as string}</div>
@@ -328,7 +326,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const tripsHighlight = resolvedHand?.tripsMultiplier ? resolvedHand.tripsCategory : null;
     const sixCardHighlight = stage === "roundOver" && resolvedHand?.sixCardMultiplier ? resolvedHand.sixCardCategory : null;
 
-    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1 to 1" : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
+    const anteResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.dealerQualified ? "Win 1 to 1" : "Push"; if (resolvedHand.compare === 0 || !resolvedHand.dealerQualified) return "Push"; return "Lose"; }, [resolvedHand, payout]);
     const blindResultText = useMemo(() => { if (!resolvedHand || !payout) return "Pending"; if (resolvedHand.folded) return "Lose"; if (resolvedHand.compare > 0) return resolvedHand.blindMultiplier ? `Win ${resolvedHand.blindMultiplier} to 1` : "Push"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout]);
     const playResultText = useMemo(() => { if (!resolvedHand || !payout) return play > 0 ? "Pending" : "No Bet"; if (resolvedHand.folded) return "Lose"; if (play === 0) return "No Bet"; if (resolvedHand.compare > 0) return "Win 1 to 1"; if (resolvedHand.compare === 0) return "Push"; return "Lose"; }, [resolvedHand, payout, play]);
     const tripsResultText = useMemo(() => { if (trips <= 0) return "No Bet"; if (!resolvedHand || !payout) return "Pending"; return resolvedHand.tripsMultiplier ? `Win ${resolvedHand.tripsMultiplier} to 1` : "Lose"; }, [resolvedHand, payout, trips]);
@@ -350,7 +348,9 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 blindReturn = blind + blindWin;
                 summary.push(blindWin > 0 ? `Blind wins ${blindWin / blind} to 1 on ${playerEval.category}.` : "Blind pushes.");
             } else if (compare === 0) { anteReturn = ante; blindReturn = blind; playReturn = playStake; summary.push("Tie. Ante, Blind, and Play push."); }
-            else summary.push("Dealer beats player. Ante, Blind, and Play lose.");
+            else if (dealerQualified) summary.push("Dealer beats player. Ante, Blind, and Play lose.");
+            // a dealer who does not qualify cannot take the Ante, even with the better hand
+            else { anteReturn = ante; summary.push("Dealer does not qualify. Ante pushes. Blind and Play lose."); }
         } else summary.push("Player folds.");
         const tripsWin = trips > 0 ? getTripsPayout(playerEval.category, trips) : 0;
         if (trips > 0) { if (tripsWin > 0) { tripsReturn = trips + tripsWin; summary.push(`Trips wins ${tripsWin / trips} to 1 on ${playerEval.category}.`); } else summary.push("Trips loses."); }

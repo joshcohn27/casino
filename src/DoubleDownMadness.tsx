@@ -571,6 +571,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         setResultLabel(label);
         setResultLines(lines);
         setStage("done");
+        setMessage(`Hand over: ${label}.`);
     };
 
     const resolveDealerBlackjackIfAny = async (

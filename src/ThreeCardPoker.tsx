@@ -148,13 +148,25 @@ function dealerQualifies(cards: Card[]): boolean {
     return score >= 2 || highValue >= 12;
 }
 
+// What a hand is compared on, most important first: the kind of hand, then the cards that
+// make it, then the kicker. A pair is compared by the pair before the odd card, and A-2-3 is
+// the lowest straight, not the highest.
+function handStrength(cards: Card[]): number[] {
+    const [v0, v1, v2] = [...cards].map(c => c.value).sort((a, b) => b - a);
+    const { score } = evaluate3Cards(cards);
+    const wheel = v0 === 14 && v1 === 3 && v2 === 2;
+    if (score === 6 || score === 4) return [score, wheel ? 3 : v0];
+    if (score === 5) return [score, v0];
+    if (score === 2) return v0 === v1 ? [score, v0, v2] : [score, v1, v0];
+    return [score, v0, v1, v2];
+}
+
 function compareHands(playerCards: Card[], dealerCards: Card[]): number {
-    const p = evaluate3Cards(playerCards);
-    const d = evaluate3Cards(dealerCards);
-    if (p.score !== d.score) return p.score - d.score;
-    const pv = [...playerCards].sort((a, b) => b.value - a.value).map(c => c.value);
-    const dv = [...dealerCards].sort((a, b) => b.value - a.value).map(c => c.value);
-    for (let i = 0; i < 3; i++) if (pv[i] !== dv[i]) return pv[i] - dv[i];
+    const p = handStrength(playerCards);
+    const d = handStrength(dealerCards);
+    for (let i = 0; i < Math.max(p.length, d.length); i++) {
+        if ((p[i] ?? 0) !== (d[i] ?? 0)) return (p[i] ?? 0) - (d[i] ?? 0);
+    }
     return 0;
 }
 

@@ -32,6 +32,11 @@ export const CHANGELOG: ChangeEntry[] = [
             ["new", "The Blazing 7s jackpot grows as other players bet, and now and then one of them wins it."],
             ["improved", "Double Down Madness: the Double Ladder lights up the step your hand is on."],
             ["fixed", "Double Down Madness: the rules and the pay table now show the Push 22 payout correctly as 11 to 1."],
+            ["fixed", "Three Card Poker: when you and the dealer both have a pair, the higher pair now wins. A-2-3 is now the lowest straight."],
+            ["fixed", "Ultimate Texas Hold'em: the dealer needs a pair or better to qualify. Ace-King high no longer counts."],
+            ["fixed", "Ultimate Texas Hold'em: when the dealer doesn't qualify, your Ante comes back even if the dealer has the better hand, unless you folded."],
+            ["fixed", "Video Poker: Jacks or Better now pays every four of a kind the same, as the real game does."],
+            ["fixed", "Double Down Madness: the message now says how the hand ended."],
         ],
     },
     {
