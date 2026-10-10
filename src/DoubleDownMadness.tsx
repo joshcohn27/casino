@@ -247,7 +247,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             items: [
                 "• If the dealer makes exactly 22, standing main wagers push.",
                 "• The Push 22 side bet wins when the dealer finishes on exactly 22.",
-                "• Push 22 pays 12 to 1.",
+                "• Push 22 pays 11 to 1.",
                 "• If you bust but have Push 22 bet, the dealer still draws out the hand to resolve the side bet.",
             ],
         },
@@ -721,6 +721,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
         if (sideBet > 0) {
             if (dealerHas22) {
+                // 11 to 1: the bet comes back with eleven times itself
                 const sideReturn = sideBet * 12;
                 returned += sideReturn;
                 lines.push(`Push 22 wins: ${formatMoney(sideReturn)} returned.`);
@@ -1048,7 +1049,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between gap-2 text-sm">
                                     <span className="text-zinc-400">Dealer finishes on 22</span>
-                                    <span className="font-bold text-gold">12 to 1</span>
+                                    <span className="font-bold text-gold">11 to 1</span>
                                 </div>
                             </div>
                         </InfoPanel>
