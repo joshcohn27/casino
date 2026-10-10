@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.0.1",
+        date: "2026-10-09",
+        title: "Card backs",
+        changes: [
+            ["fixed", "Face-down cards now fill their outline, with no gap around the card back."],
+        ],
+    },
+    {
         version: "4.0.0",
         date: "2026-10-09",
         title: "A new look, and links to every page",

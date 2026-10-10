@@ -156,9 +156,9 @@ export default function PlayingCard({ card, className = '', style }: Props) {
                 style={{ transformStyle: 'preserve-3d' }}
                 className="relative h-full w-full rounded-[inherit]"
             >
-                {/* Back face */}
+                {/* Back face: white to the edge, so the card back fills its outline */}
                 <div
-                    className="absolute inset-0 overflow-hidden rounded-[inherit]"
+                    className="absolute inset-0 overflow-hidden rounded-[inherit] bg-white"
                     style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
