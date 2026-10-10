@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.3",
+        date: "2026-10-10",
+        title: "Smoother Blackjack",
+        changes: [
+            ["improved", "Blackjack: cards are dealt in turn (you, dealer, you, dealer) and a Hit card arrives right away instead of after a pause."],
+            ["improved", "Blackjack: cards slide over to make room for a new one instead of jumping, and the table no longer shifts when the hand is dealt."],
+            ["improved", "Blackjack: the dealer starts playing as soon as you stand, and draws cards face up one at a time."],
+        ],
+    },
+    {
         version: "4.1.2",
         date: "2026-10-10",
         title: "Pai Gow house way",

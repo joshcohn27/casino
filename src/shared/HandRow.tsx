@@ -34,10 +34,12 @@ export interface HandRowProps {
     /** Number of slots to reserve width for (defaults to the card count). */
     slots?: number;
     testId?: string;
+    /** Seconds before each card starts its deal, by position. Defaults to a quick left-to-right ripple. */
+    dealDelay?: (index: number) => number;
 }
 
 export default function HandRow({
-    cards, order, isFaceUp, emphasis, onCardClick, canClick, cardLabel, size = "sm", slots, testId,
+    cards, order, isFaceUp, emphasis, onCardClick, canClick, cardLabel, size = "sm", slots, testId, dealDelay,
 }: HandRowProps) {
     // cards are keyed by deck as well as by name, so a card dealt two hands running is a new card
     const deckNo = useContext(DeckContext);
@@ -80,7 +82,7 @@ export default function HandRow({
                                 variants={DEAL_VARIANTS}
                                 initial="initial"
                                 animate="animate"
-                                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
+                                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1], delay: dealDelay ? dealDelay(i) : i * 0.04 }}
                                 whileTap={clickable ? { scale: 0.97 } : undefined}
                                 className={`block ${cfg.radius} transition-[translate] duration-150 ${clickable ? "cursor-pointer hover:-translate-y-1" : "cursor-default"}`}
                             >
@@ -91,7 +93,7 @@ export default function HandRow({
                                 variants={DEAL_VARIANTS}
                                 initial="initial"
                                 animate="animate"
-                                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
+                                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1], delay: dealDelay ? dealDelay(i) : i * 0.04 }}
                             >
                                 {face}
                             </motion.div>
