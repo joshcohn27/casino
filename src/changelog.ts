@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.1",
+        date: "2026-10-10",
+        title: "DJ Wild Trips pay table",
+        changes: [
+            ["improved", "DJ Wild: when Trips hits, the payout that applies (Natural or Wild) is tinted green and the other is greyed out."],
+        ],
+    },
+    {
         version: "4.1.0",
         date: "2026-10-09",
         title: "Two decks in play",

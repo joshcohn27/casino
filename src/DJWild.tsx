@@ -193,9 +193,17 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
 function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatural: boolean }) {
     // laid out like the table felt: every cell reads "x to 1", and a hand that can only be
     // made with wild cards shows its one payout in both columns
-    // on the winning row, the column that did not pay drops back to white
-    const cell = (value: number | undefined, dim: boolean) => (
-        <span className={`w-[62px] shrink-0 whitespace-nowrap text-right font-bold tabular-nums ${dim ? "text-white/75" : "text-gold"}`}>
+    // on the row that hits, the column that pays is tinted green and the other one grey
+    const TINT = "relative isolate before:absolute before:inset-y-0 before:-inset-x-0.5 before:-z-10 before:rounded-[2px] before:content-['']";
+    const cell = (value: number | undefined, state: "pays" | "misses" | "plain") => (
+        <span
+            data-trips-cell={state}
+            className={`w-[62px] shrink-0 whitespace-nowrap text-right font-bold tabular-nums ${
+                state === "pays" ? `${TINT} text-emerald-300 before:bg-emerald-400/25`
+                : state === "misses" ? `${TINT} text-white/60 before:bg-white/10`
+                : "text-gold"
+            }`}
+        >
             {(value ?? 0).toLocaleString()} to 1
         </span>
     );
@@ -214,8 +222,8 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
                 return (
                     <div key={hand} data-trips-row={hand} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
                         <span className={`flex-1 ${hit ? "font-extrabold text-amber-100" : "text-white/75"}`}>{hand}</span>
-                        {cell(natural, hit && !hitNatural)}
-                        {cell(wild, hit && hitNatural)}
+                        {cell(natural, !hit ? "plain" : hitNatural ? "pays" : "misses")}
+                        {cell(wild, !hit ? "plain" : hitNatural ? "misses" : "pays")}
                     </div>
                 );
             })}
