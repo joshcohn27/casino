@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.0.3",
+        date: "2026-10-09",
+        title: "Pai Gow dealer fixes",
+        changes: [
+            ["fixed", "Pai Gow Poker: the dealer now keeps a straight or flush together instead of breaking it up to play high cards in the Low hand."],
+            ["improved", "Pai Gow Poker: when the dealer has Ace-high, the main bet pushes and the hand finishes by itself. Your cards are turned over and set for you."],
+            ["improved", "Pai Gow Poker: the table now reads \"Dealer Ace High Pushes\"."],
+        ],
+    },
+    {
         version: "4.0.2",
         date: "2026-10-09",
         title: "Pai Gow hand names",
