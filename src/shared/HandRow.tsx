@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useContext } from "react";
 import { motion } from "motion/react";
 import PlayingCard from "./Card";
 import type { Card as SharedCard } from "./cards";
+import { DeckContext } from "./deck";
 
 // One row of cards for the poker-style games.
 //
@@ -38,6 +39,8 @@ export interface HandRowProps {
 export default function HandRow({
     cards, order, isFaceUp, emphasis, onCardClick, canClick, cardLabel, size = "sm", slots, testId,
 }: HandRowProps) {
+    // cards are keyed by deck as well as by name, so a card dealt two hands running is a new card
+    const deckNo = useContext(DeckContext);
     const cfg = SIZES[size];
     const ids = order ?? cards.map((c) => c.id);
     const count = Math.max(ids.length, 1);
@@ -68,7 +71,7 @@ export default function HandRow({
                     </div>
                 );
                 return (
-                    <div key={card.id} style={style}>
+                    <div key={`${deckNo}-${card.id}`} style={style}>
                         {onCardClick ? (
                             <motion.button
                                 onClick={() => onCardClick(card.id)}

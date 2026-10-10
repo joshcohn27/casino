@@ -140,6 +140,8 @@ function PayoutColumn({ title, entries, unit, highlight }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ILuvSuits({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your bets and press Deal.");
     const [showRules, setShowRules] = useState(false);
@@ -209,6 +211,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
         if (pendingAnte < MIN_ANTE) { setMessage(`The Ante must be at least $${MIN_ANTE}.`); return; }
         // the Ante must be matched by a Play bet later, so that money has to be there too
         if (bankroll < pendingTotal + pendingAnte) { setMessage("Not enough bankroll to cover the Ante and a Play bet."); return; }
+        setDeckNo((n) => n + 1);
         const deck = shuffle(createDeck());
         resetRound();
         setAnteBet(pendingAnte); setFlushRushBet(pendingFlushRush); setSuperFlushBet(pendingSuperFlush);
@@ -335,7 +338,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor={FELT_COLOR}
                 gameName="I Luv Suits"
                 bankroll={bankroll}

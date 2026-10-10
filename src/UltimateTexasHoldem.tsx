@@ -280,6 +280,8 @@ function PayoutColumn({ title, entries, highlight }: { title: string; entries: R
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
     const [ante, setAnte] = useState(() => defaultBet("uth", "ante"));
     const blind = ante;
@@ -389,6 +391,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         if (normalizedSix !== 0 && normalizedSix < MIN_SIX_BONUS) { setMessage("6 Card Bonus must be 0 or at least $5."); return; }
         const totalBet = normalizedAnte + normalizedAnte + normalizedTrips + normalizedSix;
         if (bankroll < totalBet) { setMessage("Not enough bankroll for those bets."); return; }
+        setDeckNo((n) => n + 1);
         const deck = createDeck(); let nextDeck = deck;
         let player: Card[], dealer: Card[], hiddenSix: Card[];
         [player, nextDeck] = draw(nextDeck, 2);[dealer, nextDeck] = draw(nextDeck, 2);[hiddenSix, nextDeck] = draw(nextDeck, 4);
@@ -536,7 +539,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#1a3a5c"
                 gameName="Ultimate Texas Hold'em"
                 bankroll={bankroll}
@@ -774,7 +777,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <div className="flex gap-2" data-testid="dealer-cards">
                                 <AnimatePresence>
                                     {round.dealer.map((card, i) => (
-                                        <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                        <motion.div key={`${deckNo}-${card.id}`} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
                                             <PlayingCard card={toShared(card, i < dealerShown)} className={CARD_CLS} />
                                         </motion.div>
                                     ))}
@@ -789,7 +792,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <div className="flex gap-1.5 sm:gap-2" data-testid="board-cards">
                                 <AnimatePresence>
                                     {round.board.map((card, i) => (
-                                        <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
+                                        <motion.div key={`${deckNo}-${card.id}`} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.08)}>
                                             <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
                                         </motion.div>
                                     ))}
@@ -805,7 +808,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 <div className="flex gap-2" data-testid="player-cards">
                                     <AnimatePresence>
                                         {round.player.map((card, i) => (
-                                            <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
+                                            <motion.div key={`${deckNo}-${card.id}`} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.1)}>
                                                 <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
                                             </motion.div>
                                         ))}
@@ -817,7 +820,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                         <span className="text-[13px] font-bold text-white/75">6 Card Bonus</span>
                                         <div className="flex gap-1">
                                             {round.hiddenSixBonusCards.map((card, i) => (
-                                                <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(0.2 + i * 0.06)}>
+                                                <motion.div key={`${deckNo}-${card.id}`} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(0.2 + i * 0.06)}>
                                                     <PlayingCard card={toShared(card, i < sixShown)} className={BONUS_CARD_CLS} />
                                                 </motion.div>
                                             ))}

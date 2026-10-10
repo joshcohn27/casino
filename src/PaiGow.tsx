@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "./shared/TableShell";
 import ChipTray from "./shared/ChipTray";
@@ -51,7 +51,7 @@ type SplitEval = {
 };
 
 type FortuneCategory =
-    | "Natural 7 Card S/F" | "Royal Flush + R/M" | "Wild 7 Card S/F"
+    | "Natural 7 Card Straight Flush" | "Royal Flush + Royal Match" | "Wild 7 Card Straight Flush"
     | "5 Aces" | "Royal Flush" | "Straight Flush" | "4 of a Kind"
     | "Full House" | "Flush" | "3 of a Kind" | "Straight"
     | "Three Pair" | "No Fortune";
@@ -81,9 +81,9 @@ const MAIN_MIN = 5;
 const SIDE_MIN = 0;
 
 const FORTUNE_PAYTABLE_1: Record<Exclude<FortuneCategory, "No Fortune">, number> = {
-    "Natural 7 Card S/F": 5000,
-    "Royal Flush + R/M": 1000,
-    "Wild 7 Card S/F": 750,
+    "Natural 7 Card Straight Flush": 5000,
+    "Royal Flush + Royal Match": 1000,
+    "Wild 7 Card Straight Flush": 750,
     "5 Aces": 250,
     "Royal Flush": 100,
     "Straight Flush": 50,
@@ -565,9 +565,9 @@ function hasRoyalPlusRM(cards: Card[]) {
 }
 
 function evaluateFortune(cards: Card[]): FortuneResult {
-    if (isNaturalSevenCardStraightFlush(cards)) return { category: "Natural 7 Card S/F", multiplier: FORTUNE_PAYTABLE_1["Natural 7 Card S/F"] };
-    if (hasRoyalPlusRM(cards)) return { category: "Royal Flush + R/M", multiplier: FORTUNE_PAYTABLE_1["Royal Flush + R/M"] };
-    if (isWildSevenCardStraightFlush(cards)) return { category: "Wild 7 Card S/F", multiplier: FORTUNE_PAYTABLE_1["Wild 7 Card S/F"] };
+    if (isNaturalSevenCardStraightFlush(cards)) return { category: "Natural 7 Card Straight Flush", multiplier: FORTUNE_PAYTABLE_1["Natural 7 Card Straight Flush"] };
+    if (hasRoyalPlusRM(cards)) return { category: "Royal Flush + Royal Match", multiplier: FORTUNE_PAYTABLE_1["Royal Flush + Royal Match"] };
+    if (isWildSevenCardStraightFlush(cards)) return { category: "Wild 7 Card Straight Flush", multiplier: FORTUNE_PAYTABLE_1["Wild 7 Card Straight Flush"] };
     const bestFive = combinations(cards, 5).map((combo) => evaluateFive(combo)).sort((a, b) => compareFive(b, a))[0];
     if (bestFive.category === "Five Aces") return { category: "5 Aces", multiplier: FORTUNE_PAYTABLE_1["5 Aces"] };
     if (bestFive.category === "Royal Flush") return { category: "Royal Flush", multiplier: FORTUNE_PAYTABLE_1["Royal Flush"] };
@@ -583,9 +583,9 @@ function evaluateFortune(cards: Card[]): FortuneResult {
 
 function sidebetRows() {
     return [
-        ["Natural 7 Card S/F", 5000],
-        ["Royal Flush + R/M", 1000],
-        ["Wild 7 Card S/F", 750],
+        ["Natural 7 Card Straight Flush", 5000],
+        ["Royal Flush + Royal Match", 1000],
+        ["Wild 7 Card Straight Flush", 750],
         ["5 Aces", 250],
         ["Royal Flush", 100],
         ["Straight Flush", 50],
@@ -876,6 +876,8 @@ function PaiGowBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     // ── Game state (preserved) ────────────────────────────────────────────────
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your wagers and press Deal.");
@@ -1034,6 +1036,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
 
     function autoSetBest() {
         if (!bestPlayerSplitAgainstDealer) return;
+        sortRowNext.current = true;
         setSelectedFrontIds(bestPlayerSplitAgainstDealer.best.front.map((c) => c.id));
         setMessage("The dealer set your best high and low hands against theirs.");
     }
@@ -1044,6 +1047,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const normalizedAceHigh = Math.max(SIDE_MIN, clampBet(aceHighBet, SIDE_MIN));
         const total = normalizedMain + normalizedFortune + normalizedAceHigh;
         if (bankroll < total) { setMessage("Not enough bankroll for those wagers."); return; }
+        setDeckNo((n) => n + 1);
         const freshDeck = createDeck();
         let next = freshDeck;
         let p: Card[]; let d: Card[];
@@ -1132,7 +1136,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         let id: number;
         if (selectedFrontIds.length !== 2) {
             // set the way the dealer would: nothing rides on it, so it should simply look right
-            id = window.setTimeout(() => setSelectedFrontIds(evaluateDealerHouseWay(playerCards).front.map((c) => c.id)), 600);
+            id = window.setTimeout(() => { sortRowNext.current = true; setSelectedFrontIds(evaluateDealerHouseWay(playerCards).front.map((c) => c.id)); }, 600);
         } else {
             id = window.setTimeout(setHandAndResolve, 900);
         }
@@ -1227,9 +1231,26 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const dealerLowIds = dealerBestSplit ? powerOrder(dealerBestSplit.front, "groups") : [];
     // the player's remaining cards: as a set five-card hand once two are picked, otherwise all of them together
     const playerRest = playerCards.filter((c) => !lowIds.includes(c.id));
+    const sortedRest = () => playerRest.length === 5 && currentBackEval ? powerOrder(playerRest, modeFor(currentBackEval.category)) : powerOrder(playerRest);
+    // The row is sorted when the cards are first turned over. After that, lifting a card into the
+    // Low hand leaves the others where they are: they only re-sort when a card comes back down,
+    // when the dealer sets the hand for you, and at the showdown.
+    const [rowOrder, setRowOrder] = useState<string[] | null>(null);
+    const lastFrontIds = useRef<string[]>([]);
+    const sortRowNext = useRef(false);
+    useEffect(() => {
+        const cameBack = lastFrontIds.current.some((id) => !selectedFrontIds.includes(id));
+        lastFrontIds.current = selectedFrontIds;
+        if (!playerReady) { setRowOrder(null); return; }
+        const resort = cameBack || sortRowNext.current || stage === "showdown";
+        sortRowNext.current = false;
+        setRowOrder((cur) => (cur === null || resort ? sortedRest() : cur.filter((id) => playerRest.some((c) => c.id === id))));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedFrontIds, playerReady, stage]);
+    const keptOrder = (rowOrder ?? []).filter((id) => playerRest.some((c) => c.id === id));
     const playerRestOrder = !playerReady ? playerRest.map((c) => c.id)
-        : playerRest.length === 5 && currentBackEval ? powerOrder(playerRest, modeFor(currentBackEval.category))
-        : powerOrder(playerRest);
+        : rowOrder !== null && keptOrder.length === playerRest.length ? keptOrder
+        : sortedRest();
     const playerRowCards = playerRestOrder.map((id) => playerRest.find((c) => c.id === id)!);
     const playerHasStartedSetting = selectedFrontIds.length > 0;
 
@@ -1271,7 +1292,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#1a5c2e"
                 gameName="Pai Gow Poker"
                 bankroll={bankroll}
@@ -1400,7 +1421,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             : highCol >= 0 ? slotStyle(0, highCol, 5, DEALER_ROW_STEP, 10 + highCol)
                                             : slotStyle(0, i, 7, DEALER_ROW_STEP, 10 + i);
                                         return (
-                                            <div key={card.id} style={style} data-hand={lowCol >= 0 ? "low" : highCol >= 0 ? "high" : "spread"}>
+                                            <div key={`${deckNo}-${card.id}`} style={style} data-hand={lowCol >= 0 ? "low" : highCol >= 0 ? "high" : "spread"}>
                                                 <motion.div variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(i * 0.04)}>
                                                     <PlayingCard card={toShared(card, dealerIsSet || i < revealStep)} className={CARD_SM} />
                                                 </motion.div>
@@ -1460,7 +1481,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             : slotStyle(1, rowCol, playerRowCards.length, PLAYER_ROW_STEP, 20 + rowCol);
                                         const canClick = stage === "setting" && !dealerSetting && (!isPeeled || (playerReady && !autoFinishing));
                                         return (
-                                            <div key={card.id} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
+                                            <div key={`${deckNo}-${card.id}`} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
                                                 <motion.button
                                                     onClick={() => (isPeeled ? toggleFront(card.id) : peelCard(card.id))}
                                                     disabled={!canClick}

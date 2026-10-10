@@ -483,6 +483,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function MississippiStud({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage]                   = useState<Stage>("betting");
     const [deck, setDeck]                     = useState<Card[]>(() => createDeck());
     const [playerCards, setPlayerCards]       = useState<Card[]>([]);
@@ -552,6 +554,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         if (pendingAnte < MIN_BET || bankroll < pendingAnte + pendingBonus) return;
         setBankroll(p => p - (pendingAnte + pendingBonus));
 
+        setDeckNo((n) => n + 1);
         const d = deck.length < 10 ? createDeck() : deck;
         const [pCards, d1] = draw(d, 2);
         const [cCards, d2] = draw(d1, 3);
@@ -824,7 +827,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor={FELT_COLOR}
                 gameName="Mississippi Stud"
                 bankroll={bankroll}

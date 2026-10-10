@@ -465,6 +465,8 @@ function BaccaratBar({
 type BetOverrides = Partial<Record<BetSpotId, number>>;
 
 export default function BaccaratTable({ bankroll, setBankroll }: Props) {
+    // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
+    const [deckNo, setDeckNo] = useState(1);
 
     const [deck,        setDeck]        = useState<BacCard[]>(() => createShoe());
     const [playerCards, setPlayerCards] = useState<BacCard[]>([]);
@@ -598,6 +600,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const performShuffleIfNeeded = async (shoe: BacCard[]) => {
         if (!shouldShuffle(shoe)) return shoe;
         setIsShuffling(true);
+        setDeckNo((n) => n + 1);
         setMessage("Shuffling 8-deck shoe...");
         await wait(SHUFFLE_DELAY_MS);
         const fresh = createShoe();
@@ -808,7 +811,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                 </div>
             )}
 
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#7f1d1d"
                 gameName="Baccarat"
                 bankroll={bankroll}

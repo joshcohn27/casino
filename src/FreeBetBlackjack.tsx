@@ -711,6 +711,8 @@ function FreeBetBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
+    // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
+    const [deckNo, setDeckNo] = useState(1);
 
     // ── Game state (preserved) ────────────────────────────────────────────────
 
@@ -797,6 +799,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
         setIsShuffling(true);
+        setDeckNo((n) => n + 1);
         setMessage("Shuffling 6-deck shoe...");
         await wait(SHUFFLE_DELAY_MS);
         const freshShoe = createShoe();
@@ -1301,7 +1304,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
 
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
 
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#7f1d1d"
                 gameName="Free Bet Blackjack"
                 bankroll={bankroll}

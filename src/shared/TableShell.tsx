@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { formatMoney } from './money';
+import { DeckContext } from './deck';
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
@@ -22,6 +23,11 @@ export interface TableShellProps {
      * Defaults to false.
      */
     hideHeader?: boolean;
+    /**
+     * Which deck is in play: 1, 2, 3... Odd numbers are the gold deck, even numbers the purple.
+     * Single-deck tables count hands, shoe games count shoes.
+     */
+    deckNo?: number;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -44,6 +50,7 @@ export default function TableShell({
     children,
     actionBar,
     hideHeader = false,
+    deckNo = 1,
 }: TableShellProps) {
     // Measure the live ActionBar height so we can pad the content area by
     // exactly that amount — game-specific buttons never hide behind the bar.
@@ -61,6 +68,7 @@ export default function TableShell({
     }, []);
 
     return (
+        <DeckContext.Provider value={deckNo}>
         <div
             className="relative flex flex-col text-white"
             style={{ background: feltGradient(feltColor), minHeight: 'calc(100dvh - 84px)' }}
@@ -115,5 +123,6 @@ export default function TableShell({
                 {actionBar}
             </div>
         </div>
+        </DeckContext.Provider>
     );
 }

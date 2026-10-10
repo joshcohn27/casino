@@ -422,6 +422,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
     const [deck, setDeck] = useState<Card[]>(() => createDeck());
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
@@ -538,6 +540,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         const total = pendingAnte + pendingPp + pendingSc;
         setBankroll(p => p - total);
 
+        setDeckNo((n) => n + 1);
         const newDeck = deck.length < 10 ? createDeck() : deck;
         const [pCards, d1] = draw(newDeck, 3);
         const [dCards, d2] = draw(d1, 3);
@@ -690,7 +693,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     return (
         <>
         <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-        <TableShell
+        <TableShell deckNo={deckNo}
             feltColor={FELT_COLOR}
             gameName="Three Card Poker"
             bankroll={bankroll}

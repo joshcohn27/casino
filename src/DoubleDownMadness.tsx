@@ -448,6 +448,8 @@ function DDMBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
+    // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
+    const [deckNo, setDeckNo] = useState(1);
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
     const [stage, setStage] = useState<Stage>("betting");
 
@@ -507,6 +509,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
         setIsShuffling(true);
+        setDeckNo((n) => n + 1);
         setStage("shuffling");
         setMessage("Shuffling shoe...");
         await wait(SHUFFLE_DELAY_MS);
@@ -943,7 +946,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
 
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
 
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#18181b"
                 gameName="Double Down Madness"
                 bankroll={bankroll}

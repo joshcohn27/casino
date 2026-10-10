@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'motion/react';
 import type { Card } from './cards';
+import { DeckContext, deckBackSrc } from './deck';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,9 @@ const RANK_FONT: React.CSSProperties = {
 // ─── Card back ────────────────────────────────────────────────────────────────
 
 function Back() {
-    return <img src="/card-back.svg" alt="" className="h-full w-full" style={{ objectFit: "contain", padding: "2px" }} draggable={false} />;
+    // gold or purple, whichever deck this hand was dealt from
+    const deckNo = useContext(DeckContext);
+    return <img src={deckBackSrc(deckNo)} alt="" className="h-full w-full" style={{ objectFit: "contain", padding: "2px" }} draggable={false} />;
 }
 
 // ─── Corner pip — rank only, no suit symbol ───────────────────────────────────

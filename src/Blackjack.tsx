@@ -352,6 +352,8 @@ function BlackjackBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function BlackjackTable({ bankroll, setBankroll }: Props) {
+    // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
+    const [deckNo, setDeckNo] = useState(1);
 
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
     const [dealer, setDealer] = useState<Card[]>([]);
@@ -392,6 +394,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const performShuffleIfNeeded = async (shoe: Card[]) => {
         if (!shouldShuffle(shoe)) return shoe;
         setIsShuffling(true);
+        setDeckNo((n) => n + 1);
         setMessage("Shuffling 6-deck shoe...");
         await wait(SHUFFLE_DELAY_MS);
         const fresh = createShoe();
@@ -704,7 +707,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                 </div>
             )}
 
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor="#1f7a45"
                 gameName="Blackjack"
                 bankroll={bankroll}

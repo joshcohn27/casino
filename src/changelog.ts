@@ -21,6 +21,17 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.1.0",
+        date: "2026-10-09",
+        title: "Two decks in play",
+        changes: [
+            ["new", "Tables now use two decks, one with gold backs and one with purple, the way a real table does. Poker tables swap decks every hand, and blackjack and baccarat swap when the shoe is reshuffled."],
+            ["fixed", "A card that was in the last hand no longer slides across the table face up when it is dealt again."],
+            ["improved", "Pai Gow Poker: moving a card up to your Low hand no longer rearranges your other cards. They re-sort when a card comes back down."],
+            ["improved", "Pai Gow Poker: the Fortune Bonus pay table spells out Straight Flush and Royal Match in full."],
+        ],
+    },
+    {
         version: "4.0.4",
         date: "2026-10-09",
         title: "Pai Gow Ace-high reveal",

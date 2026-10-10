@@ -226,6 +226,8 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DJWild({ bankroll, setBankroll }: Props) {
+    // two decks take turns, gold backs then purple: every hand is dealt from the other deck
+    const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your bets and press Deal.");
     const [showRules, setShowRules] = useState(false);
@@ -322,6 +324,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
         if (pendingAnte < MIN_ANTE) { setMessage(`The Ante must be at least $${MIN_ANTE}.`); return; }
         // the Play bet is 2x the Ante, so that money has to be there too
         if (bankroll < pendingTotal + pendingAnte * PLAY_MULTIPLE) { setMessage("Not enough bankroll to cover the bets and a Play bet."); return; }
+        setDeckNo((n) => n + 1);
         const deck = shuffle(createDeck());
         resetRound();
         setAnteBet(pendingAnte); setTripsBet(pendingTrips); setBadBeatBet(pendingBadBeat); setProgressiveBet(pendingProgressive);
@@ -472,7 +475,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
-            <TableShell
+            <TableShell deckNo={deckNo}
                 feltColor={FELT_COLOR}
                 gameName="DJ Wild"
                 bankroll={bankroll}
