@@ -21,6 +21,17 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.2.0",
+        date: "2026-10-10",
+        title: "Side Bet Blackjack",
+        changes: [
+            ["new", "New game: Side Bet Blackjack. Classic blackjack with six side bets you can mix and match."],
+            ["new", "Blazing 7s: a $5 progressive that pays on 7s in your two cards and the dealer's up card. Three 7s of diamonds win the whole jackpot."],
+            ["new", "TriLux, King's Bounty, Lucky Ladies, Match the Dealer and Fortune side bets, each with its pay table on the felt."],
+            ["new", "Holding two 7s on a Blazing 7s bet? The dealer's card stays face down until you choose to turn it over."],
+        ],
+    },
+    {
         version: "4.1.7",
         date: "2026-10-10",
         title: "Double for less",

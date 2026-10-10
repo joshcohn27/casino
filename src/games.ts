@@ -62,6 +62,15 @@ export const GAMES: ReadonlyArray<GameEntry> = [
         component: lazy(() => import("./DoubleDownMadness")),
     },
     {
+        id: "sidebetblackjack",
+        path: "/blackjack/side-bets",
+        title: "Side Bet Blackjack",
+        group: "blackjack",
+        subtitle: "Classic blackjack with six side bets · $5 Blazing 7s progressive jackpot · TriLux pays 9 to 1 · King's Bounty and Lucky Ladies pay up to 1,000 to 1 · Match the Dealer · Fortune",
+        homeOrder: 3.5,
+        component: lazy(() => import("./SideBetBlackjack")),
+    },
+    {
         id: "uth",
         path: "/poker/ultimate-texas-holdem",
         title: "Ultimate Texas Hold'em",
