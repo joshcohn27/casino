@@ -123,16 +123,16 @@ export default function Settings({ onBack }: Props) {
     return (
         <div className="min-h-[calc(100vh-88px)] bg-room px-4 py-8 text-room-text sm:px-6">
             <div className="mx-auto max-w-5xl">
-                <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-room-line pb-4">
+                <div className="mb-6 flex flex-col items-center gap-4 border-b border-room-line pb-4 text-center">
                     <div>
                         <h1 className="text-room-text">Settings</h1>
-                        <p className="mt-2 max-w-[62ch] text-base leading-6 text-room-muted">
+                        <p className="mx-auto mt-2 max-w-[62ch] text-base leading-6 text-room-muted">
                             Text size, and the chips each table starts with when you sit down. Changes save as you make them.
                             You can still change or clear your bets at the table.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`mr-2 text-sm font-bold text-room-text transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
+                    <div className="relative flex items-center gap-2">
+                        <span className={`absolute right-full top-1/2 mr-3 -translate-y-1/2 text-sm font-bold text-room-text transition-opacity ${saved ? "opacity-100" : "opacity-0"}`} data-testid="settings-saved" aria-live="polite">
                             Saved
                         </span>
                         <button className={BTN_PLAIN} onClick={resetAll}>Reset to defaults</button>

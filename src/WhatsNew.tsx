@@ -12,7 +12,7 @@ export default function WhatsNew({ onBack }: Props) {
     return (
         <div className="min-h-[calc(100vh-88px)] bg-room px-4 py-8 text-room-text sm:px-6">
             <div className="mx-auto max-w-3xl">
-                <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-room-line pb-4">
+                <div className="mb-6 flex flex-col items-center gap-4 border-b border-room-line pb-4 text-center">
                     <div>
                         <h1 className="text-room-text">What&apos;s New</h1>
                         <p className="mt-2 text-base text-room-muted">

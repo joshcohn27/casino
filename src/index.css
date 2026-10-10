@@ -99,7 +99,7 @@ body {
     display: block;
     width: 48px;
     height: 3px;
-    margin-top: 16px;
+    margin: 16px auto 0;
     background: var(--home-rule-color);
   }
 }

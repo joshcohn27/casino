@@ -313,14 +313,14 @@ export default function Casino() {
                 className="min-h-screen bg-room text-room-text"
             >
                 <div className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-8 sm:px-6">
-                    <div className="mb-8 border-b border-room-line pb-6">
+                    <div className="mb-8 border-b border-room-line pb-6 text-center">
                         <h1 className="home-title">
                             Cohn Casino
                         </h1>
                         <p className="home-subtitle mt-2">
                             A collection of casino table games
                         </p>
-                        <p className="mt-4 max-w-[62ch] text-base leading-6 text-room-muted">
+                        <p className="mx-auto mt-4 max-w-[62ch] text-base leading-6 text-room-muted">
                             A browser-based casino simulator built for fun. Play blackjack, poker, roulette, and more
                             with a shared bankroll that carries across every table. No real money, no ads, no accounts.
                         </p>

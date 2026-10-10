@@ -89,14 +89,14 @@ export default function Feedback({ onBack }: FeedbackProps) {
         >
             <div className="mx-auto w-full max-w-[760px] px-4 pb-16 pt-8 sm:px-6">
                 {/* Page header */}
-                <div className="mb-6 border-b border-room-line pb-4">
+                <div className="mb-6 border-b border-room-line pb-4 text-center">
                     <h1 className="text-room-text">
                         Feedback
                     </h1>
                     <p className="mt-2 text-base font-semibold text-room-text">
                         Bugs, suggestions and new games
                     </p>
-                    <p className="mt-2 max-w-[56ch] text-base leading-6 text-room-muted">
+                    <p className="mx-auto mt-2 max-w-[56ch] text-base leading-6 text-room-muted">
                         Found something broken, want a game added, or think something could feel better? Let me know.
                     </p>
                     <div className="mt-6">
