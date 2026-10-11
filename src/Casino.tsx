@@ -10,6 +10,7 @@ import { DEFAULT_BANKROLL, useBankroll } from "./shared/bankrollContext"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
 import { TableContext } from "./shared/sessionContext"
 import SessionBadge from "./shared/SessionBadge"
+import { useHotkeys } from "./shared/hotkeys"
 
 // the site used to reopen the last table from this key. Pages have URLs now, so it is cleared.
 const OLD_SELECTED_GAME_KEY = "casino-selected-game"
@@ -175,6 +176,7 @@ export default function Casino() {
     // "/blackjack/" and "/blackjack" are the same page
     const pathname = location.pathname.replace(/\/+$/, "") || "/"
     const table = gameAtPath(pathname)
+    useHotkeys()
 
     // Your seat is held: a table you have opened stays in the background when you go to
     // another page, so a hand in progress is still there when you come back.

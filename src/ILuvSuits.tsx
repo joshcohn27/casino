@@ -350,27 +350,29 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (
                                     <SlideBtn key="clear">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingTotal <= 0}>Clear</button>
+                                        <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingTotal <= 0}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (
                                     <SlideBtn key="deal">
-                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && !playerSorted && (
                                     <SlideBtn key="reveal">
-                                        <button className={BTN_GOLD} onClick={revealAll} disabled={allPeeled}>Reveal Cards</button>
+                                        <button data-hotkey="R" className={BTN_GOLD} onClick={revealAll} disabled={allPeeled}>Reveal Cards</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && playerSorted && (
                                     <SlideBtn key="fold">
-                                        <button className={BTN_NEUTRAL} onClick={handleFold}>Fold</button>
+                                        <button data-hotkey="F" className={BTN_NEUTRAL} onClick={handleFold}>Fold</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && playerSorted && [1, 2, 3].filter((m) => m <= maxMultiple).map((m) => (
                                     <SlideBtn key={`play-${m}`}>
                                         <button
+                                            data-hotkey={maxMultiple === 1 ? "C" : String(m)}
+                                            data-hotkey-alt={maxMultiple === 1 ? "1" : m === maxMultiple ? "C" : undefined}
                                             className={m === maxMultiple ? BTN_GOLD : BTN_NEUTRAL}
                                             onClick={() => handlePlay(m)}
                                             disabled={bankroll < anteBet * m}
@@ -381,17 +383,17 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 ))}
                                 {stage === "done" && (
                                     <SlideBtn key="clear-done">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear}>Clear</button>
+                                        <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="change-bet">
-                                        <button className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
+                                        <button data-hotkey="B" className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="rebet-deal">
-                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                                     </SlideBtn>
                                 )}
                             </AnimatePresence>
@@ -494,7 +496,8 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             />
                         </div>
 
-                        {/* Result lines */}
+                        {/* Result lines: their space is always reserved, so the circles above do not move */}
+                        <div className="flex min-h-[76px] w-full flex-col items-center">
                         {done && result && (
                             <motion.div
                                 initial={{ opacity: 0, y: 8 }}
@@ -508,6 +511,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 ))}
                             </motion.div>
                         )}
+                        </div>
                     </div>
 
                     {/* Center column - cards */}
@@ -556,7 +560,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 {playerReady && playerHand ? describeFlushHand(playerHand) : ""}
                             </span>
                             <span className="text-[13px] font-bold text-white/75">Player</span>
-                            <div className="flex min-h-[28px] items-center">
+                            <div className="flex min-h-[32px] items-center">
                                 <AnimatePresence>
                                     {suggestion && (
                                         <motion.div

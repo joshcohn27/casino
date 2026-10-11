@@ -551,62 +551,62 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (
                                     <SlideBtn key="clear">
-                                        <button onClick={handleClear} disabled={!canAct || totalMainWager <= 0} className={BTN_NEUTRAL}>Clear</button>
+                                        <button data-hotkey="Q" onClick={handleClear} disabled={!canAct || totalMainWager <= 0} className={BTN_NEUTRAL}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (
                                     <SlideBtn key="deal">
-                                        <button onClick={startRound} disabled={!canAct || !canDeal} className={BTN_GOLD}>Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" onClick={startRound} disabled={!canAct || !canDeal} className={BTN_GOLD}>Deal</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "preflop" && (
                                     <SlideBtn key="bet4x">
-                                        <button onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
+                                        <button data-hotkey="4" onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "preflop" && (
                                     <SlideBtn key="bet3x">
-                                        <button onClick={() => void placePlayBet(3)} disabled={!canAct} className={BTN_GOLD}>Bet 3x</button>
+                                        <button data-hotkey="3" onClick={() => void placePlayBet(3)} disabled={!canAct} className={BTN_GOLD}>Bet 3x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "preflop" && (
                                     <SlideBtn key="check-preflop">
-                                        <button onClick={() => void revealFlop()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
+                                        <button data-hotkey="K" data-hotkey-alt="Space" onClick={() => void revealFlop()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "flop" && (
                                     <SlideBtn key="bet2x">
-                                        <button onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
+                                        <button data-hotkey="2" onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "flop" && (
                                     <SlideBtn key="check-flop">
-                                        <button onClick={() => void revealRiver()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
+                                        <button data-hotkey="K" data-hotkey-alt="Space" onClick={() => void revealRiver()} disabled={!canAct} className={BTN_NEUTRAL}>Check</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "river" && (
                                     <SlideBtn key="bet1x">
-                                        <button onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
+                                        <button data-hotkey="1" onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "river" && (
                                     <SlideBtn key="fold">
-                                        <button onClick={foldHand} disabled={!canAct} className={BTN_NEUTRAL}>Fold</button>
+                                        <button data-hotkey="F" onClick={foldHand} disabled={!canAct} className={BTN_NEUTRAL}>Fold</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "roundOver" && (
                                     <SlideBtn key="clear-done">
-                                        <button onClick={handleClear} disabled={!canAct} className={BTN_NEUTRAL}>Clear</button>
+                                        <button data-hotkey="Q" onClick={handleClear} disabled={!canAct} className={BTN_NEUTRAL}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "roundOver" && (
                                     <SlideBtn key="change-bet">
-                                        <button onClick={handleChangeBet} disabled={!canAct} className={BTN_NEUTRAL}>Change Bet</button>
+                                        <button data-hotkey="B" onClick={handleChangeBet} disabled={!canAct} className={BTN_NEUTRAL}>Change Bet</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "roundOver" && (
                                     <SlideBtn key="rebet-deal">
-                                        <button onClick={startRound} disabled={!canAct || !canRebet} className={BTN_GOLD}>Rebet &amp; Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" onClick={startRound} disabled={!canAct || !canRebet} className={BTN_GOLD}>Rebet &amp; Deal</button>
                                     </SlideBtn>
                                 )}
                             </AnimatePresence>
@@ -734,39 +734,6 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             />
                         </div>
 
-                        {/* Settlement - no background box */}
-                        {resolvedHand && payout && roundDone && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="flex flex-col items-center gap-2" data-testid="settlement">
-                                <div className="flex items-center gap-4 text-xs">
-                                    <div className="text-center">
-                                        <div className="text-[13px] text-white/75">Player</div>
-                                        <div className="font-extrabold text-amber-100">{describeBestHand(resolvedHand.playerBest)}</div>
-                                    </div>
-                                    <div className="h-6 w-px bg-white/10" />
-                                    <div className="text-center">
-                                        <div className="text-[13px] text-white/75">Dealer{!resolvedHand.dealerQualified ? " (no qualify)" : ""}</div>
-                                        <div className="font-bold text-white/90">{describeBestHand(resolvedHand.dealerBest)}</div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                                    {[
-                                        { name: "Ante", result: anteResultText },
-                                        { name: "Blind", result: blindResultText },
-                                        { name: "Play", result: playResultText },
-                                        { name: "Trips", result: tripsResultText },
-                                        { name: "6 Card", result: sixCardResultText },
-                                    ].map(({ name, result }) => {
-                                        const isWin = result.startsWith("Win"), isLose = result === "Lose";
-                                        return (
-                                            <div key={name} data-result={name} className="rounded-[4px] border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
-                                                <div className="text-[13px] text-white/75">{name}</div>
-                                                <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100"}`}>{result}</div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
-                        )}
                     </div>
 
                     {/* Cards column - center on desktop */}
@@ -839,6 +806,31 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                             <span className="text-[13px] font-bold text-white/75">Player</span>
                         </div>
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
+                        {/* The bet results. Their row is always here, so nothing moves when they appear. */}
+                        <div className="flex min-h-[46px] items-center justify-center">
+                            {resolvedHand && payout && roundDone && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} data-testid="settlement">
+                                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                                    {[
+                                        { name: "Ante", result: anteResultText },
+                                        { name: "Blind", result: blindResultText },
+                                        { name: "Play", result: playResultText },
+                                        { name: "Trips", result: tripsResultText },
+                                        { name: "6 Card", result: sixCardResultText },
+                                        ...(!resolvedHand.dealerQualified ? [{ name: "Dealer", result: "No Qualify" }] : []),
+                                    ].map(({ name, result }) => {
+                                        const isWin = result.startsWith("Win"), isLose = result === "Lose";
+                                        return (
+                                            <div key={name} data-result={name} className="rounded-[4px] border px-2.5 py-1 text-center text-xs" style={{ borderColor: isWin ? "rgba(52,211,153,0.3)" : isLose ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)", background: isWin ? "rgba(52,211,153,0.08)" : isLose ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.04)" }}>
+                                                <div className="text-[13px] text-white/75">{name}</div>
+                                                <div className={`font-extrabold ${isWin ? "text-emerald-300" : isLose ? "text-red-300" : "text-amber-100"}`}>{result}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                </motion.div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Payout tables - vertically centered, right side */}

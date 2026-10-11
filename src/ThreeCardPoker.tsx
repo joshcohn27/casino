@@ -251,7 +251,8 @@ function settle(params: {
     }
 
     let ppReturn = 0;
-    if (pairPlusBet > 0 && !folded) {
+    // Pair Plus pays on the player's own three cards, whether the main hand was played or folded
+    if (pairPlusBet > 0) {
         const mult = PAIR_PLUS_TABLE[playerHand.rank] ?? 0;
         if (mult > 0) ppReturn = pairPlusBet * (mult + 1);
     }
@@ -287,9 +288,8 @@ function PlayCircle({ bet }: { bet: number }) {
             >
                 <span className="text-sm font-medium text-emerald-200/80">Play</span>
                 <span className="mt-0.5 text-[10px] font-normal text-white/75">1×</span>
-                {bet > 0 && (
-                    <span className="mt-1 text-[10px] font-extrabold text-emerald-300">{formatMoney(bet)}</span>
-                )}
+                {/* the amount keeps its line when empty, so the label does not shift when the bet goes on */}
+                <span className={`mt-1 text-[10px] font-extrabold text-emerald-300 ${bet > 0 ? "" : "invisible"}`}>{formatMoney(bet)}</span>
             </div>
         </div>
     );
@@ -387,8 +387,9 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <div className="flex flex-col gap-5">
                     <Section title="How the Hand Works" items={[
                         "You and the dealer each receive 3 cards from a single 52-card deck.",
-                        "Place an Ante to play. Pair Plus and 6 Card Bonus are optional side bets placed before the deal.",
-                        "After seeing your 3 cards, choose to Play (place a Play bet equal to your Ante) or Fold (forfeit your Ante and Pair Plus).",
+                        "Place an Ante to play the main hand. Pair Plus and 6 Card Bonus are side bets placed before the deal.",
+                        "You can also play Pair Plus on its own, with no Ante. Your cards are turned over and the side bets are paid, with nothing to decide.",
+                        "After seeing your 3 cards, choose to Play (place a Play bet equal to your Ante) or Fold (forfeit your Ante). Side bets are still paid if you fold.",
                         "The dealer then reveals their hand.",
                     ]} />
                     <Section title="Dealer Qualification" items={[
@@ -407,7 +408,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                     ]} />
                     <Section title="Pair Plus" items={[
                         "Pays on your hand regardless of whether you beat the dealer or the dealer qualifies.",
-                        "Lost if you fold.",
+                        "Still paid if you fold the main hand.",
                         "Straight Flush 40 to 1 · Three of a Kind 30 to 1 · Straight 6 to 1 · Flush 4 to 1 · Pair 1 to 1.",
                     ]} />
                     <Section title="6 Card Bonus" items={[
@@ -425,7 +426,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "If your highest card is a Queen, play if your second card is 7 or higher. If your second card is a 6, play only if your third card is 4 or higher. Otherwise fold.",
                         "If your highest card is a Jack or lower, always fold.",
                         "The house edge playing this strategy is approximately 3.4% on the Ante and Play.",
-                        "Pair Plus has no strategy — it pays based on your cards alone regardless of what you decide with your Ante.",
+                        "Pair Plus has no strategy. It pays on your cards alone, whatever you decide with your Ante.",
                         "The Suggest indicator on the felt uses this exact strategy and updates in real time as your cards are dealt.",
                     ]} />
                 </div>
@@ -511,10 +512,14 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     // ─── Result lines ─────────────────────────────────────────────────────────
 
-    function buildResultLines(settled: SettleResult): string[] {
+    // the bets are passed in when the hand is settled in the same step it was dealt (no Ante),
+    // because the stored bets are not updated yet at that point
+    function buildResultLines(settled: SettleResult, bets = { anteBet, pairPlusBet, sixCardBet }): string[] {
         const lines: string[] = [];
 
-        if (settled.folded) {
+        if (bets.anteBet <= 0) {
+            lines.push("No Ante bet");
+        } else if (settled.folded) {
             lines.push("Folded - Ante lost");
         } else {
             if (settled.qualified) {
@@ -531,15 +536,13 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         if (settled.anteBonusWin > 0)
             lines.push(`Ante Bonus: ${settled.playerRank}`);
 
-        if (pairPlusBet > 0) {
+        if (bets.pairPlusBet > 0) {
             lines.push(settled.ppReturn > 0
                 ? `Pair Plus: ${settled.playerRank}`
-                : settled.folded
-                ? "Pair Plus: Lost on fold"
                 : "Pair Plus: No win");
         }
 
-        if (sixCardBet > 0) {
+        if (bets.sixCardBet > 0) {
             lines.push(settled.sixCardReturn > 0
                 ? `6 Card Bonus: ${settled.sixCardRank}`
                 : "6 Card Bonus: No win");
@@ -551,7 +554,8 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     // ─── Game actions ─────────────────────────────────────────────────────────
 
     function handleDeal() {
-        if (pendingAnte <= 0 || bankroll < pendingAnte + pendingPp + pendingSc) return;
+        // a hand needs an Ante, or a Pair Plus bet played on its own
+        if ((pendingAnte <= 0 && pendingPp <= 0) || bankroll < pendingAnte + pendingPp + pendingSc) return;
         const total = pendingAnte + pendingPp + pendingSc;
         setBankroll(p => p - total);
 
@@ -570,7 +574,22 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setResultInfo(null);
         setResultLines([]);
         setPlayBet(0);
-        setStage("dealt");
+        if (pendingAnte > 0) { setStage("dealt"); return; }
+        void settleSideBetsOnly(pCards, dCards, pendingPp, pendingSc);
+    }
+
+    // No Ante: there is no Play or Fold decision. The cards are shown and the side bets are paid.
+    async function settleSideBetsOnly(pCards: Card[], dCards: Card[], pp: number, sc: number) {
+        if (resolving.current) return;
+        resolving.current = true;
+        setStage("showdown");
+        await wait(900);
+        const settled = settle({ playerCards: pCards, dealerCards: dCards, anteBet: 0, pairPlusBet: pp, sixCardBet: sc, playBet: 0, folded: false });
+        setBankroll(p => p + settled.ppReturn + settled.sixCardReturn);
+        setResultInfo(settled);
+        setResultLines(buildResultLines(settled, { anteBet: 0, pairPlusBet: pp, sixCardBet: sc }));
+        setStage("done");
+        resolving.current = false;
     }
 
     async function handleFold() {
@@ -626,25 +645,28 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     // ─── Derived display ──────────────────────────────────────────────────────
 
-    const canDeal = stage === "betting" && pendingAnte > 0 && bankroll >= pendingAnte + pendingPp + pendingSc;
+    const canDeal = stage === "betting" && (pendingAnte > 0 || pendingPp > 0) && bankroll >= pendingAnte + pendingPp + pendingSc;
     const canPlay = stage === "dealt" && bankroll >= anteBet;
     const dealerFaceUp = stage === "showdown" || stage === "done";
 
-    const ppHighlight  = resultInfo && !resultInfo.folded ? resultInfo.playerRank : undefined;
+    const ppHighlight  = resultInfo ? resultInfo.playerRank : undefined;
     const scHighlight  = resultInfo && sixCardBet > 0 ? resultInfo.sixCardRank : undefined;
 
     const netColor = resultInfo
         ? resultInfo.net > 0 ? "text-emerald-300" : resultInfo.net < 0 ? "text-red-300" : "text-amber-100"
         : "text-white";
 
+    const noAnte = !!resultInfo && anteBet <= 0;
     const dealerStatusLabel = resultInfo
-        ? resultInfo.qualified
+        ? noAnte ? resultInfo.dealerRank
+        : resultInfo.qualified
             ? `Qualifies - ${resultInfo.dealerRank}`
             : "Does not qualify - Ante wins, Play returned"
         : null;
 
     const playerResultLabel = resultInfo
-        ? resultInfo.folded
+        ? noAnte ? resultInfo.playerRank
+        : resultInfo.folded
             ? "Folded"
             : resultInfo.cmp > 0 ? `Win - ${resultInfo.playerRank}`
             : resultInfo.cmp < 0 ? `Lose - ${resultInfo.playerRank}`
@@ -706,6 +728,32 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     // ─── JSX ─────────────────────────────────────────────────────────────────
 
+    const dealerNote = dealerStatusLabel ? (
+        <div className={`text-[11px] font-bold ${resultInfo?.qualified ? "text-emerald-300" : "text-red-300"}`}>{dealerStatusLabel}</div>
+    ) : null;
+
+    // the first result line repeats what the Player and Dealer labels already say
+    const playerNotes = (
+        <>
+            {suggestion && (
+                <div
+                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
+                        suggestion === "play"
+                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                            : "border-red-400/30 bg-red-500/10 text-red-300"
+                    }`}
+                >
+                    <span className="text-[13px] opacity-70">Suggest</span>
+                    <span>{suggestion === "play" ? "Play" : "Fold"}</span>
+                </div>
+            )}
+            {playerResultLabel && <div className={`text-[11px] font-bold ${netColor}`}>{playerResultLabel}</div>}
+            {stage === "done" && resultLines.slice(1).map((line, i) => (
+                <div key={i} className="text-[11px] font-bold text-white/90">{line}</div>
+            ))}
+        </>
+    );
+
     return (
         <>
         <RulesModal open={showRules} onClose={() => setShowRules(false)} />
@@ -721,7 +769,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                         <AnimatePresence mode="popLayout" initial={false}>
                             {stage === "betting" && (
                                 <SlideBtn key="clear">
-                                    <button
+                                    <button data-hotkey="Q"
                                         className={BTN_NEUTRAL}
                                         onClick={handleClear}
                                         disabled={pendingAnte === 0 && pendingPp === 0 && pendingSc === 0}
@@ -732,21 +780,21 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                             )}
                             {stage === "betting" && (
                                 <SlideBtn key="deal">
-                                    <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>
+                                    <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>
                                         Deal
                                     </button>
                                 </SlideBtn>
                             )}
                             {stage === "dealt" && (
                                 <SlideBtn key="fold">
-                                    <button className={BTN_NEUTRAL} onClick={handleFold}>
+                                    <button data-hotkey="F" className={BTN_NEUTRAL} onClick={handleFold}>
                                         Fold
                                     </button>
                                 </SlideBtn>
                             )}
                             {stage === "dealt" && (
                                 <SlideBtn key="play">
-                                    <button className={BTN_GOLD} onClick={handlePlay} disabled={!canPlay}>
+                                    <button data-hotkey="C" className={BTN_GOLD} onClick={handlePlay} disabled={!canPlay}>
                                         Play
                                     </button>
                                 </SlideBtn>
@@ -764,24 +812,24 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                             )}
                             {stage === "done" && (
                                 <SlideBtn key="clear-done">
-                                    <button className={BTN_NEUTRAL} onClick={handleClearAndReset}>
+                                    <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClearAndReset}>
                                         Clear
                                     </button>
                                 </SlideBtn>
                             )}
                             {stage === "done" && (
                                 <SlideBtn key="change">
-                                    <button className={BTN_NEUTRAL} onClick={handleChangeBet}>
+                                    <button data-hotkey="B" className={BTN_NEUTRAL} onClick={handleChangeBet}>
                                         Change Bet
                                     </button>
                                 </SlideBtn>
                             )}
                             {stage === "done" && (
                                 <SlideBtn key="rebet">
-                                    <button
+                                    <button data-hotkey="Space" data-hotkey-alt="Enter"
                                         className={BTN_GOLD}
                                         onClick={handleDeal}
-                                        disabled={pendingAnte <= 0 || bankroll < pendingAnte + pendingPp + pendingSc}
+                                        disabled={(pendingAnte <= 0 && pendingPp <= 0) || bankroll < pendingAnte + pendingPp + pendingSc}
                                     >
                                         Rebet & Deal
                                     </button>
@@ -839,25 +887,17 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                     {/* Dealer area */}
                     <div className="flex flex-col items-center gap-2">
                         <div className="text-[13px] font-bold text-white/75">Dealer</div>
-                        <CardRow cards={dealerCards} faceUp={dealerFaceUp} placeholder />
-                        <AnimatePresence>
-                            {dealerStatusLabel && (
-                                <motion.div
-                                    key="dealer-status"
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className={`text-[11px] font-bold ${resultInfo?.qualified ? "text-emerald-300" : "text-red-300"}`}
-                                >
-                                    {dealerStatusLabel}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        {/* the status sits beside the cards on desktop and in its own reserved row on phones */}
+                        <div className="relative">
+                            <CardRow cards={dealerCards} faceUp={dealerFaceUp} placeholder />
+                            <div className="absolute left-full top-0 ml-4 hidden h-full items-center whitespace-nowrap lg:flex">{dealerNote}</div>
+                        </div>
+                        <div className="flex min-h-[16px] items-center lg:hidden">{dealerNote}</div>
                     </div>
 
                     {/* Bet zones */}
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-end gap-4">
+                    <div className="flex flex-col items-center gap-2 lg:flex-row lg:items-end lg:gap-4">
+                        <div className="flex items-end gap-4 lg:contents">
                             <BetSpot
                                 testId="pairplus"
                                 chips={ppChips}
@@ -866,7 +906,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 sublabel="optional"
                                 dim={82}
                                 isSelected={selectedZone === "pairplus"}
-                                isWinner={!!(resultInfo && !resultInfo.folded && resultInfo.ppReturn > 0)}
+                                isWinner={!!(resultInfo && resultInfo.ppReturn > 0)}
                                 onSelect={() => handleZoneClick("pairplus")}
                                 onRemove={() => removeLastChip("pairplus")}
                                 canBet={stage === "betting"}
@@ -876,7 +916,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 chips={anteChips}
                                 totalBet={stage === "betting" ? pendingAnte : anteBet}
                                 label="Ante"
-                                sublabel="required"
+                                sublabel="main bet"
                                 dim={110}
                                 isSelected={selectedZone === "ante"}
                                 isWinner={!!(resultInfo && !resultInfo.folded && resultInfo.anteReturn > anteBet)}
@@ -884,6 +924,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 onRemove={() => removeLastChip("ante")}
                                 canBet={stage === "betting"}
                             />
+                            <div className="lg:order-last">
                             <BetSpot
                                 testId="sixcard"
                                 chips={scChips}
@@ -897,80 +938,21 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                 onRemove={() => removeLastChip("sixcard")}
                                 canBet={stage === "betting"}
                             />
+                            </div>
                         </div>
 
-                        {/* Play circle (shown after deal) */}
-                        <AnimatePresence>
-                            {(stage === "dealt" || stage === "showdown" || stage === "done") && (
-                                <motion.div
-                                    key="play-circle"
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <PlayCircle bet={playBet} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        {/* The Play spot is always on the felt, so it does not push anything when the bet goes on */}
+                        <PlayCircle bet={stage === "betting" ? 0 : playBet} />
                     </div>
 
                     {/* Player area */}
                     <div className="flex flex-col items-center gap-2">
-                        <CardRow cards={playerCards} faceUp placeholder />
+                        <div className="relative">
+                            <CardRow cards={playerCards} faceUp placeholder />
+                            <div className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
+                        </div>
                         <div className="text-[13px] font-bold text-white/75">Player</div>
-                        <AnimatePresence>
-                            {suggestion && (
-                                <motion.div
-                                    key="suggestion"
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
-                                        suggestion === "play"
-                                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
-                                            : "border-red-400/30 bg-red-500/10 text-red-300"
-                                    }`}
-                                >
-                                    <span className="text-[13px] opacity-70">Suggest</span>
-                                    <span>{suggestion === "play" ? "Play" : "Fold"}</span>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                        <AnimatePresence>
-                            {playerResultLabel && (
-                                <motion.div
-                                    key="player-result"
-                                    initial={{ opacity: 0, y: -4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className={`text-[11px] font-bold ${netColor}`}
-                                >
-                                    {playerResultLabel}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {stage === "done" && resultLines.length > 0 && (
-                            <div className="flex flex-col items-center gap-1 text-center">
-                                {resultLines.map((line, i) => (
-                                    <div
-                                        key={i}
-                                        className={`text-[11px] font-bold ${
-                                            i === 0
-                                                ? (resultInfo?.net ?? 0) > 0
-                                                    ? "text-emerald-300"
-                                                    : (resultInfo?.net ?? 0) < 0
-                                                    ? "text-red-300"
-                                                    : "text-amber-100"
-                                                : "text-white/90"
-                                        }`}
-                                    >
-                                        {line}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <div className="flex min-h-[38px] flex-col items-center gap-1 lg:hidden">{playerNotes}</div>
                     </div>
 
                 </div>

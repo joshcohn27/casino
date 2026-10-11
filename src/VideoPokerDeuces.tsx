@@ -266,6 +266,7 @@ function CardView({
 
             <button
                 type="button"
+                data-key-hold
                 onClick={onToggle}
                 disabled={!canHold || !card}
                 className={`relative h-[180px] w-[122px] overflow-hidden rounded-[10px] border-[3px] transition ${held ? "border-yellow-300" : "border-black"
@@ -636,7 +637,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                         <RetroButton label="MORE GAMES" onClick={() => { }} disabled tone="disabled" />
                         <RetroButton label="BET ONE" onClick={handleBetOne} tone="white" />
                         <RetroButton label="BET MAX" onClick={handleBetMax} tone="white" />
-                        <div className="flex justify-end">
+                        <div className="flex justify-end" data-hotkey="Space" data-hotkey-alt="Enter">
                             <RetroButton
                                 label={stage === "dealt" ? "DRAW" : "DEAL"}
                                 onClick={onDealDraw}

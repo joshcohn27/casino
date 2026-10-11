@@ -133,7 +133,11 @@ export default function BetSpot({
                     {stack}
                 </div>
             ) : (
-                stack ?? <div style={{ height: 0 }} />
+                // The chip area is always as tall as a full stack, so putting chips on a spot or
+                // taking them off never changes its height and never moves anything around it.
+                <div className="flex items-end justify-center" style={{ height: STACK_WIDTH + 2 * STACK_GAP - STACK_OVERLAP }}>
+                    {stack}
+                </div>
             )}
             <button
                 onClick={onSelect}
@@ -180,14 +184,15 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
     }, [showResult, pendingBet, net, recordHand]);
 
     return (
-        <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-6 px-6"} ${className}`} data-bet-bar>
+        <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-3 px-3 sm:gap-6 sm:px-6"} ${className}`} data-bet-bar>
             {[
                 { label: "Bet", val: pendingBet > 0 ? formatMoney(pendingBet) : "-", color: "text-white" },
                 { label: "Returned", val: showResult ? formatMoney(returned) : "-", color: "text-white" },
                 { label: "Net", val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "-", color: showResult ? netColor : "text-white" },
             ].map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
-                    <div className="text-center">
+                    {/* fixed-width cells: the bar keeps its size when the figures fill in */}
+                    <div className={`text-center ${compact ? "min-w-0 flex-1" : "w-[76px] sm:w-[96px]"}`}>
                         <div className="text-sm text-text-muted">{label}</div>
                         <div className={`text-base font-bold ${color}`} data-bet-bar-value={label}>{val}</div>
                     </div>

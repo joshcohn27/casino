@@ -817,27 +817,27 @@ function PaiGowBar({
                 <AnimatePresence mode="popLayout" initial={false}>
                     {stage === "betting" && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal}>Deal</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !playerReady && (
                         <SlideBtn key="reveal">
-                            <button className={BTN_GOLD} onClick={onRevealAll} disabled={dealerSetting}>Reveal Cards</button>
+                            <button data-hotkey="R" className={BTN_GOLD} onClick={onRevealAll} disabled={dealerSetting}>Reveal Cards</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !autoFinishing && playerReady && (
                         <SlideBtn key="auto">
-                            <button className={BTN_NEUTRAL} onClick={onAutoSetBest}>Ask Dealer for Help</button>
+                            <button data-hotkey="A" className={BTN_NEUTRAL} onClick={onAutoSetBest}>Ask Dealer for Help</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !autoFinishing && playerReady && (
                         <SlideBtn key="set">
-                            <button
+                            <button data-hotkey="Enter"
                                 className={BTN_GOLD}
                                 onClick={onSetHand}
                                 disabled={!selectedIsLegal || selectedFrontIds.length !== 2}
@@ -848,17 +848,17 @@ function PaiGowBar({
                     )}
                     {stage === "showdown" && (
                         <SlideBtn key="clear-done">
-                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "showdown" && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
                         </SlideBtn>
                     )}
                     {stage === "showdown" && (
                         <SlideBtn key="rebet">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canRebet}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canRebet}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
                 </AnimatePresence>
@@ -1250,6 +1250,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         : sortedRest();
     const playerRowCards = playerRestOrder.map((id) => playerRest.find((c) => c.id === id)!);
     const playerHasStartedSetting = selectedFrontIds.length > 0;
+    // Number keys: each card is numbered by its place in the sorted seven, and keeps that
+    // number for the whole hand however the cards are moved afterwards.
+    const keyNumbers = playerReady ? powerOrder(playerCards) : [];
 
     const displayMessage =
         stage !== "setting" ? message
@@ -1368,6 +1371,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             onRemove={() => clearSpot("main")}
                         />
 
+                        {/* The Fortune preview and the result lines share this reserved space, so the
+                            circles above do not move when they appear. */}
+                        <div className="flex min-h-[72px] w-full flex-col items-center gap-1">
                         {/* Fortune preview during setting */}
                         {stage === "setting" && playerReady && fortunePreview && fortunePreview.category !== "No Fortune" && (
                             <p className="text-center text-[11px] font-semibold text-amber-300">
@@ -1397,10 +1403,14 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 ))}
                             </motion.div>
                         )}
+                        </div>
                     </div>
 
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     <div className={`${canBet ? "order-2" : "order-1"} flex w-full flex-col items-center gap-3 px-2 py-2 lg:order-2 lg:flex-1`}>
+
+                        {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
+                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
 
                         {/* Dealer: High hand in a row, Low hand pushed out in front toward the player */}
                         {dealerCards.length > 0 && (
@@ -1480,6 +1490,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         return (
                                             <div key={`${deckNo}-${card.id}`} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
                                                 <motion.button
+                                                    data-key-card
+                                                    data-key-reveal={isPeeled ? "up" : "down"}
+                                                    data-key-number={keyNumbers.indexOf(card.id) + 1 || undefined}
                                                     onClick={() => (isPeeled ? toggleFront(card.id) : peelCard(card.id))}
                                                     disabled={!canClick}
                                                     aria-label={isPeeled ? (lowCol >= 0 ? "Move back to high hand" : "Move to low hand") : "Turn card over"}
@@ -1488,7 +1501,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                                     animate="animate"
                                                     transition={CARD_TRANSITION(i * 0.04)}
                                                     whileTap={canClick ? { scale: 0.97 } : undefined}
-                                                    className={`block rounded-[9px] transition-[translate] duration-150 sm:rounded-[11px] ${canClick ? "cursor-pointer hover:-translate-y-1" : "cursor-default"} ${
+                                                    className={`block rounded-[9px] transition-[translate] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:rounded-[11px] ${canClick ? "cursor-pointer hover:-translate-y-1" : "cursor-default"} ${
                                                         lowCol >= 0 && stage === "setting" ? "ring-2 ring-amber-400/80" : ""
                                                     }`}
                                                 >
@@ -1543,8 +1556,6 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             </div>
                         )}
 
-                        {/* Message */}
-                        <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}

@@ -169,7 +169,7 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         <span className={`shrink-0 font-bold text-gold`}>{text}</span>
                     </div>
                 );
@@ -178,7 +178,7 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={hit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
+                        <span className={`whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         <span className={`shrink-0 font-bold text-gold`}>{(mult ?? 0).toLocaleString()}{unit}</span>
                     </div>
                 );
@@ -221,7 +221,7 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
                 const natural = TRIPS_NATURAL_PAYTABLE[hand] ?? wild;
                 return (
                     <div key={hand} data-trips-row={hand} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={`flex-1 ${hit ? "font-extrabold text-amber-100" : "text-white/75"}`}>{hand}</span>
+                        <span className={`flex-1 whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         {cell(natural, !hit ? "plain" : hitNatural ? "pays" : "misses")}
                         {cell(wild, !hit ? "plain" : hitNatural ? "misses" : "pays")}
                     </div>
@@ -495,42 +495,42 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (
                                     <SlideBtn key="clear">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingTotal <= 0}>Clear</button>
+                                        <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingTotal <= 0}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (
                                     <SlideBtn key="deal">
-                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && !allPeeled && (
                                     <SlideBtn key="reveal">
-                                        <button className={BTN_NEUTRAL} onClick={revealAll}>Reveal Cards</button>
+                                        <button data-hotkey="R" className={BTN_NEUTRAL} onClick={revealAll}>Reveal Cards</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && (
                                     <SlideBtn key="fold">
-                                        <button className={BTN_NEUTRAL} onClick={handleFold}>Fold</button>
+                                        <button data-hotkey="F" className={BTN_NEUTRAL} onClick={handleFold}>Fold</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "dealt" && (
                                     <SlideBtn key="play">
-                                        <button className={BTN_GOLD} onClick={handlePlay} disabled={bankroll < anteBet * PLAY_MULTIPLE}>Play {PLAY_MULTIPLE}x</button>
+                                        <button data-hotkey="C" className={BTN_GOLD} onClick={handlePlay} disabled={bankroll < anteBet * PLAY_MULTIPLE}>Play {PLAY_MULTIPLE}x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="clear-done">
-                                        <button className={BTN_NEUTRAL} onClick={handleClear} disabled={progressiveHold}>Clear</button>
+                                        <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={progressiveHold}>Clear</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="change-bet">
-                                        <button className={BTN_NEUTRAL} onClick={handleChangeBet} disabled={progressiveHold}>Change Bet</button>
+                                        <button data-hotkey="B" className={BTN_NEUTRAL} onClick={handleChangeBet} disabled={progressiveHold}>Change Bet</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "done" && (
                                     <SlideBtn key="rebet-deal">
-                                        <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal || progressiveHold}>Rebet &amp; Deal</button>
+                                        <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal || progressiveHold}>Rebet &amp; Deal</button>
                                     </SlideBtn>
                                 )}
                             </AnimatePresence>
@@ -573,7 +573,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* Left column - betting. On mobile it sits above the cards while betting and below them during the hand */}
-                    <div className={`${isBetting ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:px-0`}>
+                    <div className={`${isBetting ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-2 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:gap-1 lg:px-0 lg:py-0`}>
                         <BetBar
                             compact
                             pendingBet={displayBet}
@@ -609,38 +609,6 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             </div>
                         </div>
 
-                        {/* The player's progressive win, held on screen */}
-                        <AnimatePresence>
-                            {progressiveWon && result && (
-                                <motion.div
-                                    key="progressive-win"
-                                    initial={{ opacity: 0, scale: 0.85 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                                    data-testid="progressive-win"
-                                    className="w-full rounded-[4px] border border-amber-300/60 bg-amber-400/15 px-3 py-2 text-center"
-                                >
-                                    <div className="text-[13px] font-extrabold text-amber-200">Progressive Win</div>
-                                    <div className="text-xl font-extrabold text-amber-100">{formatMoney(result.progressiveReturn)}</div>
-                                    <div className="text-[11px] font-semibold text-amber-100">{progressiveRow(result.playerHand)?.label}</div>
-                                </motion.div>
-                            )}
-                            {otherHit && !progressiveWon && (
-                                <motion.div
-                                    key="other-hit"
-                                    initial={{ opacity: 0, y: -4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    data-testid="other-hit"
-                                    className="w-full rounded-[4px] border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-center text-[11px] font-semibold text-red-200"
-                                >
-                                    {otherHit.kind === "jackpot"
-                                        ? `Another player hit Five Wilds and took the ${formatMoney(otherHit.amount)} jackpot. The meter has reset.`
-                                        : `Another player hit a natural Royal Flush for ${formatMoney(otherHit.amount)}.`}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
 
                         <div className="flex items-end gap-6">
                             <BetSpot
@@ -703,20 +671,6 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             isWinner={playView.win}
                         />
 
-                        {/* Result lines */}
-                        {done && result && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="flex flex-col items-center gap-1 text-center"
-                                data-testid="result-lines"
-                            >
-                                {result.lines.map((line, i) => (
-                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
-                                ))}
-                            </motion.div>
-                        )}
                     </div>
 
                     {/* Center column - cards */}
@@ -763,7 +717,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                                 {playerReady && playerHand ? playerHand.label : ""}
                             </span>
                             <span className="text-[13px] font-bold text-white/75">Player</span>
-                            <div className="flex min-h-[28px] items-center">
+                            <div className="flex min-h-[32px] items-center">
                                 <AnimatePresence>
                                     {suggestion && (
                                         <motion.div
@@ -787,6 +741,57 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                         </div>
 
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
+                        {/* Reserved rows: the result lines, then any progressive notice. Their space is always
+                            there, so nothing on the felt moves when they appear. */}
+                        <div className="flex min-h-[72px] w-full flex-col items-center">
+                        {done && result && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="flex flex-col items-center gap-1 text-center"
+                                data-testid="result-lines"
+                            >
+                                {/* a line that only repeats the message above is left out */}
+                                {result.lines.map((line, i) => line === message ? null : (
+                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
+                                ))}
+                            </motion.div>
+                        )}
+                        </div>
+                        <div className="flex min-h-[88px] w-full max-w-sm flex-col items-center justify-start">
+                        <AnimatePresence>
+                            {progressiveWon && result && (
+                                <motion.div
+                                    key="progressive-win"
+                                    initial={{ opacity: 0, scale: 0.85 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                                    data-testid="progressive-win"
+                                    className="w-full rounded-[4px] border border-amber-300/60 bg-amber-400/15 px-3 py-2 text-center"
+                                >
+                                    <div className="text-[13px] font-extrabold text-amber-200">Progressive Win</div>
+                                    <div className="text-xl font-extrabold text-amber-100">{formatMoney(result.progressiveReturn)}</div>
+                                    <div className="text-[11px] font-semibold text-amber-100">{progressiveRow(result.playerHand)?.label}</div>
+                                </motion.div>
+                            )}
+                            {otherHit && !progressiveWon && (
+                                <motion.div
+                                    key="other-hit"
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    data-testid="other-hit"
+                                    className="w-full rounded-[4px] border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-center text-[11px] font-semibold text-red-200"
+                                >
+                                    {otherHit.kind === "jackpot"
+                                        ? `Another player hit Five Wilds and took the ${formatMoney(otherHit.amount)} jackpot. The meter has reset.`
+                                        : `Another player hit a natural Royal Flush for ${formatMoney(otherHit.amount)}.`}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        </div>
                     </div>
 
                     {/* Right column - payout tables, desktop only */}

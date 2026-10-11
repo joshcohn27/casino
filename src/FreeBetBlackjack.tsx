@@ -614,25 +614,25 @@ function FreeBetBar({
 
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || buyIn <= 0}>Clear</button>
-                        </SlideBtn>
-                    )}
-
-                    {isPlayer && (
-                        <SlideBtn key="hit">
-                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || buyIn <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
                     {isPlayer && (
                         <SlideBtn key="stay">
-                            <button className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stay</button>
+                            <button data-hotkey="G" data-hotkey-alt="S Space" className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stay</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="hit">
+                            <button data-hotkey="H" className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
                         </SlideBtn>
                     )}
 
                     {isPlayer && (
                         <SlideBtn key="double">
-                            <button
+                            <button data-hotkey="B"
                                 className={isFreeDouble ? BTN_GREEN : BTN_GOLD}
                                 onClick={onDouble}
                                 disabled={!canDouble || isResolvingAction}
@@ -644,7 +644,7 @@ function FreeBetBar({
 
                     {isPlayer && (
                         <SlideBtn key="split">
-                            <button
+                            <button data-hotkey="P"
                                 className={isFreeSplitAction ? BTN_GREEN : BTN_GOLD}
                                 onClick={onSplit}
                                 disabled={!canSplit || isResolvingAction}
@@ -678,25 +678,25 @@ function FreeBetBar({
 
                     {isDone && (
                         <SlideBtn key="clear-done">
-                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
                         </SlideBtn>
                     )}
 
                     {isDone && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
                         </SlideBtn>
                     )}
 
                     {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
 
                     {isDone && (
                         <SlideBtn key="rebet-deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -1383,6 +1383,22 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                 showResult={showFinalNet}
                             />
 
+                            {/* Free bet token counter */}
+                            <div className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 transition-colors ${
+                                freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
+                            }`}>
+                                <span className={`text-[13px] font-bold ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/75"}`}>
+                                    Tokens
+                                </span>
+                                <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/75"}`}>
+                                    {freeBetTokens}
+                                </span>
+                            </div>
+
+                            <p className="text-sm font-semibold text-amber-100">{message}</p>
+
+                            {/* The bet circles and the hands share this one place, so nothing moves at the deal. */}
+                            <div className="grid w-full justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
                             {/* Bet circles: betting stage only */}
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {stage === "betting" && (
@@ -1435,21 +1451,6 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                 )}
                             </AnimatePresence>
 
-                            <motion.div layout="position" layoutDependency={stage} transition={{ layout: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }} className="flex w-full flex-col items-center gap-3">
-                            {/* Free bet token counter */}
-                            <div className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 transition-colors ${
-                                freeBetTokens > 0 ? "border-emerald-400/40 bg-emerald-500/15" : "border-white/10 bg-black/20"
-                            }`}>
-                                <span className={`text-[13px] font-bold ${freeBetTokens > 0 ? "text-emerald-300/80" : "text-white/75"}`}>
-                                    Tokens
-                                </span>
-                                <span className={`text-sm font-extrabold ${freeBetTokens > 0 ? "text-emerald-100" : "text-white/75"}`}>
-                                    {freeBetTokens}
-                                </span>
-                            </div>
-
-                            <p className="text-sm font-semibold text-amber-100">{message}</p>
-
                             {hands.length > 0 && (
                                 <div className="flex flex-wrap justify-center gap-3">
                                     {hands.map((hand, i) => (
@@ -1464,7 +1465,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                                     ))}
                                 </div>
                             )}
-                            </motion.div>
+                            </div>
 
                         </div>
                     </div>

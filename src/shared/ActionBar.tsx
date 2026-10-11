@@ -14,7 +14,11 @@ function ActionBtn({
     onClick,
     disabled,
     variant,
+    hotkey,
+    hotkeyAlt,
 }: {
+    hotkey?: string;
+    hotkeyAlt?: string;
     children: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
@@ -24,7 +28,9 @@ function ActionBtn({
         <motion.button
             onClick={onClick}
             disabled={disabled}
-                        className={BTN_STYLES[variant]}
+            data-hotkey={hotkey}
+            data-hotkey-alt={hotkeyAlt}
+            className={BTN_STYLES[variant]}
         >
             {children}
         </motion.button>
@@ -101,7 +107,7 @@ export default function ActionBar({
                 <AnimatePresence mode="popLayout" initial={false}>
                     {canClear && (
                         <SlideIn id="clear">
-                            <ActionBtn variant="clear" onClick={onClear} disabled={disabled}>
+                            <ActionBtn variant="clear" onClick={onClear} disabled={disabled} hotkey="Q">
                                 Clear
                             </ActionBtn>
                         </SlideIn>
@@ -109,7 +115,7 @@ export default function ActionBar({
 
                     {canDeal && (
                         <SlideIn id="deal">
-                            <ActionBtn variant="deal" onClick={onDeal} disabled={disabled}>
+                            <ActionBtn variant="deal" onClick={onDeal} disabled={disabled} hotkey="Space" hotkeyAlt="Enter">
                                 {dealLabel}
                             </ActionBtn>
                         </SlideIn>

@@ -264,28 +264,28 @@ function BlackjackBar({
                     {/* Betting + Done: Clear */}
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || bet <= 0}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || bet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
                     {/* Done only: Change Bet */}
                     {isDone && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet} disabled={isShuffling}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet} disabled={isShuffling}>Change Bet</button>
                         </SlideBtn>
                     )}
 
                     {/* Betting: Deal */}
                     {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
 
                     {/* Done: Rebet & Deal */}
                     {isDone && (
                         <SlideBtn key="rebet-deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -300,23 +300,23 @@ function BlackjackBar({
 
                     {/* Player: Hit / Stand / Double / Split */}
                     {isPlayer && (
-                        <SlideBtn key="hit">
-                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
+                        <SlideBtn key="stand">
+                            <button data-hotkey="G" data-hotkey-alt="S Space" className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stand</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
-                        <SlideBtn key="stand">
-                            <button className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stand</button>
+                        <SlideBtn key="hit">
+                            <button data-hotkey="H" className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
                         <SlideBtn key="double">
-                            <button className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>{doubleForLess ? "Double for Less" : "Double"}</button>
+                            <button data-hotkey="B" className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>{doubleForLess ? "Double for Less" : "Double"}</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
                         <SlideBtn key="split">
-                            <button className={BTN_GOLD} onClick={onSplit} disabled={!canSplit || isResolvingAction}>Split</button>
+                            <button data-hotkey="P" className={BTN_GOLD} onClick={onSplit} disabled={!canSplit || isResolvingAction}>Split</button>
                         </SlideBtn>
                     )}
 
