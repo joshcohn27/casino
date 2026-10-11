@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.4.1",
+        date: "2026-10-11",
+        title: "DJ Wild pay tables",
+        changes: [
+            ["fixed", "DJ Wild: the pay tables no longer scroll sideways. Long hand names wrap inside their column."],
+        ],
+    },
+    {
         version: "4.4.0",
         date: "2026-10-10",
         title: "Keyboard shortcuts",

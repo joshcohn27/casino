@@ -169,7 +169,7 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={`whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
+                        <span className={`min-w-0 ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         <span className={`shrink-0 font-bold text-gold`}>{text}</span>
                     </div>
                 );
@@ -178,7 +178,7 @@ function PayoutColumn({ title, entries, highlight, unit = " to 1", extra, note, 
                 const hit = highlight === hand;
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={`whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
+                        <span className={`min-w-0 ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         <span className={`shrink-0 font-bold text-gold`}>{(mult ?? 0).toLocaleString()}{unit}</span>
                     </div>
                 );
@@ -221,7 +221,7 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
                 const natural = TRIPS_NATURAL_PAYTABLE[hand] ?? wild;
                 return (
                     <div key={hand} data-trips-row={hand} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-[11px] transition ${hit ? "bg-amber-300/12" : ""}`}>
-                        <span className={`flex-1 whitespace-nowrap ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
+                        <span className={`min-w-0 flex-1 ${hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}`}>{hand}</span>
                         {cell(natural, !hit ? "plain" : hitNatural ? "pays" : "misses")}
                         {cell(wild, !hit ? "plain" : hitNatural ? "misses" : "pays")}
                     </div>
@@ -795,7 +795,8 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Right column - payout tables, desktop only */}
-                    <div className="order-3 hidden lg:flex lg:w-[24rem] lg:shrink-0 lg:flex-col lg:overflow-y-auto">
+                    {/* a pay table never scrolls sideways: long names wrap inside their column */}
+                    <div className="order-3 hidden lg:flex lg:w-[24rem] lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
                         {/* centred when it fits, scrolls when it does not (short screens, Large text) */}
                         <div className="my-auto grid grid-cols-[1fr_1.55fr] gap-3 py-2">
                             <div>
