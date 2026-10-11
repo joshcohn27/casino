@@ -21,6 +21,26 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.4.0",
+        date: "2026-10-10",
+        title: "Keyboard shortcuts",
+        changes: [
+            ["new", "Play from the keyboard. Every table button shows its key, like Hit (H) and Stand (G). Space deals the next hand."],
+            ["new", "Blackjack tables: H hits, G stands, B doubles, P splits. Poker tables: K checks, 1 to 4 bet, C plays (calls), F folds. Q clears your bets."],
+            ["new", "Pai Gow: once your cards are sorted, 1 to 7 move that card to the Low hand or back. The arrow keys and Space do the same, and Enter sets the hand."],
+            ["new", "Where you turn your own cards over (Pai Gow, I Luv Suits, DJ Wild), a number key turns over that card: 5 for the fifth. R turns them all."],
+            ["new", "Video Poker: 1 to 5 hold a card, and Space deals or draws."],
+            ["new", "Esc closes a rules popup. You can turn shortcuts off under Settings, Display."],
+            ["new", "Baccarat: the pay table is now on the felt, with the third card rules beside it. The rule that applies to the hand lights up."],
+            ["new", "Three Card Poker: you can play Pair Plus on its own, with no Ante. Your cards are turned over and the side bets are paid."],
+            ["fixed", "Three Card Poker: Pair Plus is now paid even if you fold the main hand, as in a casino."],
+            ["improved", "Tables hold still. Results, suggestions and chips no longer push the cards, bet spots or pay tables around when they appear."],
+            ["improved", "Blackjack tables: Stand now sits to the left of Hit, matching G and H on the keyboard."],
+            ["improved", "Three Card Poker: the Play spot is always on the felt, and results show beside the cards."],
+            ["fixed", "Three Card Poker and Mississippi Stud no longer show the same result line twice."],
+        ],
+    },
+    {
         version: "4.3.0",
         date: "2026-10-10",
         title: "Session stats",

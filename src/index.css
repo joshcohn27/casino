@@ -129,6 +129,24 @@ button {
   cursor: pointer;
 }
 
+/* Keep room for the scrollbar at all times, so the page does not slide sideways when a
+   table grows taller than the window. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Keyboard shortcuts (Settings > Display). A table button that has a key shows it after its
+   label, like Hit (H). Only where there is a keyboard and mouse and room for it, and only while it is on. */
+@media (hover: hover) and (pointer: fine) and (min-width: 1360px) {
+  html:not([data-hotkeys="off"]) [data-table] button[data-hotkey] { white-space: nowrap; }
+  html:not([data-hotkeys="off"]) [data-table] button[data-hotkey]::after {
+    content: "(" attr(data-hotkey) ")";
+    margin-left: 0.35em;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+}
+
 /* Large text (Settings > Display). Enlarges the type itself and leaves the layout alone:
    every small and medium text size steps up about two pixels. Card faces and the big
    Video Poker read-outs are already large and stay as they are. */

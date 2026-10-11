@@ -81,6 +81,7 @@ export default function HandRow({
                     <div key={`${deckNo}-${card.id}`} style={style}>
                         {onCardClick ? (
                             <motion.button
+                                data-key-reveal={clickable ? "down" : "up"}
                                 onClick={() => onCardClick(card.id)}
                                 disabled={!clickable}
                                 aria-label={cardLabel ? cardLabel(card.id) : "Card"}

@@ -290,6 +290,91 @@ function ResultBanner({ winner, pandaHit, dragonHit }: {
 
 // ─── RulesModal ───────────────────────────────────────────────────────────────
 
+// ─── Felt panels ─────────────────────────────────────────────────────────────
+
+function FeltPanel({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div className="flex flex-col gap-0.5">
+            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">{title}</div>
+            {children}
+        </div>
+    );
+}
+
+function FeltHeading({ children }: { children: React.ReactNode }) {
+    return <div className="mt-2 border-b border-white/15 pb-0.5 text-[11px] font-bold text-white/75">{children}</div>;
+}
+
+function FeltRow({ label, value, hit, note }: { label: string; value: string; hit?: boolean; note?: string }) {
+    return (
+        <div className={`rounded px-1.5 py-0.5 ${hit ? "bg-amber-300/15" : ""}`} data-hit={hit ? "true" : undefined}>
+            <div className="flex items-center justify-between gap-2 text-[12px]">
+                <span className={hit ? "font-extrabold text-amber-100" : "text-white/90"}>{label}</span>
+                <span className="shrink-0 font-bold text-gold">{value}</span>
+            </div>
+            {note && <div className="text-[11px] leading-snug text-white/75">{note}</div>}
+        </div>
+    );
+}
+
+/** What every bet pays. The line that just won lights up. */
+function PaysPanel({ winner, pandaHit, dragonHit }: { winner: Winner | null; pandaHit: boolean; dragonHit: boolean }) {
+    return (
+        <div data-testid="pays-panel">
+            <FeltPanel title="Pays">
+                <FeltHeading>Main bets</FeltHeading>
+                <FeltRow label="Player" value="1 to 1" hit={winner === "player"} />
+                <FeltRow label="Banker" value="1 to 1" hit={winner === "banker" && !dragonHit} note="No commission. Pushes on a Dragon 7." />
+                <FeltRow label="Tie" value="8 to 1" hit={winner === "tie"} note="Player and Banker bets push on a tie." />
+                <FeltHeading>Side bets</FeltHeading>
+                <FeltRow label="Panda 8" value="25 to 1" hit={pandaHit} note="Player wins with a three-card total of 8." />
+                <FeltRow label="Dragon 7" value="40 to 1" hit={dragonHit} note="Banker wins with a three-card total of 7." />
+            </FeltPanel>
+        </div>
+    );
+}
+
+/** When each hand takes a third card. The rule that applies to the hand on the felt lights up. */
+function ThirdCardPanel({ playerCards, bankerCards }: { playerCards: BacCard[]; bankerCards: BacCard[] }) {
+    const two = (cards: BacCard[]) => (cards.length >= 2 ? (cards[0].baccaratValue + cards[1].baccaratValue) % 10 : null);
+    const p2 = two(playerCards), b2 = two(bankerCards);
+    const dealt = p2 !== null && b2 !== null;
+    const natural = dealt && (p2 >= 8 || b2 >= 8);
+    const live = dealt && !natural;
+    const playerDraws = live && p2 <= 5;
+    const playerStood = live && p2 >= 6;
+    const third = playerCards.length === 3 ? playerCards[2].baccaratValue : null;
+    // Banker rows only light once the Player's third card is on the felt
+    const bankerRow = (lo: number, hi: number) => playerDraws && third !== null && b2 !== null && b2 >= lo && b2 <= hi;
+    return (
+        <div data-testid="third-card-panel">
+            <FeltPanel title="Third Card Rules">
+                <FeltRow label="8 or 9 on two cards" value="Natural" hit={natural} note="Either hand. No more cards for anyone." />
+                <FeltHeading>Player goes first</FeltHeading>
+                <FeltRow label="Player has 0 to 5" value="Draws" hit={playerDraws} />
+                <FeltRow label="Player has 6 or 7" value="Stands" hit={playerStood} />
+                <FeltHeading>Banker, if Player stood</FeltHeading>
+                <FeltRow label="Banker has 0 to 5" value="Draws" hit={playerStood && b2 !== null && b2 <= 5} />
+                <FeltRow label="Banker has 6 or 7" value="Stands" hit={playerStood && b2 !== null && b2 >= 6} />
+                <FeltHeading>Banker, if Player drew</FeltHeading>
+                <div className="flex items-center justify-between gap-2 px-1.5 pt-0.5 text-[11px] text-white/75">
+                    <span>Banker has</span>
+                    <span>Draws if Player's 3rd card is</span>
+                </div>
+                <FeltRow label="0, 1 or 2" value="Any card" hit={bankerRow(0, 2)} />
+                <FeltRow label="3" value="Anything but 8" hit={bankerRow(3, 3)} />
+                <FeltRow label="4" value="2 to 7" hit={bankerRow(4, 4)} />
+                <FeltRow label="5" value="4 to 7" hit={bankerRow(5, 5)} />
+                <FeltRow label="6" value="6 or 7" hit={bankerRow(6, 6)} />
+                <FeltRow label="7" value="Never" hit={bankerRow(7, 7)} />
+                <div className="mt-2 px-1.5 text-[11px] leading-snug text-white/75">
+                    Aces count 1. Tens and face cards count 0. Only the last digit of a total counts.
+                </div>
+            </FeltPanel>
+        </div>
+    );
+}
+
 function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     return (
         <AnimatePresence>
@@ -341,7 +426,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     EZ Baccarat
                                 </h3>
                                 <ul className="space-y-1 text-[13px] text-white/90">
-                                    <li>No commission on Banker wins — the house edge is built into the push rule.</li>
+                                    <li>No commission on Banker wins - the house edge is built into the push rule.</li>
                                     <li>When Banker wins with a <span className="font-bold text-gold">3-card total of 7</span>, the Banker bet pushes (stake returned, no profit).</li>
                                 </ul>
                             </section>
@@ -361,8 +446,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     Side Bets
                                 </h3>
                                 <div className="space-y-1 text-[13px] text-white/90">
-                                    <div className="flex justify-between"><span>Panda 8 — Player wins with 3-card 8</span><span className="font-bold text-gold">25 to 1</span></div>
-                                    <div className="flex justify-between"><span>Dragon 7 — Banker wins with 3-card 7</span><span className="font-bold text-gold">40 to 1</span></div>
+                                    <div className="flex justify-between"><span>Panda 8 - Player wins with 3-card 8</span><span className="font-bold text-gold">25 to 1</span></div>
+                                    <div className="flex justify-between"><span>Dragon 7 - Banker wins with 3-card 7</span><span className="font-bold text-gold">40 to 1</span></div>
                                     <p className="pt-0.5 text-[12px] text-white/90">Side bets are independent of main bets and pay only on the specific outcome.</p>
                                 </div>
                             </section>
@@ -419,24 +504,24 @@ function BaccaratBar({
                 <AnimatePresence mode="popLayout" initial={false}>
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || totalBet <= 0}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || totalBet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
                     {isDone && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet} disabled={!canChangeBet}>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet} disabled={!canChangeBet}>
                                 Change Bet
                             </button>
                         </SlideBtn>
                     )}
                     {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
                     {isDone && (
                         <SlideBtn key="rebet-deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -833,9 +918,17 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                     />
                 }
             >
-                <div className="flex flex-1 flex-col items-center gap-4 py-2">
+                <div className="relative flex flex-1 flex-col items-center gap-3">
 
                     <TableLabel onRules={() => setShowRules(true)} />
+
+                    {/* On the felt either side of the cards: what pays, and when a third card is drawn */}
+                    <div className="hidden xl:absolute xl:left-2 xl:top-[76px] xl:block xl:w-[272px]">
+                        <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
+                    </div>
+                    <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
+                        <ThirdCardPanel playerCards={playerCards} bankerCards={bankerCards} />
+                    </div>
 
                     {/* Hand lanes — stacked on mobile, side by side on sm: */}
                     <div className="flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
@@ -874,19 +967,17 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         showResult={stage === "done"}
                     />
 
-                    <AnimatePresence>
-                        {winner && (
-                            <ResultBanner
-                                winner={winner}
-                                pandaHit={pandaHitResult}
-                                dragonHit={dragonHitResult}
-                            />
+                    {/* One fixed line: the message while the hand plays, then the result. It never changes
+                        height, so the bet spots below do not move. */}
+                    <div className="flex min-h-[28px] items-center justify-center" data-testid="status-line">
+                        {winner ? (
+                            <ResultBanner winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
+                        ) : (
+                            <p className="text-sm font-semibold text-rose-100/70">
+                                {canBet && selectedSpot === null ? "Tap a betting spot, then tap chips to bet." : message}
+                            </p>
                         )}
-                    </AnimatePresence>
-
-                    <p className="text-sm font-semibold text-rose-100/70">
-                        {canBet && selectedSpot === null ? "Tap a betting spot, then tap chips to bet." : message}
-                    </p>
+                    </div>
 
                     {/* Side bets: Panda 8 and Dragon 7 */}
                     <div className="flex items-end justify-center gap-8">

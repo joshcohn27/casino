@@ -5,6 +5,7 @@ import {
     type FontSize, loadFontSize, saveFontSize,
 } from "./shared/settings";
 import { formatMoney, BTN_BASE } from "./shared/money";
+import { loadHotkeys, saveHotkeys } from "./shared/hotkeys";
 
 type Props = { onBack: () => void };
 
@@ -101,6 +102,8 @@ export default function Settings({ onBack }: Props) {
     const [saved, setSaved] = useState(false);
     const [fontSize, setFontSize] = useState<FontSize>(loadFontSize);
     const chooseFont = (size: FontSize) => { saveFontSize(size); setFontSize(size); setSaved(true); };
+    const [hotkeys, setHotkeys] = useState<boolean>(loadHotkeys);
+    const chooseHotkeys = (on: boolean) => { saveHotkeys(on); setHotkeys(on); setSaved(true); };
 
     const update = (gameId: string, key: string, value: number | boolean) => {
         setSettings((prev) => {
@@ -117,6 +120,8 @@ export default function Settings({ onBack }: Props) {
         setSettings(fresh);
         saveFontSize("normal");
         setFontSize("normal");
+        saveHotkeys(true);
+        setHotkeys(true);
         setSaved(true);
     };
 
@@ -158,6 +163,25 @@ export default function Settings({ onBack }: Props) {
                                     className={`h-11 px-5 text-sm font-bold capitalize transition-colors ${fontSize === size ? "bg-room-red text-room-text" : "bg-room-deep text-room-text hover:bg-room-raised"}`}
                                 >
                                     {size}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-room-line pt-4">
+                        <div className="min-w-0">
+                            <div className="text-base font-semibold text-room-text">Keyboard shortcuts</div>
+                            <div className="text-sm text-room-muted">Play from the keyboard. Each button shows its key, like Hit (H). Space deals. Number keys turn over one card at a time. In Pai Gow 1 to 7, or the arrow keys and Space, pick your Low cards. In Video Poker 1 to 5 hold.</div>
+                        </div>
+                        <div className="flex shrink-0 overflow-hidden rounded-[4px] border-2 border-room-line" role="group" aria-label="Keyboard shortcuts">
+                            {([true, false] as const).map((on) => (
+                                <button
+                                    key={String(on)}
+                                    onClick={() => chooseHotkeys(on)}
+                                    aria-pressed={hotkeys === on}
+                                    data-setting={`display.hotkeys.${on ? "on" : "off"}`}
+                                    className={`h-11 px-5 text-sm font-bold transition-colors ${hotkeys === on ? "bg-room-red text-room-text" : "bg-room-deep text-room-text hover:bg-room-raised"}`}
+                                >
+                                    {on ? "On" : "Off"}
                                 </button>
                             ))}
                         </div>

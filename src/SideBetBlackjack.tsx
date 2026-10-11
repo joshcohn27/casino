@@ -360,49 +360,49 @@ function SideBetBar({
                 <AnimatePresence mode="popLayout" initial={false}>
                     {(isBetting || isDone) && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || (isBetting && !hasBets)}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || (isBetting && !hasBets)}>Clear</button>
                         </SlideBtn>
                     )}
                     {isDone && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet} disabled={isShuffling}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet} disabled={isShuffling}>Change Bet</button>
                         </SlideBtn>
                     )}
                     {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
                     {isDone && (
                         <SlideBtn key="rebet-deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
                     {isReveal && (
                         <SlideBtn key="reveal">
-                            <button className={BTN_GOLD} onClick={onReveal}>Reveal Dealer Card</button>
+                            <button data-hotkey="R" className={BTN_GOLD} onClick={onReveal}>Reveal Dealer Card</button>
                         </SlideBtn>
                     )}
 
                     {isPlayer && (
-                        <SlideBtn key="hit">
-                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
+                        <SlideBtn key="stand">
+                            <button data-hotkey="G" data-hotkey-alt="S Space" className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stand</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
-                        <SlideBtn key="stand">
-                            <button className={BTN_NEUTRAL} onClick={onStay} disabled={isResolvingAction}>Stand</button>
+                        <SlideBtn key="hit">
+                            <button data-hotkey="H" className={BTN_NEUTRAL} onClick={onHit} disabled={isResolvingAction}>Hit</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
                         <SlideBtn key="double">
-                            <button className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>{doubleForLess ? "Double for Less" : "Double"}</button>
+                            <button data-hotkey="B" className={BTN_GOLD} onClick={onDouble} disabled={!canDouble || isResolvingAction}>{doubleForLess ? "Double for Less" : "Double"}</button>
                         </SlideBtn>
                     )}
                     {isPlayer && (
                         <SlideBtn key="split">
-                            <button className={BTN_GOLD} onClick={onSplit} disabled={!canSplit || isResolvingAction}>Split</button>
+                            <button data-hotkey="P" className={BTN_GOLD} onClick={onSplit} disabled={!canSplit || isResolvingAction}>Split</button>
                         </SlideBtn>
                     )}
 
@@ -1036,7 +1036,8 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
                                 {sideSpot("matchDealer", "Match Dealer")}
                             </div>
 
-                            <div className="order-3 flex w-full justify-center lg:order-2 lg:w-auto">
+                            {/* as wide as a hand from the start, so the side spots do not slide outward at the deal */}
+                            <div className="order-3 flex w-full justify-center lg:order-2 lg:w-auto lg:min-w-[262px]">
                                 {stage === "betting" ? (
                                     <BetSpot
                                         testId="main"

@@ -368,43 +368,43 @@ function DDMBar({
 
                     {canClear && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={onClear} disabled={bet <= 0 && sideBet <= 0}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={bet <= 0 && sideBet <= 0}>Clear</button>
                         </SlideBtn>
                     )}
 
                     {isBetting && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
 
                     {isInsurance && canTakeInsurance && (
                         <SlideBtn key="take-insurance">
-                            <button className={BTN_GOLD} onClick={onTakeInsurance}>Take Insurance</button>
+                            <button data-hotkey="Y" className={BTN_GOLD} onClick={onTakeInsurance}>Take Insurance</button>
                         </SlideBtn>
                     )}
 
                     {isInsurance && canTakeInsurance && (
                         <SlideBtn key="no-insurance">
-                            <button className={BTN_NEUTRAL} onClick={onNoInsurance}>No Insurance</button>
-                        </SlideBtn>
-                    )}
-
-                    {isPlayer && (
-                        <SlideBtn key="hit">
-                            <button className={BTN_NEUTRAL} onClick={onHit} disabled={!canHit}>Hit</button>
+                            <button data-hotkey="N" className={BTN_NEUTRAL} onClick={onNoInsurance}>No Insurance</button>
                         </SlideBtn>
                     )}
 
                     {isPlayer && (
                         <SlideBtn key="stand">
-                            <button className={BTN_NEUTRAL} onClick={onStand} disabled={!canStand}>Stand</button>
+                            <button data-hotkey="G" data-hotkey-alt="S Space" className={BTN_NEUTRAL} onClick={onStand} disabled={!canStand}>Stand</button>
+                        </SlideBtn>
+                    )}
+
+                    {isPlayer && (
+                        <SlideBtn key="hit">
+                            <button data-hotkey="H" className={BTN_NEUTRAL} onClick={onHit} disabled={!canHit}>Hit</button>
                         </SlideBtn>
                     )}
 
                     {isPlayer && (
                         <SlideBtn key="double">
-                            <button
+                            <button data-hotkey="B"
                                 className={doubleWagersCount > 0 ? BTN_GREEN : BTN_GOLD}
                                 onClick={onDouble}
                                 disabled={!canDouble}
@@ -438,19 +438,19 @@ function DDMBar({
 
                     {isDone && (
                         <SlideBtn key="clear-done">
-                            <button className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
                         </SlideBtn>
                     )}
 
                     {isDone && (
                         <SlideBtn key="change-bet">
-                            <button className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={onChangeBet}>Change Bet</button>
                         </SlideBtn>
                     )}
 
                     {isDone && (
                         <SlideBtn key="rebet-deal">
-                            <button className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDealFromDone}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
 
@@ -1139,7 +1139,12 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             </div>
                         </div>
 
-                        {/* Bet circles — only during betting */}
+                        {/* Message */}
+                        <p className="text-sm font-semibold text-zinc-100/70">{message}</p>
+
+                        {/* The bet circles and the player's hand share this one place, so nothing moves at the deal. */}
+                        <div className="grid w-full justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
+                        {/* Bet circles - only during betting */}
                         <AnimatePresence mode="popLayout" initial={false}>
                             {stage === "betting" && (
                                 <motion.div
@@ -1178,12 +1183,8 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                             )}
                         </AnimatePresence>
 
-                        <motion.div layout="position" layoutDependency={stage} transition={{ layout: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } }} className="flex w-full flex-col items-center gap-4">
-                        {/* Message */}
-                        <p className="text-sm font-semibold text-zinc-100/70">{message}</p>
-
                         {/* Player lane */}
-                        <div className="flex flex-col items-center gap-2">
+                        <div className={`flex flex-col items-center gap-2 ${stage === "betting" ? "invisible" : ""}`}>
                             <Chip>
                                 {"Player"}
                                 {playerCards.length > 0
@@ -1191,6 +1192,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                     : ""}
                             </Chip>
                             <BlackjackHand cards={playerCards.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
+                        </div>
                         </div>
 
                         {/* Round detail lines (below lg where right col is hidden) */}
@@ -1201,7 +1203,6 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                                 ))}
                             </div>
                         )}
-                        </motion.div>
 
                     </div>
 

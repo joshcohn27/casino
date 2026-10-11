@@ -378,7 +378,8 @@ function StreetCircle({ label, bet, isCurrent }: { label: string; bet: number; i
                 style={{ width: 70, height: 70 }}
             >
                 <span className={`text-[13px] font-extrabold ${active || isCurrent ? "text-amber-200" : "text-white/75"}`}>{label}</span>
-                {active && <span className="mt-0.5 text-[10px] font-bold text-amber-300">{formatMoney(bet)}</span>}
+                {/* the amount keeps its line when empty, so the label does not shift when the bet goes on */}
+                <span className={`mt-0.5 text-[10px] font-bold text-amber-300 ${active ? "" : "invisible"}`}>{formatMoney(bet)}</span>
             </div>
         </div>
     );
@@ -755,32 +756,32 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 <AnimatePresence mode="popLayout" initial={false}>
                     {stage === "betting" && (
                         <SlideBtn key="clear">
-                            <button className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (
                         <SlideBtn key="deal">
-                            <button className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>Deal</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
                         <SlideBtn key={`fold-${stage}`}>
-                            <button className={BTN_NEUTRAL} onClick={handleFold} disabled={resolving.current}>Fold</button>
+                            <button data-hotkey="F" className={BTN_NEUTRAL} onClick={handleFold} disabled={resolving.current}>Fold</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
                         <SlideBtn key={`one-${stage}`}>
-                            <button className={BTN_NEUTRAL} onClick={() => handleBetStreet(1)} disabled={resolving.current}>Bet 1×</button>
+                            <button data-hotkey="1" className={BTN_NEUTRAL} onClick={() => handleBetStreet(1)} disabled={resolving.current}>Bet 1×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
                         <SlideBtn key={`three-${stage}`}>
-                            <button className={BTN_GOLD} onClick={() => handleBetStreet(3)} disabled={resolving.current}>Bet 3×</button>
+                            <button data-hotkey="3" className={BTN_GOLD} onClick={() => handleBetStreet(3)} disabled={resolving.current}>Bet 3×</button>
                         </SlideBtn>
                     )}
                     {(stage === "third" || stage === "fourth" || stage === "fifth") && (
                         <SlideBtn key={`max-${stage}`}>
-                            <button
+                            <button data-hotkey="M"
                                 className={BTN_GREEN}
                                 onClick={handleMaxBet}
                                 disabled={
@@ -795,17 +796,17 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                     )}
                     {stage === "done" && (
                         <SlideBtn key="clear-done">
-                            <button className={BTN_NEUTRAL} onClick={handleClearAndReset}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClearAndReset}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "done" && (
                         <SlideBtn key="change">
-                            <button className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
+                            <button data-hotkey="B" className={BTN_NEUTRAL} onClick={handleChangeBet}>Change Bet</button>
                         </SlideBtn>
                     )}
                     {stage === "done" && (
                         <SlideBtn key="rebet">
-                            <button
+                            <button data-hotkey="Space" data-hotkey-alt="Enter"
                                 className={BTN_GOLD}
                                 onClick={handleDeal}
                                 disabled={pendingAnte < MIN_BET || bankroll < pendingAnte + pendingBonus}
@@ -824,6 +825,35 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     );
 
     // ─── JSX ─────────────────────────────────────────────────────────────────
+
+    const playerNotes = (
+        <>
+            {(stage === "third" || stage === "fourth" || stage === "fifth") && (
+                <div className="text-sm font-bold text-white/90">
+                    {stage === "third" ? "3rd Street - Bet or Fold" : stage === "fourth" ? "4th Street - Bet or Fold" : "5th Street - Bet or Fold"}
+                </div>
+            )}
+            {suggestion && (
+                <div
+                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
+                        suggestion === "max" || suggestion === "3x"
+                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                            : suggestion === "1x"
+                            ? "border-amber-400/40 bg-amber-500/15 text-amber-300"
+                            : "border-red-400/30 bg-red-500/10 text-red-300"
+                    }`}
+                >
+                    <span className="text-[13px] opacity-70">Suggest</span>
+                    <span>{suggestion === "max" ? "Max Bet" : suggestion === "3x" ? "Bet 3×" : suggestion === "1x" ? "Bet 1×" : "Fold"}</span>
+                </div>
+            )}
+            {stage === "done" && fiveCardResult && <div className={`text-sm font-extrabold ${netColor}`}>{fiveCardResult.label}</div>}
+            {/* a line that only repeats the hand name above is left out */}
+            {stage === "done" && resultLines.map((line, i) => line === fiveCardResult?.label ? null : (
+                <div key={i} className={`text-[11px] font-bold ${i === 0 ? netColor : "text-white/90"}`}>{line}</div>
+            ))}
+        </>
+    );
 
     return (
         <>
@@ -934,6 +964,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             <div className="text-[13px] font-bold text-white/75">
                                 Your Hand
                             </div>
+                            <div className="relative">
                             <div className="flex gap-2">
                                 {stage === "betting"
                                     ? [0, 1].map(i => (
@@ -955,22 +986,10 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                     ))
                                 }
                             </div>
+                            {/* what to do, and then how the hand came out: beside the cards, so nothing moves */}
+                            <div className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
+                            </div>
                         </div>
-
-                        {/* Hand eval label */}
-                        <AnimatePresence>
-                            {stage === "done" && fiveCardResult && (
-                                <motion.div
-                                    key="hand-eval"
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className={`text-sm font-extrabold ${netColor}`}
-                                >
-                                    {fiveCardResult.label}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
 
                         {/* Bet circles — Ante and 3CB side by side */}
                         <div className="flex items-end justify-center gap-6 mt-14">
@@ -1014,62 +1033,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             <StreetCircle label="5th" bet={fifthBet} isCurrent={stage === "fifth"} />
                         </div>
 
-                        {/* Street message */}
-                        <AnimatePresence>
-                            {(stage === "third" || stage === "fourth" || stage === "fifth") && (
-                                <motion.div
-                                    key="street-msg"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="text-sm font-bold text-white/90"
-                                >
-                                    {stage === "third"
-                                        ? "3rd Street - Bet or Fold"
-                                        : stage === "fourth"
-                                        ? "4th Street - Bet or Fold"
-                                        : "5th Street - Bet or Fold"}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Strategy suggestion */}
-                        <AnimatePresence>
-                            {suggestion && (
-                                <motion.div
-                                    key="ms-suggest"
-                                    initial={{ opacity: 0, y: 4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
-                                        suggestion === "max"
-                                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
-                                            : suggestion === "3x"
-                                            ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
-                                            : suggestion === "1x"
-                                            ? "border-amber-400/40 bg-amber-500/15 text-amber-300"
-                                            : "border-red-400/30 bg-red-500/10 text-red-300"
-                                    }`}
-                                >
-                                    <span className="text-[13px] opacity-70">Suggest</span>
-                                    <span>{suggestion === "max" ? "Max Bet" : suggestion === "3x" ? "Bet 3×" : suggestion === "1x" ? "Bet 1×" : "Fold"}</span>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Result lines */}
-                        {stage === "done" && resultLines.length > 0 && (
-                            <div className="flex flex-col items-center gap-1 text-center">
-                                {resultLines.map((line, i) => (
-                                    <div
-                                        key={i}
-                                        className={`text-[11px] font-bold ${i === 0 ? netColor : "text-white/90"}`}
-                                    >
-                                        {line}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {/* on phones the notes get a reserved row here: on desktop they sit beside the cards */}
+                        <div className="flex min-h-[84px] flex-col items-center gap-1 text-center lg:hidden">{playerNotes}</div>
 
                     </div>
 
