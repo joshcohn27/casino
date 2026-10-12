@@ -182,3 +182,78 @@ html[data-font="large"] .text-2xl { font-size: 1.625rem; }
 }
 /* Bet spots are fixed-size circles, so their labels tighten up instead of spilling out */
 html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; line-height: 1.1; }
+
+
+/* ─── Screen sizes ─────────────────────────────────────────────────────────────
+   Layout comes from Tailwind classes on the elements: phones are the base, and
+   sm 640px, md 768px, lg 1024px (tables go three columns) and xl 1280px add to it.
+   The rules below cover the sizes those classes leave awkward. They are plain
+   (unlayered) CSS, so they win over the utility classes without !important. */
+
+/* Action bar. Each table keeps an invisible copy of the chip tray on the right of its
+   action bar so the buttons sit dead centre. That needs about 1500px. Below it, the copy
+   made the bar wider than the screen and squeezed the button labels onto several lines. */
+@media (max-width: 1499px) {
+  [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > .invisible { display: none; }
+}
+/* Tablets held upright: the chip tray takes its own row above the buttons, as on a phone */
+@media (min-width: 640px) and (max-width: 1023px) {
+  [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] { display: flex; flex-direction: column; align-items: center; }
+}
+/* Phones and tablets: a button keeps its label on one line, and the row of buttons wraps instead */
+@media (max-width: 1023px) {
+  [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) { flex-wrap: wrap; }
+  [data-table] button[data-hotkey] { white-space: nowrap; }
+}
+
+/* Session read-out. It floats in the top left corner on desktop. At these two tables that
+   corner is already taken (a pay table, the game tabs), so it keeps its own row instead. */
+@media (min-width: 1024px) {
+  [data-table="doubledownmadness"] > [data-testid="session"],
+  [data-table="videopoker"] > [data-testid="session"] {
+    position: static;
+    justify-content: flex-start;
+    border-width: 0 0 1px;
+    border-radius: 0;
+  }
+}
+
+/* Notes shown beside the cards (Three Card Poker, Mississippi Stud): narrow enough to stay
+   clear of the pay table next to them, wrapping onto a second line when they must. */
+[data-side-notes] { width: max-content; max-width: 176px; white-space: normal; line-height: 1.2; }
+@media (min-width: 1280px) { [data-side-notes] { max-width: 240px; } }
+
+/* Short screens (small laptops): the felt is drawn a little smaller so a whole table fits
+   with less scrolling. The nav and the action bar stay full size. */
+@media (min-width: 1024px) and (max-height: 860px) {
+  [data-table] main { zoom: 0.9; }
+}
+@media (min-width: 1024px) and (max-height: 700px) {
+  [data-table] main { zoom: 0.84; }
+}
+
+/* Table height. A table fills the window below the menu bar. The menu is two rows tall on
+   tablets held upright, and Video Poker has no shell of its own, so both are set here.
+   (!important because the table shell sets its height inline.) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 129px) !important; }
+}
+[data-table="videopoker"] > .min-h-screen { min-height: calc(100dvh - 84px); }
+
+/* Video Poker. Pay table columns are the same width in every row, whatever the label. */
+#video-poker-paytable > .grid { grid-template-columns: minmax(0, 1.9fr) repeat(5, minmax(0, 1fr)); }
+@media (max-width: 639px) {
+  /* a wider name column and smaller type, so no hand name is broken mid-word */
+  #video-poker-paytable > .grid { grid-template-columns: minmax(0, 2.5fr) repeat(5, minmax(0, 1fr)); }
+  #video-poker-paytable > .grid:not(:first-child) > div { font-size: 13px; padding-inline: 4px; }
+  /* WIN, BET and DENOM on one row, CREDIT on its own row beneath, so nothing is cut off */
+  [data-vp-meters] { flex-wrap: wrap; row-gap: 8px; }
+  [data-vp-meters] > :last-child { flex-basis: 100%; text-align: center; }
+}
+/* The five cards always sit in one row: they are drawn smaller as the screen narrows */
+@media (max-width: 690px) { [data-vp-cards] { flex-wrap: nowrap; zoom: 0.85; } }
+@media (max-width: 578px) { [data-vp-cards] { zoom: 0.7; } }
+@media (max-width: 481px) { [data-vp-cards] { zoom: 0.6; } }
+@media (max-width: 417px) { [data-vp-cards] { zoom: 0.54; } }
+@media (max-width: 379px) { [data-vp-cards] { zoom: 0.47; } }
+@media (max-width: 334px) { [data-vp-cards] { zoom: 0.42; } }

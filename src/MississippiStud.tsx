@@ -987,7 +987,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                                 }
                             </div>
                             {/* what to do, and then how the hand came out: beside the cards, so nothing moves */}
-                            <div className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
+                            <div data-side-notes className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
                             </div>
                         </div>
 

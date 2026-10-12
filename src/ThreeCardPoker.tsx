@@ -890,7 +890,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                         {/* the status sits beside the cards on desktop and in its own reserved row on phones */}
                         <div className="relative">
                             <CardRow cards={dealerCards} faceUp={dealerFaceUp} placeholder />
-                            <div className="absolute left-full top-0 ml-4 hidden h-full items-center whitespace-nowrap lg:flex">{dealerNote}</div>
+                            <div data-side-notes className="absolute left-full top-0 ml-4 hidden h-full items-center whitespace-nowrap lg:flex">{dealerNote}</div>
                         </div>
                         <div className="flex min-h-[16px] items-center lg:hidden">{dealerNote}</div>
                     </div>
@@ -949,7 +949,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                     <div className="flex flex-col items-center gap-2">
                         <div className="relative">
                             <CardRow cards={playerCards} faceUp placeholder />
-                            <div className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
+                            <div data-side-notes className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
                         </div>
                         <div className="text-[13px] font-bold text-white/75">Player</div>
                         <div className="flex min-h-[38px] flex-col items-center gap-1 lg:hidden">{playerNotes}</div>
