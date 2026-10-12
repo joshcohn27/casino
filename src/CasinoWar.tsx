@@ -24,17 +24,17 @@ const FELT_COLOR = "#2f6fb3";
 const CHIP_KEY = "casino-war-chip";
 /** Reshuffle when this few cards are left: about three quarters of the way through the shoe. */
 const RESHUFFLE_AT = Math.ceil(DECKS * 52 * 0.25);
-// Pace, in ms. A card is dealt face down, then turned over a beat later, as at the other tables.
-const DEAL_MS = 520;
-const FLIP_MS = 620;
-const BURN_MS = 360;
-/** How long the turned-over cards sit before the result is called. */
-const READ_MS = 500;
+// Pace, in ms: the same beat as the Blackjack tables. Your card arrives face up; the dealer's
+// is dealt face down and turned over, then the result is called.
+const DEAL_MS = 380;
+const FLIP_MS = 480;
+const BURN_MS = 200;
 
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
+// a card travels in from the shoe, up and to the right, exactly as at the Blackjack tables
 const CARD_VARIANTS = {
-    initial: { opacity: 0, y: -18, scale: 0.94 },
-    animate: { opacity: 1, y: 0, scale: 1 },
+    initial: { opacity: 0, x: 36, y: -44, scale: 0.94 },
+    animate: { opacity: 1, x: 0, y: 0, scale: 1 },
 };
 const CARD_TRANSITION = (delay: number) => ({
     duration: 0.32,
@@ -156,7 +156,7 @@ function PayTable({ outcome, tieBetHit }: { outcome: Outcome | null; tieBetHit: 
 
 // ─── Cards on the felt ────────────────────────────────────────────────────────
 
-/** A card as it is dealt onto the felt. It arrives face down and is turned over where it lies. */
+/** A card as it is dealt onto the felt. A face-down card is turned over where it lies. */
 function DealtCard({ card, deckNo }: { card: Card; deckNo: number }) {
     return (
         <motion.div
@@ -178,7 +178,7 @@ function DealtCard({ card, deckNo }: { card: Card; deckNo: number }) {
 function Lane({ label, cards, deckNo, testId }: { label: string; cards: Card[]; deckNo: number; testId: string }) {
     const shown = cards.filter((c) => c.faceUp);
     return (
-        <div className="flex flex-col items-center gap-2" data-testid={testId}>
+        <div className="flex w-full flex-col items-center gap-2" data-testid={testId}>
             <span className="text-[13px] font-bold text-white/85">{label}</span>
             <div className={`${CARD_CLS} relative`}>
                 {cards[0] && <DealtCard card={cards[0]} deckNo={deckNo} />}
@@ -296,15 +296,13 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         setMessage("Dealing.");
         const [playerCard, dealerCard, ...rest] = cards;
         setShoe(rest);
-        // dealt face down, the player's first, then turned over in the same order
-        setPlayerCards([{ ...playerCard, faceUp: false }]);
+        // yours face up, the dealer's face down, then the dealer's is turned over
+        setPlayerCards([{ ...playerCard, faceUp: true }]);
         await wait(DEAL_MS);
         setDealerCards([{ ...dealerCard, faceUp: false }]);
         await wait(DEAL_MS);
-        setPlayerCards([{ ...playerCard, faceUp: true }]);
-        await wait(FLIP_MS);
         setDealerCards([{ ...dealerCard, faceUp: true }]);
-        await wait(FLIP_MS + READ_MS);
+        await wait(FLIP_MS);
 
         const result = compareFirst(playerCard, dealerCard);
         setFirst(result);
@@ -346,26 +344,24 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         setRaiseBet(raise);
         setStage("war");
         setMessage(`War! The dealer burns ${BURN_CARDS} cards.`);
-        await wait(350);
+        await wait(DEAL_MS - 120);
         // the burn cards come off the shoe one at a time, face down, onto the felt
         const burn = shoe.slice(0, BURN_CARDS).map((c) => ({ ...c, faceUp: false }));
         for (let i = 0; i < burn.length; i++) {
             setBurnCards(burn.slice(0, i + 1));
             await wait(BURN_MS);
         }
-        await wait(250);
+        await wait(DEAL_MS - BURN_MS);
 
         const [playerCard, dealerCard, ...rest] = shoe.slice(BURN_CARDS);
         setShoe(rest);
         setMessage("One more card each.");
-        setPlayerCards((prev) => [...prev, { ...playerCard, faceUp: false }]);
+        setPlayerCards((prev) => [...prev, { ...playerCard, faceUp: true }]);
         await wait(DEAL_MS);
         setDealerCards((prev) => [...prev, { ...dealerCard, faceUp: false }]);
         await wait(DEAL_MS);
-        setPlayerCards((prev) => prev.map((c, i) => (i === 1 ? { ...c, faceUp: true } : c)));
-        await wait(FLIP_MS);
         setDealerCards((prev) => prev.map((c, i) => (i === 1 ? { ...c, faceUp: true } : c)));
-        await wait(FLIP_MS + READ_MS);
+        await wait(FLIP_MS);
 
         const war: WarResult = compareWar(playerCard, dealerCard);
         const back = warReturn(mainBet, raise, war);
@@ -399,7 +395,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
                 hideHeader
                 actionBar={
                     <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
-                        <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
+                        <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} alwaysShown />
                         <div className="flex min-h-[48px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (

@@ -5,12 +5,14 @@ interface Props {
     selectedChip: ChipDenomination;
     onSelect: (chip: ChipDenomination) => void;
     disabled?: boolean;
+    /** Stay on screen on phones while disabled, so the action bar keeps one height through a hand. */
+    alwaysShown?: boolean;
 }
 
 // On phones the tray is hidden while it is disabled, to leave room for the table
-export default function ChipTray({ selectedChip, onSelect, disabled = false }: Props) {
+export default function ChipTray({ selectedChip, onSelect, disabled = false, alwaysShown = false }: Props) {
     return (
-        <div className={`${disabled ? "hidden sm:flex" : "flex"} flex-wrap items-center gap-2 sm:flex-nowrap`}>
+        <div className={`${disabled && !alwaysShown ? "hidden sm:flex" : "flex"} flex-wrap items-center gap-2 sm:flex-nowrap`}>
             {CHIP_DENOMINATIONS.map((denom) => {
                 const chip = CHIP_COLORS[denom];
                 const selected = selectedChip === denom;
