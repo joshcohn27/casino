@@ -570,7 +570,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                 </div>
 
                 <div className="px-1 pb-1 pt-2 md:px-2">
-                    <div className="flex flex-wrap items-start justify-center gap-2 md:gap-3">
+                    <div data-vp-cards className="flex flex-wrap items-start justify-center gap-2 md:gap-3">
                         {Array.from({ length: 5 }).map((_, index) => (
                             <CardView
                                 key={hand[index]?.id ?? `empty-${index}`}
@@ -582,7 +582,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
                         ))}
                     </div>
 
-                    <div className="mt-2 flex items-end justify-between gap-3 border-t-[4px] border-[#efe957] px-1 pt-2">
+                    <div data-vp-meters className="mt-2 flex items-end justify-between gap-3 border-t-[4px] border-[#efe957] px-1 pt-2">
                         <div className="flex items-end gap-3">
                             <div>
                                 <div

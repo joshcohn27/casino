@@ -21,6 +21,28 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.5.0",
+        date: "2026-10-12",
+        title: "Card Ladder",
+        changes: [
+            ["new", "Card Ladder: a free game for winning chips. Call red or black, higher or lower, inside or outside, then the suit. Get all four right and win $1,000."],
+            ["new", "Out of chips? A notice now points you to Card Ladder, and it has its own Free Chips link in the menu."],
+            ["improved", "Pai Gow: with two small pairs (6s or lower) the dealer now plays the higher pair in the High hand and the lower pair in the Low hand, unless an Ace or King can go in the Low hand."],
+        ],
+    },
+    {
+        version: "4.4.2",
+        date: "2026-10-12",
+        title: "Fits more screens",
+        changes: [
+            ["fixed", "Tablets and small laptops: tables no longer run off the side of the screen, and button labels stay on one line."],
+            ["fixed", "Video Poker on a phone: the five cards sit in one row, the pay table lines up, and the credit read-out is no longer cut off."],
+            ["fixed", "Double Down Madness and Video Poker: the session read-out no longer sits on top of the pay table or the game tabs."],
+            ["improved", "Short screens: tables are drawn a little smaller so more of the felt fits without scrolling."],
+            ["improved", "Video Poker no longer scrolls on a large screen."],
+        ],
+    },
+    {
         version: "4.4.1",
         date: "2026-10-11",
         title: "DJ Wild pay tables",

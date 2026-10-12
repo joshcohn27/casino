@@ -328,7 +328,8 @@ function buildSplit(front: Card[], allCards: Card[]): SplitEval {
 //   No pair          highest card behind, next two in front
 //   One pair         pair behind, two highest others in front
 //   Two pair         low is 2-6, medium 7-10, high J-K.
-//                    low + low: keep together. low + medium, low + high, medium + medium:
+//                    low + low: split unless holding an ace or king (the one place this departs
+//                    from MGM, which never splits two low pairs). low + medium, low + high, medium + medium:
 //                    split unless holding an ace. medium + high, high + high, aces + any: split.
 //   Three pair       highest pair in front
 //   Three of a kind  keep together, except aces: one ace in front
@@ -421,9 +422,13 @@ function houseWayFront(cards: Card[]): Card[] {
         const size = (v: number) => (v <= 6 ? 0 : v <= 10 ? 1 : 2);
         const bothLow = size(high.value) === 0;
         if (bothLow && made.length > 0 && !hasAce) return made[0].front;
+        // Two low pairs: MGM never splits them. Josh chose the common rule instead: split them
+        // (higher pair behind, lower pair in front) unless an ace or king can go in front.
+        const hasKingOrAce = singles.some((c) => houseValue(c) >= 13);
         const split = high.value === 14
             || (size(high.value) === 2 && size(low.value) >= 1)
-            || (!bothLow && !hasAce);
+            || (!bothLow && !hasAce)
+            || (bothLow && !hasKingOrAce);
         return split ? low.cards : top2(singles);
     }
 
