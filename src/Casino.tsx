@@ -5,7 +5,7 @@ import Settings from "./Settings"
 import WhatsNew from "./WhatsNew"
 import NotFound from "./NotFound"
 import { VERSION } from "./changelog"
-import { GAMES, HOME_GAMES, NAV_GROUPS, gameAtPath } from "./games"
+import { FREE_GAME, GAMES, HOME_GAMES, NAV_GROUPS, gameAtPath } from "./games"
 import { DEFAULT_BANKROLL, useBankroll } from "./shared/bankrollContext"
 import { feedMeterFromWager } from "./shared/progressiveMeter"
 import { TableContext } from "./shared/sessionContext"
@@ -125,29 +125,38 @@ function MenuItem({
     )
 }
 
+/** Below this balance no table can be played, so the free game is offered. */
+const OUT_OF_CHIPS_BELOW = 5
+
 function GameCard({
     title,
     subtitle,
     to,
     bankroll,
     label = "Table Game",
+    free = false,
 }: {
     title: string
     subtitle: string
     to: string
     bankroll: string
     label?: string
+    /** The free game: a red edge and a tag set it apart from the tables. */
+    free?: boolean
 }) {
     return (
         <Link
             to={to}
-            className="group relative overflow-hidden rounded-[4px] border border-room-line bg-room-panel p-6 pl-7 text-left transition-colors hover:border-room-line-hover"
+            className={`group relative overflow-hidden rounded-[4px] border bg-room-panel p-6 pl-7 text-left transition-colors ${free ? "border-room-accent border-l-4 hover:border-room-red-hover" : "border-room-line hover:border-room-line-hover"}`}
             data-testid="game-card"
+            data-free={free ? "true" : undefined}
         >
             <div className="relative flex h-full flex-col justify-between gap-6">
                 <div>
                     <h3 className="text-room-text">{title}</h3>
-                    <div className="mt-1 text-sm font-semibold text-room-text">{label}</div>
+                    {free
+                        ? <div className="mt-2"><span className="tag tag-new">Free chips</span></div>
+                        : <div className="mt-1 text-sm font-semibold text-room-text">{label}</div>}
                     <div className="mt-4 max-w-[52ch] text-base leading-6 text-room-muted">{subtitle}</div>
                 </div>
 
@@ -158,7 +167,7 @@ function GameCard({
                     </div>
 
                     <div className="rounded-[4px] border border-room-red-pressed bg-room-red px-4 py-2 text-sm font-bold text-room-text transition-colors group-hover:bg-room-red-hover">
-                        Play
+                        {free ? "Play free" : "Play"}
                     </div>
                 </div>
             </div>
@@ -185,6 +194,18 @@ export default function Casino() {
         if (table) setSeated((prev) => (prev.includes(table.id) ? prev : [...prev, table.id]))
     }, [table])
     const heldTables = table && !seated.includes(table.id) ? [...seated, table.id] : seated
+
+    // Out of chips: once the balance has sat below the lowest table minimum for a moment, a
+    // notice points to the free game. It floats over the page, so it moves nothing, and it
+    // comes back each time the balance runs out again.
+    const outOfChips = bankroll < OUT_OF_CHIPS_BELOW
+    const [chipsNotice, setChipsNotice] = useState<"hidden" | "shown" | "dismissed">("hidden")
+    useEffect(() => {
+        if (!outOfChips) { setChipsNotice("hidden"); return }
+        const id = window.setTimeout(() => setChipsNotice((cur) => (cur === "hidden" ? "shown" : cur)), 1500)
+        return () => window.clearTimeout(id)
+    }, [outOfChips])
+    const showChipsNotice = chipsNotice === "shown" && !!FREE_GAME && pathname !== FREE_GAME.path
 
     useEffect(() => {
         window.localStorage.removeItem(OLD_SELECTED_GAME_KEY)
@@ -256,6 +277,7 @@ export default function Casino() {
                             to={g.path}
                             bankroll={bankrollDisplay}
                             label={g.cardLabel}
+                            free={g.free}
                         />
                     ))}
                 </div>
@@ -431,6 +453,33 @@ export default function Casino() {
                     </div>
                 )}
             </div>
+
+            {showChipsNotice && FREE_GAME && (
+                <div
+                    className="fixed left-1/2 top-[72px] z-40 flex w-[min(92vw,560px)] -translate-x-1/2 items-center gap-3 rounded-[4px] border border-room-accent bg-room-panel px-4 py-3 text-room-text"
+                    role="status"
+                    data-testid="chips-notice"
+                >
+                    <div className="min-w-0 flex-1">
+                        <div className="text-base font-bold">Out of chips?</div>
+                        <div className="text-sm text-room-muted">{FREE_GAME.title} is free to play. Four right calls wins $1,000.</div>
+                    </div>
+                    <Link
+                        to={FREE_GAME.path}
+                        onClick={() => setChipsNotice("dismissed")}
+                        className="shrink-0 rounded-[4px] border border-room-red-pressed bg-room-red px-4 py-3 text-sm font-bold text-room-text transition-colors hover:bg-room-red-hover"
+                    >
+                        Get free chips
+                    </Link>
+                    <button
+                        onClick={() => setChipsNotice("dismissed")}
+                        aria-label="Dismiss"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[4px] border border-room-line bg-room-deep text-xl font-bold text-room-text transition-colors hover:bg-room-raised"
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
 
             {/* Tables: each one you have opened stays here, hidden unless it is the page you are on */}
             {GAMES.filter((g) => heldTables.includes(g.id)).map((g) => (

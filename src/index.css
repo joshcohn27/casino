@@ -218,6 +218,9 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
   }
 }
 
+/* Card Ladder is a free game with nothing bet, so it has no session to show */
+[data-table="cardladder"] > [data-testid="session"] { display: none; }
+
 /* Notes shown beside the cards (Three Card Poker, Mississippi Stud): narrow enough to stay
    clear of the pay table next to them, wrapping onto a second line when they must. */
 [data-side-notes] { width: max-content; max-width: 176px; white-space: normal; line-height: 1.2; }

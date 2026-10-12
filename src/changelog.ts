@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.5.0",
+        date: "2026-10-12",
+        title: "Card Ladder",
+        changes: [
+            ["new", "Card Ladder: a free game for winning chips. Call red or black, higher or lower, inside or outside, then the suit. Get all four right and win $1,000."],
+            ["new", "Out of chips? A notice now points you to Card Ladder, and it has its own Free Chips link in the menu."],
+            ["improved", "Pai Gow: with two small pairs (6s or lower) the dealer now plays the higher pair in the High hand and the lower pair in the Low hand, unless an Ace or King can go in the Low hand."],
+        ],
+    },
+    {
         version: "4.4.2",
         date: "2026-10-12",
         title: "Fits more screens",

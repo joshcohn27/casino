@@ -22,6 +22,8 @@ export type GameEntry = {
     subtitle: string;
     /** Position on the Home page. */
     homeOrder: number;
+    /** A free game that pays chips. It is marked out on Home and offered when the balance runs out. */
+    free?: boolean;
     /** Loaded the first time the table is opened. */
     component: LazyExoticComponent<ComponentType<GameProps>>;
 };
@@ -152,10 +154,24 @@ export const GAMES: ReadonlyArray<GameEntry> = [
         homeOrder: 10,
         component: lazy(() => import("./Baccarat")),
     },
+    {
+        id: "cardladder",
+        path: "/card-ladder",
+        title: "Card Ladder",
+        navLabel: "Free Chips",
+        group: "table",
+        free: true,
+        subtitle: "Free to play · Call red or black, higher or lower, inside or outside, then the suit · Four right in a row wins $1,000",
+        homeOrder: 13,
+        component: lazy(() => import("./CardLadder")),
+    },
 ];
 
 /** The cards on the Home page, in the order they are shown. */
 export const HOME_GAMES: ReadonlyArray<GameEntry> = [...GAMES].sort((a, b) => a.homeOrder - b.homeOrder);
+
+/** The free game that pays chips, offered when the balance runs out. */
+export const FREE_GAME: GameEntry | undefined = GAMES.find((g) => g.free);
 
 /** The game at this URL, if there is one. */
 export function gameAtPath(pathname: string): GameEntry | undefined {
