@@ -195,6 +195,7 @@ export default function Feedback({ onBack }: FeedbackProps) {
                                         <option className="bg-room-deep">Mississippi Stud</option>
                                         <option className="bg-room-deep">Baccarat</option>
                                         <option className="bg-room-deep">Roulette</option>
+                                        <option className="bg-room-deep">Casino War</option>
                                         <option className="bg-room-deep">Video Poker</option>
                                         <option className="bg-room-deep">Card Ladder</option>
                                         <option className="bg-room-deep">Other</option>

@@ -53,6 +53,7 @@ export const GAME_SETTINGS: GameSettings[] = [
     { id: "iluvsuits", name: "I Luv Suits", bets: [main("ante", "Ante"), side("flushRush", "Flush Rush", MAIN_MAX), side("superFlush", "Super Flush Rush", MAIN_MAX)] },
     { id: "djwild", name: "DJ Wild", bets: [main("ante", "Ante (Blind matches)"), side("trips", "Trips", MAIN_MAX), side("badBeat", "Two-Way Bad Beat", MAIN_MAX)],
       toggles: [{ key: "progressive", label: "Progressive", hint: "Put the $5 progressive bet on every hand automatically", fallback: false }] },
+    { id: "casinowar", name: "Casino War", bets: [main("main", "Bet"), side("tie", "Tie", MAIN_MAX)] },
     { id: "videopoker", name: "Video Poker", bets: [
         { key: "credits", label: "Credits per hand", min: 1, max: 5, optional: false, fallback: 5, choices: [1, 2, 3, 4, 5], unit: "credits" },
         { key: "denom", label: "Coin size", min: 1, max: 25, optional: false, fallback: 1, choices: [1, 2, 5, 10, 25], unit: "dollars" },

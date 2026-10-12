@@ -127,6 +127,15 @@ export const GAMES: ReadonlyArray<GameEntry> = [
         component: lazy(() => import("./DJWild")),
     },
     {
+        id: "casinowar",
+        path: "/poker/casino-war",
+        title: "Casino War",
+        group: "poker",
+        subtitle: "One card each · High card wins even money · On a tie, go to war or surrender half · Tie bet pays 10 to 1 · 6-deck shoe",
+        homeOrder: 9.5,
+        component: lazy(() => import("./CasinoWar")),
+    },
+    {
         id: "videopoker",
         path: "/poker/video-poker",
         title: "Video Poker",

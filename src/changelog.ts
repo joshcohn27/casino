@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.6.0",
+        date: "2026-10-12",
+        title: "Casino War",
+        changes: [
+            ["new", "New game: Casino War, under Poker Games. One card each and the high card wins."],
+            ["new", "On a tie, go to war by matching your bet, or surrender and take half back. A tie during the war pays a bonus equal to your bet."],
+            ["new", "Tie side bet: pays 10 to 1 when the first two cards tie."],
+        ],
+    },
+    {
         version: "4.5.0",
         date: "2026-10-12",
         title: "Card Ladder",
