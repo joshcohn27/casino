@@ -395,7 +395,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
                 hideHeader
                 actionBar={
                     <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
-                        <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} alwaysShown />
+                        <ChipTray selectedChip={selectedChip} onSelect={handleChipSelect} disabled={!isBetting} />
                         <div className="flex min-h-[48px] items-center justify-center gap-2">
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {isBetting && (

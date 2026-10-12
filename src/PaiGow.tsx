@@ -1327,7 +1327,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* ── LEFT: betting ──────────────────────────────────── */}
-                    <div className={`${canBet ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:px-0`}>
+                    <div className={`order-2 flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:px-0`}>
 
                         <BetBar
                             compact
@@ -1412,7 +1412,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* ── CENTER: cards ───────────────────────────────────── */}
-                    <div className={`${canBet ? "order-2" : "order-1"} flex w-full flex-col items-center gap-3 px-2 py-2 lg:order-2 lg:flex-1`}>
+                    {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
+                        from the start: dealing the cards then pushes nothing down. */}
+                    <div className={`order-1 flex min-h-[424px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[446px] lg:order-2 lg:min-h-0 lg:flex-1`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>

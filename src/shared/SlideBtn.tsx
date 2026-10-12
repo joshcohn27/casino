@@ -1,10 +1,10 @@
 import { motion, useIsPresent } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type Ref } from "react";
 
 // How long a button that has just appeared ignores clicks (ms)
 const ARM_DELAY_MS = 250;
 
-export function SlideBtn({ children }: { children: ReactNode }) {
+export function SlideBtn({ children, ref }: { children: ReactNode; ref?: Ref<HTMLDivElement> }) {
     // Double-click protection, both directions:
     //  - while a button animates out it still holds the handlers from the stage that just
     //    ended, so clicks on it are ignored
@@ -17,7 +17,10 @@ export function SlideBtn({ children }: { children: ReactNode }) {
         return () => window.clearTimeout(id);
     }, []);
     return (
+        // the ref lets AnimatePresence (mode="popLayout") lift a leaving button out of the row, so
+        // the buttons that replace it never share the row with it
         <motion.div
+            ref={ref}
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.88 }}
