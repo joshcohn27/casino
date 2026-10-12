@@ -37,7 +37,7 @@ const rankValue = (card: Card) => RANK_ORDER.indexOf(card.rank);
 const isRed = (card: Card) => card.suit === "♥" || card.suit === "♦";
 
 const RANK_NAMES: Record<string, string> = { T: "10", J: "Jack", Q: "Queen", K: "King", A: "Ace" };
-const SUIT_NAMES: Record<string, string> = { "♠": "Spades", "♥": "Hearts", "♦": "Diamonds", "♣": "Clubs" };
+const SUIT_NAMES: Record<string, string> = { "♠": "Spades", "♥": "Hearts", "♣": "Clubs", "♦": "Diamonds" };
 const cardName = (card: Card) => `${RANK_NAMES[card.rank] ?? card.rank} of ${SUIT_NAMES[card.suit]}`;
 
 type Call = "red" | "black" | "higher" | "lower" | "inside" | "outside" | "♠" | "♥" | "♦" | "♣";
