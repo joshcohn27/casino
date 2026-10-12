@@ -21,6 +21,27 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.6.1",
+        date: "2026-10-12",
+        title: "Tables hold still on every screen",
+        changes: [
+            ["fixed", "The bar at the bottom of each table keeps one height through a hand. It no longer grows or shrinks as buttons appear and disappear."],
+            ["fixed", "Phones and tablets: the cards and the bets no longer swap places when a hand is dealt at Hold'em, Pai Gow, I Luv Suits and DJ Wild."],
+            ["fixed", "Phones: the chips stay in the bottom bar during a hand, so the page no longer slides when you deal."],
+            ["fixed", "Desktop: the felt now reaches the bottom of the window, so the bottom bar no longer drops when a hand is dealt."],
+        ],
+    },
+    {
+        version: "4.6.0",
+        date: "2026-10-12",
+        title: "Casino War",
+        changes: [
+            ["new", "New game: Casino War, under Poker Games. One card each and the high card wins."],
+            ["new", "On a tie, go to war by matching your bet, or surrender and take half back. A tie during the war pays a bonus equal to your bet."],
+            ["new", "Tie side bet: pays 10 to 1 when the first two cards tie."],
+        ],
+    },
+    {
         version: "4.5.0",
         date: "2026-10-12",
         title: "Card Ladder",

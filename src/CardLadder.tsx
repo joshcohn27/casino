@@ -218,7 +218,7 @@ export default function CardLadder({ bankroll, setBankroll }: Props) {
                 bankroll={bankroll}
                 hideHeader
                 actionBar={
-                    <div className="flex min-h-[72px] flex-wrap items-center justify-center gap-2 border-t border-line bg-ink px-4 py-3" data-testid="ladder-bar">
+                    <div className="flex min-h-[80px] flex-wrap items-center justify-center gap-2 border-t border-line bg-ink px-4 py-3" data-testid="ladder-bar">
                         <AnimatePresence mode="popLayout" initial={false}>
                             {stage === "playing" && callButtons.map((b) => (
                                 <SlideBtn key={`${deckNo}-${step}-${b.call}`}>

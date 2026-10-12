@@ -7,10 +7,11 @@ interface Props {
     disabled?: boolean;
 }
 
-// On phones the tray is hidden while it is disabled, to leave room for the table
+// The tray is always in the action bar, dimmed while it is disabled. It used to hide on phones
+// during a hand, which changed the height of the bar and made the page slide when a hand was dealt.
 export default function ChipTray({ selectedChip, onSelect, disabled = false }: Props) {
     return (
-        <div className={`${disabled ? "hidden sm:flex" : "flex"} flex-wrap items-center gap-2 sm:flex-nowrap`}>
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             {CHIP_DENOMINATIONS.map((denom) => {
                 const chip = CHIP_COLORS[denom];
                 const selected = selectedChip === denom;

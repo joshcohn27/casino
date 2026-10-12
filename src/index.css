@@ -235,6 +235,22 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
   [data-table] main { zoom: 0.84; }
 }
 
+/* Action bar height. The row of buttons is always held a little taller than any button, so
+   buttons appearing (Clear, Deal, Change Bet) or going away (while the hand plays) can never
+   make the bar grow or shrink, not even by a pixel. */
+[data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) { min-height: 56px; }
+/* Classic Blackjack offers four buttons after a hand. On a phone only three fit one row, so the
+   extra one (Double & Deal, the only one with no key) is left off there. */
+@media (max-width: 639px) {
+  [data-table="blackjack"] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) div:has(> button:not([data-hotkey])) { display: none; }
+}
+
+/* On narrow screens the bets sit under the cards and the message. The message keeps room for
+   two lines there, so a long one wrapping does not push the bets down. */
+@media (max-width: 1023px) {
+  [data-table] p[data-testid="message"] { min-height: 40px; }
+}
+
 /* Table height. A table fills the window below the menu bar. The menu is two rows tall on
    tablets held upright, and Video Poker has no shell of its own, so both are set here.
    (!important because the table shell sets its height inline.) */
@@ -242,6 +258,13 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
   [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 129px) !important; }
 }
 [data-table="videopoker"] > .min-h-screen { min-height: calc(100dvh - 84px); }
+/* On desktop the menu bar is one row (57px) and the session read-out floats, so the felt runs
+   to the bottom of the window. Otherwise the action bar hangs short of the bottom and drops
+   when a hand makes the page taller. Double Down Madness keeps a row for its read-out. */
+@media (min-width: 1024px) {
+  [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 57px) !important; }
+  [data-table="doubledownmadness"] > .relative.flex.flex-col { min-height: calc(100dvh - 84px) !important; }
+}
 
 /* Video Poker. Pay table columns are the same width in every row, whatever the label. */
 #video-poker-paytable > .grid { grid-template-columns: minmax(0, 1.9fr) repeat(5, minmax(0, 1fr)); }

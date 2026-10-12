@@ -103,7 +103,8 @@ export default function ActionBar({
             />
 
             {/* ── Right: action buttons ──────────────────────────────── */}
-            <div className="flex shrink-0 items-center gap-2">
+            {/* held taller than any button, so the bar keeps one height as buttons come and go */}
+            <div className="flex min-h-[56px] shrink-0 items-center gap-2">
                 <AnimatePresence mode="popLayout" initial={false}>
                     {canClear && (
                         <SlideIn id="clear">

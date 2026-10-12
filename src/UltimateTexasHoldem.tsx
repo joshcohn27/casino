@@ -642,8 +642,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                 {/* Three-column body: betting left | cards center | payout tables right */}
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
-                    {/* Betting column - on mobile it sits above the cards while betting and below them during the hand */}
-                    <div className={`${isBetting ? "order-1" : "order-2"} flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-1 lg:w-64 lg:shrink-0`}>
+                    {/* Betting column - On narrow screens it sits under the cards and stays there: the two never swap, so dealing moves nothing */}
+                    <div className={`order-2 flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-1 lg:w-64 lg:shrink-0`}>
                         <BetBar
                             compact
                             pendingBet={committedBet}
@@ -737,7 +737,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Cards column - center on desktop */}
-                    <div className={`${isBetting ? "order-2" : "order-1"} flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-2 lg:flex-1`}>
+                    <div className={`order-1 flex w-full flex-col items-center justify-center gap-3 py-2 lg:order-2 lg:flex-1`}>
                         {/* Dealer */}
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-[13px] font-bold text-white/75">Dealer</span>
