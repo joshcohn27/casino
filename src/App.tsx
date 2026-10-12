@@ -1,7 +1,7 @@
 import { BrowserRouter } from "react-router"
-import BankrollProvider from "./shared/BankrollProvider"
-import SessionProvider from "./shared/SessionProvider"
-import Casino from "./Casino"
+import BankrollProvider from "./shared/state/BankrollProvider"
+import SessionProvider from "./shared/state/SessionProvider"
+import Casino from "./app/Casino"
 
 export default function App() {
   return (

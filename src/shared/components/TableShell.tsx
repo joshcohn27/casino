@@ -1,0 +1,128 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { formatMoney } from '../lib/money';
+import { DeckContext } from '../lib/deck';
+
+/* ─── Props ──────────────────────────────────────────────────────────────── */
+
+export interface TableShellProps {
+    /** 6-digit hex used to build the felt radial gradient, e.g. "#1f7a45" */
+    feltColor: string;
+    /** Game title shown centered in the header */
+    gameName: string;
+    /** Shared bankroll in dollars — rendered on the left of the header */
+    bankroll: number;
+    /** Optional content for the right side of the header (stat pills, rules button, etc.) */
+    headerRight?: React.ReactNode;
+    /** The felt area — card lanes, panels, info cards, etc. */
+    children: React.ReactNode;
+    /** A fully-configured <ActionBar /> instance */
+    actionBar: React.ReactNode;
+    /**
+     * When true the shell header (bankroll + game name) is not rendered.
+     * Use this when the parent (e.g. Casino.tsx) already provides a navbar.
+     * Defaults to false.
+     */
+    hideHeader?: boolean;
+    /**
+     * Which deck is in play: 1, 2, 3... Odd numbers are the gold deck, even numbers the purple.
+     * Single-deck tables count hands, shoe games count shoes.
+     */
+    deckNo?: number;
+}
+
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
+
+/**
+ * The felt is one flat color: the game's own felt color, deepened so white table print
+ * stays easy to read on it.
+ */
+function feltGradient(hex: string): string {
+    return `color-mix(in srgb, ${hex} 62%, #000)`;
+}
+
+/* ─── Component ──────────────────────────────────────────────────────────── */
+
+export default function TableShell({
+    feltColor,
+    gameName,
+    bankroll,
+    headerRight,
+    children,
+    actionBar,
+    hideHeader = false,
+    deckNo = 1,
+}: TableShellProps) {
+    // Measure the live ActionBar height so we can pad the content area by
+    // exactly that amount — game-specific buttons never hide behind the bar.
+    const actionBarRef = useRef<HTMLDivElement>(null);
+    const [barHeight, setBarHeight] = useState(80); // conservative default
+
+    useEffect(() => {
+        const el = actionBarRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => {
+            setBarHeight(Math.ceil(entry.borderBoxSize[0].blockSize));
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    return (
+        <DeckContext.Provider value={deckNo}>
+        <div
+            className="relative flex flex-col text-white"
+            style={{ background: feltGradient(feltColor), minHeight: 'calc(100dvh - 84px)' }}
+        >
+            {/* ── Header (opt-out with hideHeader when parent nav is present) ── */}
+            {!hideHeader && (
+                <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-black/45">
+                    <div className="mx-auto flex max-w-[1700px] items-center gap-4 px-4 py-2.5">
+
+                        {/* Left: bankroll */}
+                        <div className="flex-1">
+                            <div className="inline-flex flex-col rounded-[2px] border border-amber-300/20
+                                            bg-black/30 px-4 py-1.5 leading-tight">
+                                <span className="text-[9px] font-bold text-amber-200">
+                                    Bankroll
+                                </span>
+                                <span className="text-sm font-extrabold text-white sm:text-base">
+                                    {formatMoney(bankroll)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Center: game name */}
+                        <h1 className="shrink-0 text-center text-base font-bold
+                                       text-amber-50 sm:text-2xl">
+                            {gameName}
+                        </h1>
+
+                        {/* Right: caller-supplied stats / buttons */}
+                        <div className="flex flex-1 items-center justify-end gap-2">
+                            {headerRight}
+                        </div>
+                    </div>
+                </header>
+            )}
+
+            {/* ── Felt content ───────────────────────────────────────── */}
+            {/*
+                paddingBottom = live ActionBar height + 12 px breathing room.
+                This guarantees game-specific action buttons (Hit / Stand / Fold …)
+                are never occluded by the sticky ActionBar, even on short screens.
+            */}
+            <main
+                className="mx-auto flex w-full max-w-[1700px] flex-1 flex-col px-3 py-3"
+                style={{ paddingBottom: barHeight + 12 }}
+            >
+                {children}
+            </main>
+
+            {/* ── Action bar — always pinned to viewport bottom ──────── */}
+            <div ref={actionBarRef} className="sticky bottom-0 z-10 shrink-0">
+                {actionBar}
+            </div>
+        </div>
+        </DeckContext.Provider>
+    );
+}
