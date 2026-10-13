@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import HandRow from "../../shared/components/HandRow";
 import BlackjackHand from "../../shared/components/BlackjackHand";
@@ -694,7 +694,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         setSelectedChip(chip);
         if (stage === "betting") {
             setBet((b) => { const next = b + chip; setBaseBet(next); return next; });
-            setChipStack((s) => [...s, chip]);
+            setChipStack((s) => addChipToStack(s, chip));
         }
     };
 

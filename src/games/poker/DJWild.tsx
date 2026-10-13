@@ -5,7 +5,7 @@ import ChipTray from "../../shared/components/ChipTray";
 import HandRow from "../../shared/components/HandRow";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "../../shared/lib/money";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import { sortByPower } from "../../shared/lib/handSort";
@@ -306,9 +306,9 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const handleChipSelect = (chip: ChipDenomination) => {
         setSelectedChip(chip);
         if (!isBetting) return;
-        if (selectedZone === "ante") setAnteChips((prev) => [...prev, chip]);
-        else if (selectedZone === "trips") setTripsChips((prev) => [...prev, chip]);
-        else setBadBeatChips((prev) => [...prev, chip]);
+        if (selectedZone === "ante") setAnteChips((prev) => addChipToStack(prev, chip));
+        else if (selectedZone === "trips") setTripsChips((prev) => addChipToStack(prev, chip));
+        else setBadBeatChips((prev) => addChipToStack(prev, chip));
     };
 
     // Clicking the chips on a spot takes the last chip back

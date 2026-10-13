@@ -19,8 +19,16 @@ const STACK_OVERLAP = 14;
 // ─── ChipStack ────────────────────────────────────────────────────────────────
 
 export function ChipStack({ chips, onRemove }: { chips: ChipDenomination[]; onRemove?: () => void }) {
-    const visible = chips.slice(-3);
-    const startIdx = chips.length - visible.length;
+    // Biggest chip on the bottom, smallest on top, however the list arrived. Three chips are
+    // drawn: the two biggest, and the top one, so a chip just added always shows.
+    const sorted = [...chips].sort((a, b) => Number(b) - Number(a));
+    const visible = sorted.length <= 3 ? sorted : [sorted[0], sorted[1], sorted[sorted.length - 1]];
+    // a chip keeps its identity by its value and its place among chips of that value, so
+    // adding a bigger chip underneath does not replay the chips above it
+    const keyOf = (i: number) => {
+        const at = sorted.length <= 3 ? i : i < 2 ? i : sorted.length - 1;
+        return `${sorted[at]}-${sorted.slice(0, at).filter((d) => d === sorted[at]).length}`;
+    };
     const stackH = STACK_WIDTH + (visible.length > 0 ? (visible.length - 1) * STACK_GAP : 0);
     return (
         <div
@@ -36,7 +44,7 @@ export function ChipStack({ chips, onRemove }: { chips: ChipDenomination[]; onRe
                     const cfg = CHIP_COLORS[denom];
                     return (
                         <motion.div
-                            key={startIdx + i}
+                            key={keyOf(i)}
                             className="absolute left-0 right-0 mx-auto flex select-none items-center justify-center rounded-full text-[10px] font-extrabold"
                             style={{
                                 width: CHIP_SIZE, height: CHIP_SIZE,
@@ -163,6 +171,15 @@ export default function BetSpot({
 
 // ─── BetBar ───────────────────────────────────────────────────────────────────
 
+/** Figure sizes the bet bar may use, largest first. 10px is the site's minimum. */
+const FIGURE_SIZES = [16, 15, 14, 13, 12, 11, 10];
+/** Roughly how wide a money figure is, in ems of bold Arial: digits are wider than punctuation. */
+function figureWidth(text: string): number {
+    let em = 0;
+    for (const ch of text) em += ch === "," || ch === "." ? 0.28 : ch === "+" || ch === "-" ? 0.58 : 0.56;
+    return em;
+}
+
 export function BetBar({ pendingBet, returned, net, showResult, compact, className = "" }: {
     pendingBet: number; returned: number; net: number; showResult: boolean;
     /** Fill a narrow side column instead of sizing to content. */
@@ -170,6 +187,18 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
     className?: string;
 }) {
     const netColor = net > 0 ? "text-emerald-300" : net < 0 ? "text-red-300" : "text-amber-100";
+
+    const cells = [
+        { label: "Bet", val: pendingBet > 0 ? formatMoney(pendingBet) : "-", color: "text-white" },
+        { label: "Returned", val: showResult ? formatMoney(returned) : "-", color: "text-white" },
+        { label: "Net", val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "-", color: showResult ? netColor : "text-white" },
+    ];
+    // Long amounts are drawn smaller so they stay inside their cell. All three figures share
+    // one size, picked for the longest of them, and never go below the 10px minimum.
+    const widest = Math.max(...cells.map((c) => figureWidth(c.val)));
+    const sizeFor = (cellWidth: number) => FIGURE_SIZES.find((px) => widest * px <= cellWidth) ?? FIGURE_SIZES[FIGURE_SIZES.length - 1];
+    // the cells are narrower on a phone (76px) than from 640px up (96px); the side-column bar is about 70px a cell
+    const figureSizes = { "--figure": `${sizeFor(compact ? 66 : 72)}px`, "--figure-wide": `${sizeFor(compact ? 66 : 92)}px` } as React.CSSProperties;
 
     // Count the hand for the session when its result first shows. If the figures move after
     // that (a bonus settled a moment later), the same hand is corrected, not counted again.
@@ -184,17 +213,14 @@ export function BetBar({ pendingBet, returned, net, showResult, compact, classNa
     }, [showResult, pendingBet, net, recordHand]);
 
     return (
-        <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-3 px-3 sm:gap-6 sm:px-6"} ${className}`} data-bet-bar>
-            {[
-                { label: "Bet", val: pendingBet > 0 ? formatMoney(pendingBet) : "-", color: "text-white" },
-                { label: "Returned", val: showResult ? formatMoney(returned) : "-", color: "text-white" },
-                { label: "Net", val: showResult ? (net >= 0 ? "+" : "") + formatMoney(net) : "-", color: showResult ? netColor : "text-white" },
-            ].map(({ label, val, color }, i, arr) => (
+        <div className={`flex items-center rounded-[4px] border border-line bg-ink py-2 ${compact ? "w-full justify-between gap-2 px-3" : "justify-center gap-3 px-3 sm:gap-6 sm:px-6"} ${className}`} style={figureSizes} data-bet-bar>
+            {cells.map(({ label, val, color }, i, arr) => (
                 <React.Fragment key={label}>
                     {/* fixed-width cells: the bar keeps its size when the figures fill in */}
                     <div className={`text-center ${compact ? "min-w-0 flex-1" : "w-[76px] sm:w-[96px]"}`}>
                         <div className="text-sm text-text-muted">{label}</div>
-                        <div className={`text-base font-bold ${color}`} data-bet-bar-value={label}>{val}</div>
+                        {/* one line of fixed height: a smaller figure does not change the bar's size */}
+                        <div className={`h-6 whitespace-nowrap text-[length:var(--figure)] font-bold leading-6 tabular-nums sm:text-[length:var(--figure-wide)] ${color}`} data-bet-bar-value={label}>{val}</div>
                     </div>
                     {i < arr.length - 1 && <div className="h-8 w-px bg-line" />}
                 </React.Fragment>

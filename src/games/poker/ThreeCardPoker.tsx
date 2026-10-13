@@ -6,6 +6,7 @@ import PlayingCard from "../../shared/components/Card";
 import { DeckContext } from "../../shared/lib/deck";
 import type { Card as SharedCard } from "../../shared/lib/cards";
 import {
+    addChipToStack,
     type ChipDenomination,
     formatMoney,
     buildChipStackFromAmount,
@@ -479,9 +480,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     function addChip(zone: BetZoneId, chip: ChipDenomination) {
         if (stage !== "betting") return;
-        if (zone === "ante")     setAnteChips(p => [...p, chip]);
-        else if (zone === "pairplus") setPpChips(p => [...p, chip]);
-        else if (zone === "sixcard")  setScChips(p => [...p, chip]);
+        if (zone === "ante")     setAnteChips(p => addChipToStack(p, chip));
+        else if (zone === "pairplus") setPpChips(p => addChipToStack(p, chip));
+        else if (zone === "sixcard")  setScChips(p => addChipToStack(p, chip));
     }
 
     function removeLastChip(zone: BetZoneId) {

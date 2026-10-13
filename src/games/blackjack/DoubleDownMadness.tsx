@@ -5,7 +5,7 @@ import ChipTray from "../../shared/components/ChipTray";
 import PlayingCard from "../../shared/components/Card";
 import BlackjackHand from "../../shared/components/BlackjackHand";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
@@ -927,7 +927,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
             }
         } else {
             setBet((b) => b + chip);
-            setChipStack((s) => [...s, chip]);
+            setChipStack((s) => addChipToStack(s, chip));
         }
     };
 
