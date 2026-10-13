@@ -1,73 +1,86 @@
-# React + TypeScript + Vite
+# Cohn Casino
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser casino simulator: table games with one shared bankroll that carries from table to table. No real money, no accounts, no ads. Everything is saved in the browser.
 
-Currently, two official plugins are available:
+Live at [casino.joshbcohn.com](https://casino.joshbcohn.com).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Games
 
-## React Compiler
+| Group | Games |
+|---|---|
+| Blackjack | Classic Blackjack, Free Bet Blackjack, Double Down Madness, Side Bet Blackjack |
+| Poker | Ultimate Texas Hold'em, Pai Gow Poker, Three Card Poker, Mississippi Stud, I Luv Suits, DJ Wild, Casino War, Video Poker (Jacks or Better, Bonus Poker, Deuces Wild) |
+| Tables | Roulette, Baccarat |
+| Free chips | Card Ladder: four right calls in a row wins $1,000 |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Every table can be played from the keyboard, shows a running session read-out (hands, average bet, net), and keeps your seat if you leave mid-hand and come back.
 
-## Expanding the ESLint configuration
+## Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+React 19, TypeScript, Tailwind 4, Vite 7, motion, react-router. Deployed on Vercel.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Run it
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+npm install
+npm run dev        start the dev server
+npm run build      type check and build for production
+npm run lint       run ESLint
+npm run preview    serve the production build locally
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Type check on its own:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+npx tsc -p tsconfig.app.json --noEmit
+```
+
+## Where things live
+
+```
+src/
+  main.tsx, App.tsx, index.css   entry point and the one stylesheet
+  app/          Casino.tsx (menu, routes, Home), games.ts (the game list), changelog.ts
+  pages/        Settings, Feedback, WhatsNew, NotFound
+  games/
+    blackjack/    Blackjack, FreeBetBlackjack, DoubleDownMadness, SideBetBlackjack
+    poker/        UltimateTexasHoldem, PaiGow, ThreeCardPoker, MississippiStud,
+                  ILuvSuits, DJWild, CasinoWar
+    video-poker/  VideoPoker, VideoPokerBonus, VideoPokerDeuces
+    table/        Roulette, Baccarat
+    minigames/    CardLadder
+  shared/
+    components/   TableShell, Card, BetSpot, ChipTray, ActionBar, SlideBtn, HandRow,
+                  BlackjackHand, SessionBadge
+    state/        bankroll and session providers, settings, progressive meter
+    lib/          cards, deck, hand sorting, money, keyboard shortcuts
+public/           card backs, suit art, favicon
+```
+
+A table's pure rules (payouts, hand ranking, house way) sit in a `...Logic.ts` file beside the table, so they can be checked without a browser. Anything two tables share goes in `shared/`.
+
+## How the site is put together
+
+- **One list of games.** `src/app/games.ts` is the only place a game is registered. The routes, the menu, the phone menu and the Home page cards are all built from it.
+- **Real URLs.** Each page has its own address. `vercel.json` sends every path to `index.html`.
+- **Shared bankroll.** The balance lives above the router in `shared/state`, so it is the same at every table and survives a refresh.
+- **Held seats.** A table you have opened stays mounted but hidden when you leave it, so a hand in progress is still there when you return.
+- **Nothing shifts.** Results, suggestions, chips and buttons appear in space that is already reserved for them. Dealing or settling a hand must not move anything else on the screen.
+- **One stylesheet.** Layout is Tailwind classes on the elements. `src/index.css` holds the color tokens, the font, and the screen size rules.
+
+## Adding a game
+
+1. Create `src/games/<group>/GameName.tsx` with a default export that takes `{ bankroll, setBankroll }`.
+2. Put its rules and payouts in `GameNameLogic.ts` beside it.
+3. Add one entry to `GAMES` in `src/app/games.ts`.
+4. Add its default bets to `src/shared/state/settings.ts` and its name to the Feedback form.
+
+`CLAUDE.md` has the full conventions: the action bar pattern, card sizes and deal timing, keyboard shortcut attributes, and felt colors.
+
+## Versions
+
+`src/app/changelog.ts` is the source of truth for the version and the What's New page. A change that players will notice gets a new entry at the top and a matching version in `package.json`. Major changes how the whole site looks or plays, minor adds something, patch is fixes and polish.
+
+## Rules sources
+
+Game rules and pay tables follow published casino rules where they exist, mostly as documented by Wizard of Odds. Each table's rules popup (the `i` button) lists what that table plays by.

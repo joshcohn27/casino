@@ -21,14 +21,6 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
-        version: "4.6.2",
-        date: "2026-10-13",
-        title: "Housekeeping",
-        changes: [
-            ["improved", "Tidied up behind the scenes. Nothing changes at the tables."],
-        ],
-    },
-    {
         version: "4.6.1",
         date: "2026-10-12",
         title: "Tables hold still on every screen",
