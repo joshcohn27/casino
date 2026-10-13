@@ -5,7 +5,7 @@ import ChipTray from "../../shared/components/ChipTray";
 import HandRow from "../../shared/components/HandRow";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "../../shared/lib/money";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import {
@@ -190,7 +190,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
     // Tray chip goes onto the highlighted spot
     const handleChipSelect = (chip: ChipDenomination) => {
         setSelectedChip(chip);
-        if (isBetting) setZoneChips(selectedZone, (prev) => [...prev, chip]);
+        if (isBetting) setZoneChips(selectedZone, (prev) => addChipToStack(prev, chip));
     };
 
     // Clicking the chips on a spot takes the last chip back

@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.6.2",
+        date: "2026-10-13",
+        title: "Chip stacks and big bets",
+        changes: [
+            ["fixed", "Bet, Returned and Net no longer run into each other when the amounts get large. The figures shrink to fit."],
+            ["improved", "Chip stacks always sit with the biggest chip on the bottom, whatever order you add them in. Tapping a stack takes off the top chip."],
+        ],
+    },
+    {
         version: "4.6.1",
         date: "2026-10-12",
         title: "Tables hold still on every screen",

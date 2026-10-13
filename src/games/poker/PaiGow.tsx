@@ -4,7 +4,7 @@ import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
 import PlayingCard from "../../shared/components/Card";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "../../shared/lib/money";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { sortByPower, type SortMode } from "../../shared/lib/handSort";
 import { SlideBtn } from "../../shared/components/SlideBtn";
@@ -1178,9 +1178,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
 
     const addChip = (spot: BetSpotId, chip: ChipDenomination) => {
         if (!canBet) return;
-        if (spot === "main") { setMainBet((b) => b + chip); setMainChips((s) => [...s, chip]); }
-        else if (spot === "fortune") { setFortuneBet((b) => b + chip); setFortuneChips((s) => [...s, chip]); }
-        else { setAceHighBet((b) => b + chip); setAceHighChips((s) => [...s, chip]); }
+        if (spot === "main") { setMainBet((b) => b + chip); setMainChips((s) => addChipToStack(s, chip)); }
+        else if (spot === "fortune") { setFortuneBet((b) => b + chip); setFortuneChips((s) => addChipToStack(s, chip)); }
+        else { setAceHighBet((b) => b + chip); setAceHighChips((s) => addChipToStack(s, chip)); }
     };
 
     const clearSpot = (spot: BetSpotId) => {

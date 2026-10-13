@@ -7,7 +7,7 @@ import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { createShoe, type Card } from "../../shared/lib/cards";
 import { defaultBet } from "../../shared/state/settings";
-import { BTN_GOLD, BTN_NEUTRAL, buildChipStackFromAmount, formatMoney, type ChipDenomination } from "../../shared/lib/money";
+import { addChipToStack, BTN_GOLD, BTN_NEUTRAL, buildChipStackFromAmount, formatMoney, type ChipDenomination } from "../../shared/lib/money";
 import {
     BURN_CARDS, DECKS, MIN_BET, TIE_AFTER_TIE_BONUS, TIE_PAYS,
     compareFirst, compareWar, mainReturn, rankName, surrenderReturn, tieBetReturn, warReturn,
@@ -239,8 +239,8 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
     const handleChipSelect = (chip: ChipDenomination) => {
         setSelectedChip(chip);
         if (!isBetting) return;
-        if (selectedZone === "main") setMainChips((p) => [...p, chip]);
-        else setTieChips((p) => [...p, chip]);
+        if (selectedZone === "main") setMainChips((p) => addChipToStack(p, chip));
+        else setTieChips((p) => addChipToStack(p, chip));
     };
     const removeLastChip = (zone: Zone) => {
         if (!isBetting) return;

@@ -5,7 +5,7 @@ import ChipTray from "../../shared/components/ChipTray";
 import HandRow from "../../shared/components/HandRow";
 import BlackjackHand from "../../shared/components/BlackjackHand";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
+import { addChipToStack, type ChipDenomination, formatMoney, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD, BTN_GREEN } from "../../shared/lib/money";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
@@ -1229,16 +1229,16 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
             if (selectedZone === "push22") {
                 if (push22Bet + chip <= SIDE_MAX) {
                     setPush22Bet((b) => Math.min(SIDE_MAX, b + chip));
-                    setPush22Stack((s) => [...s, chip]);
+                    setPush22Stack((s) => addChipToStack(s, chip));
                 }
             } else if (selectedZone === "potOfGold") {
                 if (potOfGoldBet + chip <= SIDE_MAX) {
                     setPotOfGoldBet((b) => Math.min(SIDE_MAX, b + chip));
-                    setPotOfGoldStack((s) => [...s, chip]);
+                    setPotOfGoldStack((s) => addChipToStack(s, chip));
                 }
             } else {
                 setBet((b) => b + chip);
-                setChipStack((s) => [...s, chip]);
+                setChipStack((s) => addChipToStack(s, chip));
             }
         }
     };

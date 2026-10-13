@@ -32,6 +32,15 @@ export function buildChipStackFromAmount(amount: number): ChipDenomination[] {
     return stack;
 }
 
+/**
+ * Put a chip on a stack. A stack is always kept biggest chip first (the bottom) and smallest
+ * last (the top), whatever order the chips were added in, so taking the last one off takes
+ * the top chip.
+ */
+export function addChipToStack(stack: ChipDenomination[], chip: ChipDenomination): ChipDenomination[] {
+    return [...stack, chip].sort((a, b) => Number(b) - Number(a));
+}
+
 // Amount left after taking the top chip off a stack worth `amount`.
 export function popLastChip(amount: number, floor = 0): number {
     const chips = buildChipStackFromAmount(amount);
