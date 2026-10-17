@@ -484,6 +484,19 @@ function evaluateBestSplit(cards: Card[]): { best: SplitEval; allBestFrontKeySet
     return { best, allBestFrontKeySet: bestKeys };
 }
 
+/**
+ * How a split does against the dealer's set hand, as money: 2 wins both hands, 1 pushes
+ * (one each), 0 loses. A copy (tie) goes to the dealer. Splits with the same number here
+ * pay exactly the same.
+ */
+function resultAgainstDealer(split: Pick<SplitEval, "backEval" | "frontEval">, dealer: SplitEval): number {
+    const back = compareFive(split.backEval, dealer.backEval) > 0;
+    const front = compareFront(split.frontEval, dealer.frontEval) > 0;
+    return back && front ? 2 : back || front ? 1 : 0;
+}
+
+const frontKey = (cards: Card[]) => cards.map((c) => c.id).sort().join("|");
+
 function evaluateBestSplitAgainstDealer(
     playerCards: Card[],
     dealerSplit: SplitEval
@@ -989,27 +1002,22 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         return isLegalSplit(currentBackEval, currentFrontEval);
     }, [currentFrontEval, currentBackEval]);
 
-    const selectedIsExactBest = useMemo(() => {
-        if (!bestPlayerSplitAgainstDealer || selectedFrontIds.length !== 2) return false;
-        const key = [...selectedFrontIds].sort().join("|");
-        return bestPlayerSplitAgainstDealer.allBestFrontKeySet.has(key);
-    }, [bestPlayerSplitAgainstDealer, selectedFrontIds]);
+    // The advice for this hand. The house way is recommended unless another split wins more
+    // against this dealer's face-up hand; only then is that other split recommended.
+    const advice = useMemo(() => {
+        if (!bestPlayerSplitAgainstDealer || !dealerBestSplit || playerCards.length !== 7) return null;
+        const best = bestPlayerSplitAgainstDealer.best;
+        const house = evaluateDealerHouseWay(playerCards);
+        const bestResult = resultAgainstDealer(best, dealerBestSplit);
+        const houseIsBest = resultAgainstDealer(house, dealerBestSplit) >= bestResult;
+        return { bestResult, house, houseKey: frontKey(house.front), houseIsBest, recommended: houseIsBest ? house : best };
+    }, [bestPlayerSplitAgainstDealer, dealerBestSplit, playerCards]);
 
-    const selectedMatchesBestOutcome = useMemo(() => {
-        if (!bestPlayerSplitAgainstDealer || !dealerBestSplit || !currentFrontEval || !currentBackEval || !selectedIsLegal) return false;
-        const bestBackCmp = compareFive(bestPlayerSplitAgainstDealer.best.backEval, dealerBestSplit.backEval);
-        const bestFrontCmp = compareFront(bestPlayerSplitAgainstDealer.best.frontEval, dealerBestSplit.frontEval);
-        const selectedBackCmp = compareFive(currentBackEval, dealerBestSplit.backEval);
-        const selectedFrontCmp = compareFront(currentFrontEval, dealerBestSplit.frontEval);
-        const getOutcomeTier = (backCmp: number, frontCmp: number) => {
-            const wins = (backCmp > 0 ? 1 : 0) + (frontCmp > 0 ? 1 : 0);
-            const losses = (backCmp <= 0 ? 1 : 0) + (frontCmp <= 0 ? 1 : 0);
-            if (wins === 2) return 2;
-            if (wins === 1 && losses === 1) return 1;
-            return 0;
-        };
-        return getOutcomeTier(selectedBackCmp, selectedFrontCmp) === getOutcomeTier(bestBackCmp, bestFrontCmp);
-    }, [bestPlayerSplitAgainstDealer, dealerBestSplit, currentFrontEval, currentBackEval, selectedIsLegal]);
+    // how the hand as you have set it does, against the best it could do
+    const selectedResult = advice && dealerBestSplit && currentBackEval && currentFrontEval && selectedIsLegal
+        ? resultAgainstDealer({ backEval: currentBackEval, frontEval: currentFrontEval }, dealerBestSplit)
+        : null;
+    const selectedIsHouseWay = !!advice && selectedFrontIds.length === 2 && [...selectedFrontIds].sort().join("|") === advice.houseKey;
 
     const fortunePreview = useMemo(() => {
         if (playerCards.length !== 7) return null;
@@ -1037,10 +1045,12 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     }
 
     function autoSetBest() {
-        if (!bestPlayerSplitAgainstDealer) return;
+        if (!advice) return;
         sortRowNext.current = true;
-        setSelectedFrontIds(bestPlayerSplitAgainstDealer.best.front.map((c) => c.id));
-        setMessage("The dealer set your best high and low hands against theirs.");
+        setSelectedFrontIds(advice.recommended.front.map((c) => c.id));
+        setMessage(advice.houseIsBest
+            ? "The dealer set your hand the house way."
+            : "The dealer set your hand to beat theirs. Here that wins more than the house way.");
     }
 
     function dealHand() {
@@ -1542,24 +1552,25 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     <p className="text-[11px] font-bold text-red-400">Illegal - high hand must beat low hand</p>
                                 )}
 
-                                {/* Outcome quality indicator */}
-                                {stage === "setting" && selectedFrontIds.length === 2 && selectedIsLegal && (
-                                    <div className="flex items-center gap-2 text-[11px]">
-                                        <span className="font-bold text-emerald-400">Legal split</span>
-                                        <span className="text-white/75">·</span>
-                                        <span className={
-                                            selectedIsExactBest ? "font-bold text-emerald-300"
-                                            : selectedMatchesBestOutcome ? "font-bold text-amber-300"
-                                            : "text-white/75"
-                                        }>
-                                            {selectedIsExactBest
-                                                ? "Exact best"
-                                                : selectedMatchesBestOutcome
-                                                    ? "Same best outcome"
-                                                    : "Sub-optimal"}
-                                        </span>
-                                    </div>
-                                )}
+                                {/* Advice on the hand as set: the house way unless a different split wins more here */}
+                                {stage === "setting" && selectedFrontIds.length === 2 && selectedIsLegal && advice && selectedResult !== null && (() => {
+                                    const isBest = selectedResult === advice.bestResult;
+                                    const lowOf = (split: SplitEval) => `Low ${split.frontEval.label}`;
+                                    const [label, tone, hint] =
+                                        isBest && selectedIsHouseWay ? ["Best play · House way", "font-bold text-emerald-300", ""]
+                                        : isBest && advice.houseIsBest ? ["Best play", "font-bold text-emerald-300", `House way: ${lowOf(advice.house)}`]
+                                        : isBest ? ["Best play · Beats the house way here", "font-bold text-emerald-300", ""]
+                                        : selectedIsHouseWay ? ["House way", "font-bold text-amber-300", `Better here: ${lowOf(advice.recommended)}`]
+                                        : ["Could do better", "text-white/75", `${advice.houseIsBest ? "House way" : "Better here"}: ${lowOf(advice.recommended)}`];
+                                    return (
+                                        <div className="flex flex-wrap items-center justify-center gap-x-2 text-[11px]" data-testid="set-advice" data-advice={label}>
+                                            <span className="font-bold text-emerald-400">Legal split</span>
+                                            <span className="text-white/75">·</span>
+                                            <span className={tone}>{label}</span>
+                                            {hint && <><span className="text-white/75">·</span><span className="text-white/85">{hint}</span></>}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 

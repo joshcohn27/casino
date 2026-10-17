@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.6.3",
+        date: "2026-10-17",
+        title: "Pai Gow advice",
+        changes: [
+            ["improved", "Pai Gow: setting your hand the house way is now marked as the best play whenever it wins as much as any other way."],
+            ["improved", "Pai Gow: when another way wins more against the face-up dealer, the advice says so and shows that Low hand. Otherwise it shows the house way."],
+            ["improved", "Pai Gow: Ask Dealer for Help sets the house way, unless another way wins more against this dealer."],
+        ],
+    },
+    {
         version: "4.6.2",
         date: "2026-10-13",
         title: "Chip stacks and big bets",
