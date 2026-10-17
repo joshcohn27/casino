@@ -10,6 +10,7 @@ import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import { sortByPower } from "../../shared/lib/handSort";
 import { readMeter, writeMeter, ambientHands, simulateOtherPlayers, makeRng, type OtherPlayerHit } from "../../shared/state/progressiveMeter";
+import { resultLineClass } from "../../shared/lib/resultTone";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, PLAY_MULTIPLE,
@@ -478,7 +479,6 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
     const tripsHitNatural = !!(tripsPays && playerHand.natural);
     // Strategy suggestion, from the cards the player has actually turned over
     const suggestion = stage === "dealt" ? suggestAction(playerCards.filter((c) => peeled.includes(c.id))) : null;
-    const netColor = !result ? "" : result.net > 0 ? "text-emerald-300" : result.net < 0 ? "text-red-300" : "text-amber-100";
 
     return (
         <>
@@ -754,7 +754,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             >
                                 {/* a line that only repeats the message above is left out */}
                                 {result.lines.map((line, i) => line === message ? null : (
-                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
+                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? "font-bold " : ""}${resultLineClass(line)}`}>{line}</p>
                                 ))}
                             </motion.div>
                         )}

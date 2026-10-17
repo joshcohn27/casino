@@ -9,6 +9,7 @@ import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { sortByPower, type SortMode } from "../../shared/lib/handSort";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
+import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
 
@@ -1407,11 +1408,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 {resultLines.map((line, i) => (
                                     <p
                                         key={i}
-                                        className={`text-[11px] leading-snug ${
-                                            i === 0
-                                                ? (net ?? 0) > 0 ? "text-emerald-300" : (net ?? 0) < 0 ? "text-red-300" : "text-amber-100"
-                                                : "text-white/90"
-                                        }`}
+                                        className={`text-[11px] leading-snug ${i === 0 ? "font-bold " : ""}${resultLineClass(line)}`}
                                     >
                                         {line}
                                     </p>

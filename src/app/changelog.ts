@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.6.4",
+        date: "2026-10-17",
+        title: "Clearer results",
+        changes: [
+            ["improved", "Result lines under a hand are colored by what happened to that bet: a push is yellow, a win green, a loss red. A pushed main bet no longer shows red because a side bet lost."],
+        ],
+    },
+    {
         version: "4.6.3",
         date: "2026-10-17",
         title: "Pai Gow advice",

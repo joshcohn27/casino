@@ -8,6 +8,7 @@ import type { Card as SharedCard } from "../../shared/lib/cards";
 import { addChipToStack, type ChipDenomination, buildChipStackFromAmount, formatMoney, BTN_GOLD, BTN_NEUTRAL } from "../../shared/lib/money";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
+import { resultLineClass } from "../../shared/lib/resultTone";
 import {
     type Card, type Settlement,
     HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE,
@@ -333,7 +334,6 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
     const superFlushHit = done && result && result.superFlushMultiplier > 0 ? result.superFlushCount : null;
     // Strategy suggestion, once the player's cards are all showing
     const suggestion = stage === "dealt" && playerSorted && playerHand ? suggestAction(playerHand) : null;
-    const netColor = !result ? "" : result.net > 0 ? "text-emerald-300" : result.net < 0 ? "text-red-300" : "text-amber-100";
 
     return (
         <>
@@ -507,7 +507,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 data-testid="result-lines"
                             >
                                 {result.lines.map((line, i) => (
-                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? `font-bold ${netColor}` : "text-white/90"}`}>{line}</p>
+                                    <p key={i} className={`text-[11px] leading-snug ${i === 0 ? "font-bold " : ""}${resultLineClass(line)}`}>{line}</p>
                                 ))}
                             </motion.div>
                         )}

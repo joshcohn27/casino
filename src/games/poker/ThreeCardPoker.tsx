@@ -16,6 +16,7 @@ import {
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
+import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -750,7 +751,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
             )}
             {playerResultLabel && <div className={`text-[11px] font-bold ${netColor}`}>{playerResultLabel}</div>}
             {stage === "done" && resultLines.slice(1).map((line, i) => (
-                <div key={i} className="text-[11px] font-bold text-white/90">{line}</div>
+                <div key={i} className={`text-[11px] font-bold ${resultLineClass(line)}`}>{line}</div>
             ))}
         </>
     );

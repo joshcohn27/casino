@@ -9,6 +9,7 @@ import { addChipToStack, type ChipDenomination, formatMoney, buildChipStackFromA
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
+import { resultLineClass } from "../../shared/lib/resultTone";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank =
@@ -1199,7 +1200,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         {resultLines.length > 0 && (
                             <div className="w-full max-w-sm space-y-1 px-4 py-2 text-sm text-zinc-300 lg:hidden">
                                 {resultLines.map((line, idx) => (
-                                    <div key={idx} className="leading-snug">{line}</div>
+                                    <div key={idx} className={`leading-snug ${resultLineClass(line)}`}>{line}</div>
                                 ))}
                             </div>
                         )}

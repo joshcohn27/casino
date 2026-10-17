@@ -16,6 +16,7 @@ import {
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
+import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -851,7 +852,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
             {stage === "done" && fiveCardResult && <div className={`text-sm font-extrabold ${netColor}`}>{fiveCardResult.label}</div>}
             {/* a line that only repeats the hand name above is left out */}
             {stage === "done" && resultLines.map((line, i) => line === fiveCardResult?.label ? null : (
-                <div key={i} className={`text-[11px] font-bold ${i === 0 ? netColor : "text-white/90"}`}>{line}</div>
+                <div key={i} className={`text-[11px] font-bold ${resultLineClass(line)}`}>{line}</div>
             ))}
         </>
     );

@@ -8,6 +8,7 @@ import { SlideBtn } from "../../shared/components/SlideBtn";
 import { createShoe, type Card } from "../../shared/lib/cards";
 import { defaultBet } from "../../shared/state/settings";
 import { addChipToStack, BTN_GOLD, BTN_NEUTRAL, buildChipStackFromAmount, formatMoney, type ChipDenomination } from "../../shared/lib/money";
+import { resultLineClass } from "../../shared/lib/resultTone";
 import {
     BURN_CARDS, DECKS, MIN_BET, TIE_AFTER_TIE_BONUS, TIE_PAYS,
     compareFirst, compareWar, mainReturn, rankName, surrenderReturn, tieBetReturn, warReturn,
@@ -518,7 +519,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
                         {/* How each bet came out. The space is always reserved, so nothing above moves. */}
                         <div className="flex min-h-[52px] w-full flex-col items-center gap-1 text-center" data-testid="result-lines">
                             {stage === "done" && settled?.lines.map((line, i) => (
-                                <p key={i} className={`text-[11px] leading-snug ${i === 0 ? (net > 0 ? "font-bold text-emerald-300" : net < 0 ? "font-bold text-red-300" : "font-bold text-amber-100") : "text-white/90"}`}>{line}</p>
+                                <p key={i} className={`text-[11px] leading-snug ${i === 0 ? "font-bold " : ""}${resultLineClass(line)}`}>{line}</p>
                             ))}
                         </div>
                     </div>
