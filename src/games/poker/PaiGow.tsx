@@ -1036,8 +1036,16 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     }, [dealerCards]);
 
     // ── Game handlers (preserved) ─────────────────────────────────────────────
+    // set when Ask Dealer for Help has just set the hand, so its message can be taken back
+    // as soon as the player moves a card: from then on the hand is the player's own
+    const dealerSetHand = useRef(false);
+
     function toggleFront(cardId: string) {
         if (stage !== "setting") return;
+        if (dealerSetHand.current) {
+            dealerSetHand.current = false;
+            setMessage("Pick 2 cards for your low hand, or press Ask Dealer for Help.");
+        }
         setSelectedFrontIds((prev) => {
             if (prev.includes(cardId)) return prev.filter((id) => id !== cardId);
             if (prev.length >= 2) return [prev[1], cardId];
@@ -1049,6 +1057,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         if (!advice) return;
         sortRowNext.current = true;
         setSelectedFrontIds(advice.recommended.front.map((c) => c.id));
+        dealerSetHand.current = true;
         setMessage(advice.houseIsBest
             ? "The dealer set your hand the house way."
             : "The dealer set your hand to beat theirs. Here that wins more than the house way.");
@@ -1078,6 +1087,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setResultLines([]);
         setNet(null);
         setRoundReturned(0);
+        dealerSetHand.current = false;
         setMessage(getHighPaiGowInfo(d).aceHigh
             ? "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards."
             : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
