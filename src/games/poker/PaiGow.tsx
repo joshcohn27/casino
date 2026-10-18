@@ -1,14 +1,17 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
 import PlayingCard from "../../shared/components/Card";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import { addChipToStack, type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "../../shared/lib/money";
+import { formatMoney, addChipToStack, type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "../../shared/lib/money";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { sortByPower, type SortMode } from "../../shared/lib/handSort";
 import { SlideBtn } from "../../shared/components/SlideBtn";
-import { defaultBet } from "../../shared/state/settings";
+import { defaultBet, defaultToggle } from "../../shared/state/settings";
+import { JACKPOT_BET, MUST_HIT_BY, TIER_NAMES, awardTopHand, placeBet, readJackpot, simulateLinkedTables, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
+import { makeRng } from "../../shared/state/progressiveMeter";
+import { TableContext } from "../../shared/state/sessionContext";
 import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
@@ -597,6 +600,21 @@ function evaluateFortune(cards: Card[]): FortuneResult {
     return { category: "No Fortune", multiplier: -1 };
 }
 
+// ─── Table jackpot ($5) ──────────────────────────────────────────────────────
+// Five aces and a 7-card straight flush win the Ultra or the Major, picked at random.
+// Below those, fixed amounts. The $5 is not returned on top of a win.
+const JACKPOT_TOP_HANDS = new Set(["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]);
+const JACKPOT_FIXED: Record<string, number> = { "Royal Flush + Royal Match": 2000, "Royal Flush": 2000, "Straight Flush": 500, "4 of a Kind": 375, "Full House": 25 };
+const JACKPOT_ROWS: [string, string, string[]][] = [
+    ["Five Aces or 7-Card Straight Flush", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
+    ["Royal Flush", "$2,000", ["Royal Flush", "Royal Flush + Royal Match"]],
+    ["Straight Flush", "$500", ["Straight Flush"]],
+    ["Four of a Kind", "$375", ["4 of a Kind"]],
+    ["Full House", "$25", ["Full House"]],
+];
+const METER_TICK_MS = 2500;
+const NOTICE_MS = 6000;
+
 function sidebetRows() {
     return [
         ["Natural 7 Card Straight Flush", 5000],
@@ -907,6 +925,32 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [selectedFrontIds, setSelectedFrontIds] = useState<string[]>([]);
 
     const [wagerAtDeal, setWagerAtDeal] = useState(0);
+
+    // The table jackpot: a $5 light, and meters shared with the other linked tables
+    const [jackpotOn, setJackpotOn] = useState(() => defaultToggle("paigow", "jackpot"));
+    const [jackpotBet, setJackpotBet] = useState(0);
+    const [meters, setMeters] = useState<Meters>(() => readJackpot());
+    const metersRef = useRef(meters);
+    useEffect(() => { metersRef.current = meters; writeJackpot(meters); }, [meters]);
+    /** The must-hit amount won by this hand's $5, settled with the rest of the hand */
+    const mustHitWon = useRef(0);
+    const [jackpotWin, setJackpotWin] = useState<{ title: string; amount: number } | null>(null);
+    const [otherWin, setOtherWin] = useState<OtherWin | null>(null);
+    // other players at linked tables feed the meters and can win them, but only while this
+    // table is on screen: a table held in the background does nothing
+    const tableActive = useContext(TableContext)?.active ?? true;
+    useEffect(() => {
+        if (!tableActive) return;
+        const rng = makeRng(Date.now());
+        const id = window.setInterval(() => {
+            const next = simulateLinkedTables(metersRef.current, 2 + (Date.now() % 4), rng);
+            setMeters(next.meters);
+            if (next.win) setOtherWin(next.win);
+        }, METER_TICK_MS);
+        return () => window.clearInterval(id);
+    }, [tableActive]);
+    useEffect(() => { if (!otherWin) return; const id = window.setTimeout(() => setOtherWin(null), NOTICE_MS); return () => window.clearTimeout(id); }, [otherWin]);
+    useEffect(() => { if (!jackpotWin) return; const id = window.setTimeout(() => setJackpotWin(null), NOTICE_MS); return () => window.clearTimeout(id); }, [jackpotWin]);
     const [resultLines, setResultLines] = useState<string[]>([]);
     const [net, setNet] = useState<number | null>(null);
     const [roundReturned, setRoundReturned] = useState(0);
@@ -1067,8 +1111,16 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const normalizedMain = clampBet(mainBet, MAIN_MIN);
         const normalizedFortune = Math.max(SIDE_MIN, clampBet(fortuneBet, SIDE_MIN));
         const normalizedAceHigh = Math.max(SIDE_MIN, clampBet(aceHighBet, SIDE_MIN));
-        const total = normalizedMain + normalizedFortune + normalizedAceHigh;
+        const jackpot = jackpotOn ? JACKPOT_BET : 0;
+        const total = normalizedMain + normalizedFortune + normalizedAceHigh + jackpot;
         if (bankroll < total) { setMessage("Not enough bankroll for those wagers."); return; }
+        setJackpotBet(jackpot);
+        mustHitWon.current = 0;
+        if (jackpot) {
+            const bet = placeBet(metersRef.current, Math.random);
+            setMeters(bet.meters);
+            mustHitWon.current = bet.mustHitWon;
+        }
         setDeckNo((n) => n + 1);
         const freshDeck = createDeck();
         let next = freshDeck;
@@ -1141,6 +1193,27 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 lines.push(`Ace High wins ${ACE_HIGH_PAYTABLE.dealerAceHighNoJoker} to 1. Dealer has ace-high without joker.`);
             } else {
                 lines.push("Ace High loses.");
+            }
+        }
+        if (jackpotBet > 0 && fortunePreview) {
+            const hand = fortunePreview.category;
+            if (mustHitWon.current > 0) {
+                mainReturn += mustHitWon.current;
+                lines.push(`Must Hit by $500 jackpot wins ${formatMoney(mustHitWon.current)}!`);
+                setJackpotWin({ title: "Must Hit by $500 Jackpot", amount: mustHitWon.current });
+                mustHitWon.current = 0;
+            }
+            if (JACKPOT_TOP_HANDS.has(hand)) {
+                const top = awardTopHand(metersRef.current, Math.random);
+                setMeters(top.meters);
+                mainReturn += top.amount;
+                lines.push(`Jackpot: ${hand} wins the ${TIER_NAMES[top.tier]}, ${formatMoney(top.amount)}!`);
+                setJackpotWin({ title: `${TIER_NAMES[top.tier]} Jackpot`, amount: top.amount });
+            } else if (JACKPOT_FIXED[hand]) {
+                mainReturn += JACKPOT_FIXED[hand];
+                lines.push(`Jackpot: ${hand === "Royal Flush + Royal Match" ? "Royal Flush" : hand} pays ${formatMoney(JACKPOT_FIXED[hand])}.`);
+            } else {
+                lines.push("Jackpot: no win.");
             }
         }
         setBankroll((b) => b + mainReturn);
@@ -1290,9 +1363,11 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         : message;
 
     const displayWager = stage === "betting"
-        ? mainBet + (fortuneBet > 0 ? fortuneBet : 0) + (aceHighBet > 0 ? aceHighBet : 0)
+        ? mainBet + (fortuneBet > 0 ? fortuneBet : 0) + (aceHighBet > 0 ? aceHighBet : 0) + (jackpotOn ? JACKPOT_BET : 0)
         : wagerAtDeal;
-    const canRebet = mainBet >= MAIN_MIN && bankroll >= (mainBet + fortuneBet + aceHighBet);
+    const canRebet = mainBet >= MAIN_MIN && bankroll >= (mainBet + fortuneBet + aceHighBet + (jackpotOn ? JACKPOT_BET : 0));
+    // the jackpot line this hand qualifies for, lit in the table once the cards are up
+    const jackpotHand = (stage === "showdown" || playerReady) && jackpotBet > 0 && fortunePreview ? fortunePreview.category : null;
 
     const mainWon = stage === "showdown" && resultLines.some((l) => l.includes("wins both hands"));
     const fortuneWon = stage === "showdown" && fortuneBet > 0 && fortunePreview !== null && fortunePreview.multiplier > 0;
@@ -1317,7 +1392,13 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <>
-            <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+            {jackpotWin && (
+            <div className="pointer-events-none fixed left-1/2 top-[30%] z-40 -translate-x-1/2 rounded-[4px] border-2 border-amber-300 bg-black/85 px-8 py-5 text-center" role="status" data-testid="jackpot-win">
+                <div className="text-sm font-extrabold uppercase tracking-wide text-amber-200">{jackpotWin.title}</div>
+                <div className="mt-1 text-3xl font-extrabold tabular-nums text-amber-100">{formatMoney(jackpotWin.amount)}</div>
+            </div>
+        )}
+        <RulesModal open={showRules} onClose={() => setShowRules(false)} />
             <TableShell deckNo={deckNo}
                 feltColor="#1a5c2e"
                 gameName="Pai Gow Poker"
@@ -1357,6 +1438,49 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             net={net ?? 0}
                             showResult={stage === "showdown"}
                         />
+
+                        {/* The $5 table jackpot: the light that switches it on, the three meters it shares
+                            with the linked tables, and what it pays. Fixed sizes: nothing here moves. */}
+                        <div className="flex w-full max-w-[260px] flex-col gap-1.5 rounded-[4px] border border-red-500/30 bg-black/30 px-2.5 py-2" data-testid="table-jackpot">
+                            <div className="flex items-center gap-2.5">
+                                <button
+                                    onClick={() => canBet && setJackpotOn((on) => !on)}
+                                    disabled={!canBet}
+                                    aria-pressed={jackpotOn}
+                                    aria-label={`Table jackpot, ${formatMoney(JACKPOT_BET)}`}
+                                    data-hotkey="J"
+                                    data-jackpot-light
+                                    data-lit={jackpotOn ? "true" : "false"}
+                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${jackpotOn ? "border-white" : "border-white/45 hover:border-white"} ${canBet ? "cursor-pointer" : "cursor-default"}`}
+                                    style={{ background: jackpotOn ? "#ef2a2a" : "#3a0f0f" }}
+                                >
+                                    <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
+                                </button>
+                                <div className="grid min-w-0 flex-1 grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-[11px]">
+                                    {(["ultra", "major", "mustHit"] as const).map((tier) => (
+                                        <React.Fragment key={tier}>
+                                            <span className="font-bold text-white/80">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
+                                            <span className="text-right font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex flex-col">
+                                {JACKPOT_ROWS.map(([label, pays, hands]) => {
+                                    const hit = !!jackpotHand && hands.includes(jackpotHand);
+                                    return (
+                                        <div key={label} className={`flex items-baseline justify-between gap-2 rounded px-1 text-[11px] ${hit ? "bg-amber-300/15" : ""}`} data-hit={hit ? "true" : undefined}>
+                                            <span className={hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/80"}>{label}</span>
+                                            <span className="shrink-0 font-bold text-gold">{pays}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* another player's jackpot, on a line kept for it */}
+                            <div className="min-h-[15px] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
+                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
+                            </div>
+                        </div>
 
                         {/* Side bet circles */}
                         <div className="flex items-end gap-6">

@@ -147,6 +147,9 @@ html {
   }
 }
 
+/* The jackpot light is a small round button: its key works but no hint is drawn on it */
+[data-jackpot-light]::after { content: none !important; }
+
 /* Large text (Settings > Display). Enlarges the type itself and leaves the layout alone:
    every small and medium text size steps up about two pixels. Card faces and the big
    Video Poker read-outs are already large and stay as they are. */
