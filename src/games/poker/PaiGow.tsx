@@ -810,7 +810,7 @@ function TableLabel({ onRules }: { onRules: () => void }) {
 
 function PaiGowBar({
     stage, selectedChip, selectedIsLegal, selectedFrontIds, canRebet, dealerSetting, playerReady, autoFinishing,
-    onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onClear, onChangeBet,
+    onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onFold, onClear, onChangeBet,
 }: {
     stage: Stage;
     selectedChip: ChipDenomination;
@@ -826,6 +826,8 @@ function PaiGowBar({
     onDeal: () => void;
     onAutoSetBest: () => void;
     onSetHand: () => void;
+    /** Give up the main bet and end the hand. Side bets still settle. */
+    onFold: () => void;
     onClear: () => void;
     onChangeBet: () => void;
 }) {
@@ -847,6 +849,11 @@ function PaiGowBar({
                     {stage === "setting" && !playerReady && (
                         <SlideBtn key="reveal">
                             <button data-hotkey="R" className={BTN_GOLD} onClick={onRevealAll} disabled={dealerSetting}>Reveal Cards</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "setting" && !autoFinishing && playerReady && (
+                        <SlideBtn key="fold">
+                            <button data-hotkey="F" className={BTN_NEUTRAL} onClick={onFold}>Fold</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !autoFinishing && playerReady && (
@@ -1093,19 +1100,23 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
     }
 
-    function setHandAndResolve() {
+    /** Settle the hand as set, or as folded: a fold gives up the main bet, and side bets settle as usual. */
+    function setHandAndResolve(folded = false) {
         if (!bestPlayerSplitAgainstDealer || !dealerBestSplit) return;
-        if (selectedFrontIds.length !== 2) { setMessage("Pick exactly 2 cards for the low hand."); return; }
-        if (!selectedIsLegal) { setMessage("That hand is illegal."); return; }
-        const playerSplit = buildSplit(selectedFront, playerCards);
+        if (!folded && selectedFrontIds.length !== 2) { setMessage("Pick exactly 2 cards for the low hand."); return; }
+        if (!folded && !selectedIsLegal) { setMessage("That hand is illegal."); return; }
         const dealerSplit = dealerBestSplit;
-        const backCmp = compareFive(playerSplit.backEval, dealerSplit.backEval);
-        const frontCmp = compareFront(playerSplit.frontEval, dealerSplit.frontEval);
+        const playerSplit = folded ? null : buildSplit(selectedFront, playerCards);
+        // a folded hand is not compared: both count as the dealer's
+        const backCmp = playerSplit ? compareFive(playerSplit.backEval, dealerSplit.backEval) : -1;
+        const frontCmp = playerSplit ? compareFront(playerSplit.frontEval, dealerSplit.frontEval) : -1;
         let mainReturn = 0;
         const lines: string[] = [];
         const playerWinsBack = backCmp > 0; const dealerWinsBack = backCmp <= 0;
         const playerWinsFront = frontCmp > 0; const dealerWinsFront = frontCmp <= 0;
-        if (dealerAceHighInfo?.aceHigh) {
+        if (folded) {
+            lines.push("Folded. Main bet loses.");
+        } else if (dealerAceHighInfo?.aceHigh) {
             mainReturn += mainBet;
             lines.push("Dealer has Ace-high pai gow. Main bet pushes.");
         } else if (playerWinsBack && playerWinsFront) {
@@ -1287,6 +1298,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             ? (dealerAceHighInfo?.aceHigh
                 ? (playerReady ? "Dealer has Ace-high pai gow. Main bet pushes." : "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards.")
                 : "Tap your cards to turn them over, or press Reveal Cards.")
+        // no split can beat the dealer: say so, and suggest the fold (setting it costs the same)
+        : advice && advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh
+            ? "No way to set this hand to beat the dealer. Fold, or set it anyway."
         : message;
 
     const displayWager = stage === "betting"
@@ -1337,7 +1351,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onChipSelect={handleChipSelect}
                         onDeal={dealHand}
                         onAutoSetBest={autoSetBest}
-                        onSetHand={setHandAndResolve}
+                        onSetHand={() => setHandAndResolve()}
+                        onFold={() => setHandAndResolve(true)}
                         onClear={handleClear}
                         onChangeBet={handleChangeBet}
                     />
@@ -1564,7 +1579,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     const isBest = selectedResult === advice.bestResult;
                                     const lowOf = (split: SplitEval) => `Low ${split.frontEval.label}`;
                                     const [label, tone, hint] =
-                                        isBest && selectedIsHouseWay ? ["Best play · House way", "font-bold text-emerald-300", ""]
+                                        advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh ? ["No way to win", "font-bold text-red-300", "Suggest: Fold"]
+                                        : isBest && selectedIsHouseWay ? ["Best play · House way", "font-bold text-emerald-300", ""]
                                         : isBest && advice.houseIsBest ? ["Best play", "font-bold text-emerald-300", `House way: ${lowOf(advice.house)}`]
                                         : isBest ? ["Best play · Beats the house way here", "font-bold text-emerald-300", ""]
                                         : selectedIsHouseWay ? ["House way", "font-bold text-amber-300", `Better here: ${lowOf(advice.recommended)}`]
