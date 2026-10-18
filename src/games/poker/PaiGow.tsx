@@ -606,7 +606,7 @@ function evaluateFortune(cards: Card[]): FortuneResult {
 const JACKPOT_TOP_HANDS = new Set(["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]);
 const JACKPOT_FIXED: Record<string, number> = { "Royal Flush + Royal Match": 2000, "Royal Flush": 2000, "Straight Flush": 500, "4 of a Kind": 375, "Full House": 25 };
 const JACKPOT_ROWS: [string, string, string[]][] = [
-    ["Five Aces or 7-Card Straight Flush", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
+    ["Five Aces or 7-Card Straight Flush:", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
     ["Royal Flush", "$2,000", ["Royal Flush", "Royal Flush + Royal Match"]],
     ["Straight Flush", "$500", ["Straight Flush"]],
     ["Four of a Kind", "$375", ["4 of a Kind"]],
@@ -1444,7 +1444,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* ── LEFT: betting ──────────────────────────────────── */}
-                    <div className={`order-2 flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:w-64 lg:shrink-0 lg:px-0`}>
+                    <div className={`order-2 flex w-full flex-col items-center justify-center gap-4 px-4 py-2 lg:order-1 lg:justify-start lg:w-64 lg:shrink-0 lg:px-0`}>
 
                         <BetBar
                             compact
@@ -1453,49 +1453,6 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             net={net ?? 0}
                             showResult={stage === "showdown"}
                         />
-
-                        {/* The $5 table jackpot: the light that switches it on, the three meters it shares
-                            with the linked tables, and what it pays. Fixed sizes: nothing here moves. */}
-                        <div className="flex w-full max-w-[260px] flex-col gap-1.5 rounded-[4px] border border-red-500/30 bg-black/30 px-2.5 py-2" data-testid="table-jackpot">
-                            <div className="flex items-center gap-2.5">
-                                <button
-                                    onClick={() => canBet && setJackpotOn((on) => !on)}
-                                    disabled={!canBet}
-                                    aria-pressed={jackpotOn}
-                                    aria-label={`Table jackpot, ${formatMoney(JACKPOT_BET)}`}
-                                    data-hotkey="J"
-                                    data-jackpot-light
-                                    data-lit={jackpotOn ? "true" : "false"}
-                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${jackpotOn ? "border-white" : "border-white/45 hover:border-white"} ${canBet ? "cursor-pointer" : "cursor-default"}`}
-                                    style={{ background: jackpotOn ? "#ef2a2a" : "#3a0f0f" }}
-                                >
-                                    <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
-                                </button>
-                                <div className="grid min-w-0 flex-1 grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-[11px]">
-                                    {(["ultra", "major", "mustHit"] as const).map((tier) => (
-                                        <React.Fragment key={tier}>
-                                            <span className="font-bold text-white/80">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
-                                            <span className="text-right font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
-                                        </React.Fragment>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="flex flex-col">
-                                {JACKPOT_ROWS.map(([label, pays, hands]) => {
-                                    const hit = !!jackpotHand && hands.includes(jackpotHand);
-                                    return (
-                                        <div key={label} className={`flex items-baseline justify-between gap-2 rounded px-1 text-[11px] ${hit ? "bg-amber-300/15" : ""}`} data-hit={hit ? "true" : undefined}>
-                                            <span className={hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/80"}>{label}</span>
-                                            <span className="shrink-0 font-bold text-gold">{pays}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            {/* another player's jackpot, on a line kept for it */}
-                            <div className="min-h-[15px] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
-                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
-                            </div>
-                        </div>
 
                         {/* Side bet circles */}
                         <div className="flex items-end gap-6">
@@ -1570,7 +1527,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
                         from the start: dealing the cards then pushes nothing down. */}
-                    <div className={`order-1 flex min-h-[424px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[446px] lg:order-2 lg:min-h-0 lg:flex-1`}>
+                    <div className={`order-1 flex min-h-[580px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[580px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
@@ -1721,10 +1678,51 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             </div>
                         )}
 
+                        {/* The $5 table jackpot: the light that switches it on, the three meters it shares with
+                            the linked tables, and what it pays. Pinned to the foot of the column, so the notes
+                            that appear under your hand never push it, and its own size never changes. */}
+                        <div className="relative mt-auto flex w-full max-w-[680px] flex-col items-center gap-1 rounded-[4px] border border-red-500/30 bg-black/30 px-3 py-1.5" data-testid="table-jackpot">
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => canBet && setJackpotOn((on) => !on)}
+                                    disabled={!canBet}
+                                    aria-pressed={jackpotOn}
+                                    aria-label={`Table jackpot, ${formatMoney(JACKPOT_BET)}`}
+                                    data-hotkey="J"
+                                    data-jackpot-light
+                                    data-lit={jackpotOn ? "true" : "false"}
+                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${jackpotOn ? "border-white" : "border-white/45 hover:border-white"} ${canBet ? "cursor-pointer" : "cursor-default"}`}
+                                    style={{ background: jackpotOn ? "#ef2a2a" : "#3a0f0f" }}
+                                >
+                                    <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
+                                </button>
+                                {(["ultra", "major", "mustHit"] as const).map((tier) => (
+                                    <div key={tier} className="flex min-w-[78px] flex-col items-center leading-tight sm:min-w-[96px]">
+                                        <span className="text-[10px] font-bold text-white/80">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
+                                        <span className="text-[13px] font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[11px]">
+                                {JACKPOT_ROWS.map(([label, pays, hands]) => {
+                                    const hit = !!jackpotHand && hands.includes(jackpotHand);
+                                    return (
+                                        <span key={label} className={`rounded px-1 ${hit ? "bg-amber-300/15" : ""}`} data-hit={hit ? "true" : undefined}>
+                                            <span className={hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/80"}>{label}</span>{" "}
+                                            <span className="font-bold text-gold">{pays}</span>
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                            {/* another player's jackpot: shown just under the strip, taking no room of its own */}
+                            <div className="pointer-events-none absolute inset-x-0 top-full mt-0.5 text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
+                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
+                            </div>
+                        </div>
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}
-                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-center lg:flex">
+                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-start pt-2 lg:flex">
                         <PayoutColumn
                             title="Fortune Bonus"
                             entries={sidebetRows()}
