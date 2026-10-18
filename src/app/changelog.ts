@@ -21,6 +21,18 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.0",
+        date: "2026-10-17",
+        title: "Table jackpot",
+        changes: [
+            ["new", "Pai Gow: a $5 table jackpot. Light it to play. Full house pays $25, four of a kind $375, straight flush $500 and a royal flush $2,000."],
+            ["new", "Five aces or a 7-card straight flush wins the Ultra or the Major jackpot, picked at random."],
+            ["new", "A third jackpot must hit by $500. Every jackpot bet moves it closer, and the bet that pushes it over wins it."],
+            ["new", "Players at other tables add to the jackpots while you play, and now and then one of them wins."],
+            ["fixed", "Pressing Space at a table no longer scrolls the page."],
+        ],
+    },
+    {
         version: "4.7.0",
         date: "2026-10-17",
         title: "Fold in Pai Gow",

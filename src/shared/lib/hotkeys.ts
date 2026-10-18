@@ -131,8 +131,9 @@ export function useHotkeys(): void {
                 return;
             }
 
-            // Space or Enter with nothing to press: do not let it fire a button the mouse left in focus
-            if ((key === "space" || key === "enter") && focused instanceof HTMLButtonElement) { done(); }
+            // Space with nothing to press (a button still sliding in, say) must not scroll the page,
+            // and Space or Enter must not fire a button the mouse left in focus
+            if (key === "space" || (key === "enter" && focused instanceof HTMLButtonElement)) { done(); }
         };
 
         const onKeyUp = (e: KeyboardEvent) => {

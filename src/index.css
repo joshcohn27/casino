@@ -147,6 +147,9 @@ html {
   }
 }
 
+/* The jackpot light is a small round button: its key works but no hint is drawn on it */
+[data-jackpot-light]::after { content: none !important; }
+
 /* Large text (Settings > Display). Enlarges the type itself and leaves the layout alone:
    every small and medium text size steps up about two pixels. Card faces and the big
    Video Poker read-outs are already large and stay as they are. */
@@ -258,12 +261,12 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
   [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 129px) !important; }
 }
 [data-table="videopoker"] > .min-h-screen { min-height: calc(100dvh - 84px); }
-/* On desktop the menu bar is one row (57px) and the session read-out floats, so the felt runs
+/* On desktop the menu bar is one row (58px with its border) and the session read-out floats, so the felt runs
    to the bottom of the window. Otherwise the action bar hangs short of the bottom and drops
    when a hand makes the page taller. Double Down Madness keeps a row for its read-out. */
 @media (min-width: 1024px) {
-  [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 57px) !important; }
-  [data-table="doubledownmadness"] > .relative.flex.flex-col { min-height: calc(100dvh - 84px) !important; }
+  [data-table] > .relative.flex.flex-col { min-height: calc(100dvh - 58px) !important; }
+  [data-table="doubledownmadness"] > .relative.flex.flex-col { min-height: calc(100dvh - 85px) !important; }
 }
 
 /* Video Poker. Pay table columns are the same width in every row, whatever the label. */
