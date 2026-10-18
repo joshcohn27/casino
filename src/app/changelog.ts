@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.4",
+        date: "2026-10-18",
+        title: "Pay tables never covered",
+        changes: [
+            ["fixed", "Pai Gow: the jackpot table now sits at the top of the pay tables beside the title, so it can never cover the Fortune Bonus table, whatever your text size."],
+        ],
+    },
+    {
         version: "4.8.3",
         date: "2026-10-18",
         title: "Fortune Bonus title is back",
