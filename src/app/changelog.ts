@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.7.0",
+        date: "2026-10-17",
+        title: "Fold in Pai Gow",
+        changes: [
+            ["new", "Pai Gow: a Fold button. Folding gives up your main bet and ends the hand. Side bets still pay on your cards."],
+            ["new", "Pai Gow: when no way of setting your cards can beat the dealer, the table suggests folding. You can still set the hand if you like."],
+        ],
+    },
+    {
         version: "4.6.5",
         date: "2026-10-17",
         title: "Pai Gow message",
