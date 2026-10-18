@@ -667,6 +667,22 @@ function slotStyle(row: number, col: number, count: number, rowStep: number, z: 
     };
 }
 
+// A folded hand: the cards turn over one after another, then slide into a pile.
+const FOLD_FLIP_MS = 90;      // between one card turning over and the next
+const FOLD_PILE_MS = 450;     // after the last card turns, before they gather
+const PILE_TURN = [-4, 3, -2, 5, -3, 2, -1];
+
+function pileStyle(k: number, rowStep: number): React.CSSProperties {
+    return {
+        position: "absolute",
+        left: `calc(50% - var(--cw) / 2 + ${(k % 3) - 1}px)`,
+        top: `calc(var(--ch) * ${rowStep / 2} - ${k * 1.5}px)`,
+        zIndex: 30 + k,
+        transform: `rotate(${PILE_TURN[k % PILE_TURN.length]}deg)`,
+        transition: `left 0.45s ${SLOT_EASE} ${k * 35}ms, top 0.45s ${SLOT_EASE} ${k * 35}ms, transform 0.45s ${SLOT_EASE} ${k * 35}ms`,
+    };
+}
+
 // How far the second row sits below the first, as a share of card height.
 // Less than 1 so the hands overlap like a stack on a real table.
 const DEALER_ROW_STEP = 0.62;
@@ -919,6 +935,17 @@ function PaiGowBar({
 export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
+    // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
+    // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
+    const [foldedDeck, setFoldedDeck] = useState<number | null>(null);
+    const [foldStep, setFoldStep] = useState(0);
+    useEffect(() => {
+        setFoldStep(0);
+        if (foldedDeck === null || foldedDeck !== deckNo) return;
+        const ids = Array.from({ length: 7 }, (_, i) => window.setTimeout(() => setFoldStep(i + 1), (i + 1) * FOLD_FLIP_MS));
+        ids.push(window.setTimeout(() => setFoldStep(8), 7 * FOLD_FLIP_MS + FOLD_PILE_MS));
+        return () => ids.forEach((id) => window.clearTimeout(id));
+    }, [foldedDeck, deckNo]);
     // ── Game state (preserved) ────────────────────────────────────────────────
     const [stage, setStage] = useState<Stage>("betting");
     const [message, setMessage] = useState("Set your wagers and press Deal.");
@@ -1433,7 +1460,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onDeal={dealHand}
                         onAutoSetBest={autoSetBest}
                         onSetHand={() => setHandAndResolve()}
-                        onFold={() => setHandAndResolve(true)}
+                        onFold={() => { setFoldedDeck(deckNo); setHandAndResolve(true); }}
                         onClear={handleClear}
                         onChangeBet={handleChangeBet}
                     />
@@ -1603,7 +1630,11 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         )}
 
                         {/* Player: Low hand on top (nearer the dealer), the other cards below */}
-                        {playerCards.length > 0 && (
+                        {playerCards.length > 0 && (() => {
+                            // a fold turns the cards over left to right, the Low pair last, then piles them
+                            const folding = foldedDeck === deckNo && stage === "showdown";
+                            const foldOrder = [...playerRowCards.map((c) => c.id), ...lowIds];
+                            return (
                             <div className="flex w-full flex-col items-center gap-2">
                                 <div
                                     className={`relative w-full max-w-[440px] ${STACK_VARS}`}
@@ -1615,17 +1646,21 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         <div
                                             key={`low-slot-${col}`}
                                             style={{ ...slotStyle(0, col, 2, PLAYER_ROW_STEP, 1), width: "var(--cw)", height: "var(--ch)" }}
-                                            className="flex items-start justify-center rounded-[9px] border border-dashed border-white/20 bg-black/15 pt-1.5 sm:rounded-[11px]"
+                                            className={`flex items-start justify-center rounded-[9px] border border-dashed border-white/20 bg-black/15 pt-1.5 transition-opacity duration-300 sm:rounded-[11px] ${folding ? "opacity-0" : ""}`}
                                         >
                                             <span className="text-[13px] font-bold text-white/75">Low</span>
                                         </div>
                                     ))}
 
                                     {playerCards.map((card, i) => {
-                                        const isPeeled = peeled.includes(card.id) || stage === "showdown";
+                                        const k = foldOrder.indexOf(card.id);
+                                        const turnedOver = folding && k >= 0 && k < foldStep;
+                                        const isPeeled = (peeled.includes(card.id) || stage === "showdown") && !turnedOver;
                                         const lowCol = lowIds.indexOf(card.id);
                                         const rowCol = playerRowCards.findIndex((c) => c.id === card.id);
-                                        const style = lowCol >= 0
+                                        const style = folding && foldStep >= 8 && k >= 0
+                                            ? pileStyle(k, PLAYER_ROW_STEP)
+                                            : lowCol >= 0
                                             ? slotStyle(0, lowCol, 2, PLAYER_ROW_STEP, 10 + lowCol)
                                             : slotStyle(1, rowCol, playerRowCards.length, PLAYER_ROW_STEP, 20 + rowCol);
                                         const canClick = stage === "setting" && !dealerSetting && (!isPeeled || (playerReady && !autoFinishing));
@@ -1656,7 +1691,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
 
                                 {/* Hand names: High then Low, the same order as the dealer */}
                                 <div className="flex min-h-[16px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px]">
-                                    {playerReady && (
+                                    {folding ? (
+                                        <span className="font-bold text-white/75">Folded</span>
+                                    ) : playerReady && (
                                         <>
                                             <span>
                                                 <span className="font-bold text-white/75">High </span>
@@ -1698,7 +1735,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     );
                                 })()}
                             </div>
-                        )}
+                            );
+                        })()}
 
                     </div>
                 </div>
