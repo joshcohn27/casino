@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.5",
+        date: "2026-10-18",
+        title: "Pai Gow title centered",
+        changes: [
+            ["fixed", "Pai Gow: the title is centered on the table again."],
+            ["fixed", "Pai Gow with Large text: the top jackpot line fits on one row, and on phones and tablets nothing moves when the cards are dealt."],
+        ],
+    },
+    {
         version: "4.8.4",
         date: "2026-10-18",
         title: "Pay tables never covered",

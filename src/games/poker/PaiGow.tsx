@@ -606,7 +606,7 @@ function evaluateFortune(cards: Card[]): FortuneResult {
 const JACKPOT_TOP_HANDS = new Set(["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]);
 const JACKPOT_FIXED: Record<string, number> = { "Royal Flush + Royal Match": 2000, "Royal Flush": 2000, "Straight Flush": 500, "4 of a Kind": 375, "Full House": 25 };
 const JACKPOT_ROWS: [string, string, string[]][] = [
-    ["Five Aces or 7-Card Straight Flush", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
+    ["5 Aces or 7-Card Straight Flush", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
     ["Royal Flush", "$2,000", ["Royal Flush", "Royal Flush + Royal Match"]],
     ["Straight Flush", "$500", ["Straight Flush"]],
     ["Four of a Kind", "$375", ["4 of a Kind"]],
@@ -1443,7 +1443,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     the pay tables on the right, which start level with the title. */}
                 <div className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden lg:pr-6">
                 <div className="flex min-w-0 flex-1 flex-col">
-                <TableLabel onRules={() => setShowRules(true)} />
+                {/* the right column is 324px with its gap and edge, so the same room on the left keeps the title centered on the page */}
+                <div className="lg:pl-[324px]">
+                    <TableLabel onRules={() => setShowRules(true)} />
+                </div>
 
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:pl-6">
 
@@ -1546,7 +1549,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
                         from the start: dealing the cards then pushes nothing down. */}
-                    <div className={`order-1 flex min-h-[440px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[480px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
+                    <div data-pg-center className={`order-1 flex min-h-[440px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[480px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>

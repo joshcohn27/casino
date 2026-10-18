@@ -286,3 +286,8 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
 @media (max-width: 417px) { [data-vp-cards] { zoom: 0.54; } }
 @media (max-width: 379px) { [data-vp-cards] { zoom: 0.47; } }
 @media (max-width: 334px) { [data-vp-cards] { zoom: 0.42; } }
+
+/* Pai Gow: Large text makes the dealt hands taller, so the cards area holds a little more room
+   on phones and tablets and nothing below it moves at the deal. */
+@media (max-width: 639px) { html[data-font="large"] [data-pg-center] { min-height: 456px; } }
+@media (min-width: 640px) and (max-width: 1023px) { html[data-font="large"] [data-pg-center] { min-height: 500px; } }
