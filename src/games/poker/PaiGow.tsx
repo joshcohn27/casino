@@ -606,7 +606,7 @@ function evaluateFortune(cards: Card[]): FortuneResult {
 const JACKPOT_TOP_HANDS = new Set(["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]);
 const JACKPOT_FIXED: Record<string, number> = { "Royal Flush + Royal Match": 2000, "Royal Flush": 2000, "Straight Flush": 500, "4 of a Kind": 375, "Full House": 25 };
 const JACKPOT_ROWS: [string, string, string[]][] = [
-    ["Five Aces or 7-Card Straight Flush:", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
+    ["Five Aces or 7-Card Straight Flush", "Ultra or Major", ["Natural 7 Card Straight Flush", "Wild 7 Card Straight Flush", "5 Aces"]],
     ["Royal Flush", "$2,000", ["Royal Flush", "Royal Flush + Royal Match"]],
     ["Straight Flush", "$500", ["Straight Flush"]],
     ["Four of a Kind", "$375", ["4 of a Kind"]],
@@ -696,14 +696,14 @@ function PayoutColumn({ title, entries, highlight }: {
     highlight?: string | null;
 }) {
     return (
-        <div className="flex flex-col gap-1 pt-2">
-            <div className="mb-1 text-center text-[13px] font-extrabold text-amber-200">
+        <div className="flex flex-col gap-0.5 pt-1.5">
+            <div className="mb-0.5 text-center text-[13px] font-extrabold text-amber-200">
                 {title}
             </div>
             {entries.map(([hand, pays]) => {
                 const isHit = highlight === hand;
                 return (
-                    <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-0.5 text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
+                    <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-px text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
                         <span className={`shrink-0 font-bold text-gold`}>
                             {typeof pays === "number" ? `${pays} to 1` : pays}
@@ -1454,8 +1454,23 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             showResult={stage === "showdown"}
                         />
 
-                        {/* Side bet circles */}
-                        <div className="flex items-end gap-6">
+                        {/* Side bet circles, with the $5 jackpot light set above and between them, as on
+                            a real felt. The light floats, so it adds no height. */}
+                        <div className="relative flex items-end gap-12">
+                            <button
+                                onClick={() => canBet && setJackpotOn((on) => !on)}
+                                disabled={!canBet}
+                                aria-pressed={jackpotOn}
+                                aria-label={`Table jackpot, ${formatMoney(JACKPOT_BET)}`}
+                                title="Table jackpot"
+                                data-hotkey="J"
+                                data-jackpot-light
+                                data-lit={jackpotOn ? "true" : "false"}
+                                className={`absolute left-1/2 top-0 z-10 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border-2 transition-colors ${jackpotOn ? "border-white" : "border-white/45 hover:border-white"} ${canBet ? "cursor-pointer" : "cursor-default"}`}
+                                style={{ background: jackpotOn ? "#ef2a2a" : "#3a0f0f" }}
+                            >
+                                <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
+                            </button>
                             <BetSpot
                                 testId="fortune"
                                 chips={fortuneChips} totalBet={fortuneBet}
@@ -1527,7 +1542,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
                         from the start: dealing the cards then pushes nothing down. */}
-                    <div className={`order-1 flex min-h-[580px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[580px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
+                    <div className={`order-1 flex min-h-[424px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[446px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
@@ -1678,57 +1693,42 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             </div>
                         )}
 
-                        {/* The $5 table jackpot: the light that switches it on, the three meters it shares with
-                            the linked tables, and what it pays. Pinned to the foot of the column, so the notes
-                            that appear under your hand never push it, and its own size never changes. */}
-                        <div className="relative mt-auto flex w-full max-w-[680px] flex-col items-center gap-1 rounded-[4px] border border-red-500/30 bg-black/30 px-3 py-1.5" data-testid="table-jackpot">
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => canBet && setJackpotOn((on) => !on)}
-                                    disabled={!canBet}
-                                    aria-pressed={jackpotOn}
-                                    aria-label={`Table jackpot, ${formatMoney(JACKPOT_BET)}`}
-                                    data-hotkey="J"
-                                    data-jackpot-light
-                                    data-lit={jackpotOn ? "true" : "false"}
-                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${jackpotOn ? "border-white" : "border-white/45 hover:border-white"} ${canBet ? "cursor-pointer" : "cursor-default"}`}
-                                    style={{ background: jackpotOn ? "#ef2a2a" : "#3a0f0f" }}
-                                >
-                                    <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
-                                </button>
-                                {(["ultra", "major", "mustHit"] as const).map((tier) => (
-                                    <div key={tier} className="flex min-w-[78px] flex-col items-center leading-tight sm:min-w-[96px]">
-                                        <span className="text-[10px] font-bold text-white/80">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
-                                        <span className="text-[13px] font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[11px]">
-                                {JACKPOT_ROWS.map(([label, pays, hands]) => {
-                                    const hit = !!jackpotHand && hands.includes(jackpotHand);
-                                    return (
-                                        <span key={label} className={`rounded px-1 ${hit ? "bg-amber-300/15" : ""}`} data-hit={hit ? "true" : undefined}>
-                                            <span className={hit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/80"}>{label}</span>{" "}
-                                            <span className="font-bold text-gold">{pays}</span>
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                            {/* another player's jackpot: shown just under the strip, taking no room of its own */}
-                            <div className="pointer-events-none absolute inset-x-0 top-full mt-0.5 text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
-                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
-                            </div>
-                        </div>
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}
-                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-start pt-2 lg:flex">
+                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-start lg:flex">
+                        {/* The table jackpot: its meters and what it pays, styled like the other pay
+                            tables but boxed in red */}
+                        <div className="relative mb-1 rounded-[4px] border border-red-500/70 px-2 pb-1" data-testid="table-jackpot">
+                            <div className="flex flex-col gap-0.5 pt-1.5">
+                                <div className="mb-0.5 text-center text-[13px] font-extrabold text-amber-200">Table Jackpot ($5)</div>
+                                {(["ultra", "major", "mustHit"] as const).map((tier) => (
+                                    <div key={tier} className="flex items-center justify-between gap-2 px-1.5 text-[11px]">
+                                        <span className="font-bold text-white/85">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
+                                        <span className="shrink-0 font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
+                                    </div>
+                                ))}
+                                {JACKPOT_ROWS.map(([label, pays, hands], i) => {
+                                    const isHit = !!jackpotHand && hands.includes(jackpotHand);
+                                    return (
+                                        <div key={label} className={`flex items-center justify-between gap-2 rounded px-1.5 text-[11px] transition ${i === 0 ? "mt-0.5 border-t border-red-500/30 pt-1" : ""} ${isHit ? "bg-amber-300/12" : ""}`} data-hit={isHit ? "true" : undefined}>
+                                            <span className={isHit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}>{label}</span>
+                                            <span className="shrink-0 font-bold text-gold">{pays}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* another player's jackpot: shown on the box's bottom edge, taking no room */}
+                            <div className="pointer-events-none absolute inset-x-2 -bottom-2 bg-[#14301f] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
+                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
+                            </div>
+                        </div>
                         <PayoutColumn
                             title="Fortune Bonus"
                             entries={sidebetRows()}
                             highlight={fortuneHighlight}
                         />
-                        <div className="mt-5">
+                        <div className="mt-1.5">
                             <PayoutColumn
                                 title="Ace High Side Bet"
                                 entries={ACE_HIGH_ROWS}

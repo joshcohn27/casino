@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.1",
+        date: "2026-10-18",
+        title: "Pai Gow jackpot layout",
+        changes: [
+            ["improved", "Pai Gow: the red $5 jackpot light now sits on the felt between Fortune and Ace High, as at a real table."],
+            ["improved", "Pai Gow: the jackpot meters and what it pays have their own table on the right, boxed in red."],
+        ],
+    },
+    {
         version: "4.8.0",
         date: "2026-10-17",
         title: "Table jackpot",
