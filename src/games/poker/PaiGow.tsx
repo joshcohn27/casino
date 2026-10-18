@@ -1439,7 +1439,45 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     />
                 }
             >
-                <TableLabel onRules={() => setShowRules(true)} />
+                {/* The title, with the table jackpot in the top right corner beside it (desktop only),
+                    lined up over the pay tables. It floats, so it takes no height from them. */}
+                <div className="relative">
+                    <TableLabel onRules={() => setShowRules(true)} />
+                    <div className="absolute right-6 top-0 z-10 hidden w-72 lg:block">
+                            {/* The table jackpot: its meters and what it pays, styled like the other pay
+                                tables but boxed in red */}
+                            <div className="relative rounded-[4px] border border-red-500/70 bg-[#13321f] px-2 pb-1" data-testid="table-jackpot">
+                                <div className="flex flex-col gap-1 pt-1.5">
+                                    <div className="text-center text-[13px] font-extrabold text-amber-200">Table Jackpot ($5)</div>
+                                    {/* the three meters, side by side */}
+                                    <div className="grid grid-cols-3 gap-1 text-center">
+                                        {(["ultra", "major", "mustHit"] as const).map((tier) => (
+                                            <div key={tier} className="flex flex-col leading-tight">
+                                                <span className="text-[10px] font-bold text-white/80">{tier === "mustHit" ? `Must Hit ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
+                                                <span className="text-[12px] font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* what it pays: the top hands across the box, the fixed amounts two to a row */}
+                                    <div className="grid grid-cols-2 gap-x-2 border-t border-red-500/30 pt-1">
+                                        {JACKPOT_ROWS.map(([label, pays, hands], i) => {
+                                            const isHit = !!jackpotHand && hands.includes(jackpotHand);
+                                            return (
+                                                <div key={label} className={`flex items-center justify-between gap-1.5 rounded px-1 text-[11px] ${i === 0 ? "col-span-2" : ""} ${isHit ? "bg-amber-300/12" : ""}`} data-hit={isHit ? "true" : undefined}>
+                                                    <span className={isHit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}>{label}</span>
+                                                    <span className="shrink-0 font-bold text-gold">{pays}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                {/* another player's jackpot: shown on the box's bottom edge, taking no room */}
+                                <div className="pointer-events-none absolute inset-x-2 -bottom-2 bg-[#14301f] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
+                                    {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
+                                </div>
+                            </div>
+                    </div>
+                </div>
 
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
@@ -1542,7 +1580,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
                         from the start: dealing the cards then pushes nothing down. */}
-                    <div className={`order-1 flex min-h-[424px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[446px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
+                    <div className={`order-1 flex min-h-[440px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[480px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>
@@ -1696,33 +1734,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* ── RIGHT: payout tables ────────────────────────────── */}
-                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-start lg:flex">
-                        {/* The table jackpot: its meters and what it pays, styled like the other pay
-                            tables but boxed in red */}
-                        <div className="relative mb-1 rounded-[4px] border border-red-500/70 px-2 pb-1" data-testid="table-jackpot">
-                            <div className="flex flex-col gap-0.5 pt-1.5">
-                                <div className="mb-0.5 text-center text-[13px] font-extrabold text-amber-200">Table Jackpot ($5)</div>
-                                {(["ultra", "major", "mustHit"] as const).map((tier) => (
-                                    <div key={tier} className="flex items-center justify-between gap-2 px-1.5 text-[11px]">
-                                        <span className="font-bold text-white/85">{tier === "mustHit" ? `Must Hit by ${formatMoney(MUST_HIT_BY).replace(".00", "")}` : TIER_NAMES[tier]}</span>
-                                        <span className="shrink-0 font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
-                                    </div>
-                                ))}
-                                {JACKPOT_ROWS.map(([label, pays, hands], i) => {
-                                    const isHit = !!jackpotHand && hands.includes(jackpotHand);
-                                    return (
-                                        <div key={label} className={`flex items-center justify-between gap-2 rounded px-1.5 text-[11px] transition ${i === 0 ? "mt-0.5 border-t border-red-500/30 pt-1" : ""} ${isHit ? "bg-amber-300/12" : ""}`} data-hit={isHit ? "true" : undefined}>
-                                            <span className={isHit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}>{label}</span>
-                                            <span className="shrink-0 font-bold text-gold">{pays}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            {/* another player's jackpot: shown on the box's bottom edge, taking no room */}
-                            <div className="pointer-events-none absolute inset-x-2 -bottom-2 bg-[#14301f] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
-                                {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
-                            </div>
-                        </div>
+                    <div className="order-3 hidden w-72 shrink-0 flex-col justify-start lg:flex lg:pt-7">
                         <PayoutColumn
                             title="Fortune Bonus"
                             entries={sidebetRows()}

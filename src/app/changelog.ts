@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.2",
+        date: "2026-10-18",
+        title: "Pai Gow fits the screen again",
+        changes: [
+            ["improved", "Pai Gow: the jackpot table moved up into the top right corner and got more compact, so the table fits the window without scrolling."],
+        ],
+    },
+    {
         version: "4.8.1",
         date: "2026-10-18",
         title: "Pai Gow jackpot layout",
