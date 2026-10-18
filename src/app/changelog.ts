@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.3",
+        date: "2026-10-18",
+        title: "Fortune Bonus title is back",
+        changes: [
+            ["fixed", "Pai Gow: the Fortune Bonus pay table title was hidden under the jackpot table. When another player wins a jackpot, the news now shows in the jackpot table's heading."],
+        ],
+    },
+    {
         version: "4.8.2",
         date: "2026-10-18",
         title: "Pai Gow fits the screen again",

@@ -1448,7 +1448,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 tables but boxed in red */}
                             <div className="relative rounded-[4px] border border-red-500/70 bg-[#13321f] px-2 pb-1" data-testid="table-jackpot">
                                 <div className="flex flex-col gap-1 pt-1.5">
-                                    <div className="text-center text-[13px] font-extrabold text-amber-200">Table Jackpot ($5)</div>
+                                    {/* the heading; when another player wins, it says so here for a moment, in the same space */}
+                                    <div className={`h-[18px] truncate text-center font-extrabold leading-[18px] ${otherWin ? "text-[11px] text-red-200" : "text-[13px] text-amber-200"}`} data-testid="other-win">
+                                        {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : "Table Jackpot ($5)"}
+                                    </div>
                                     {/* the three meters, side by side */}
                                     <div className="grid grid-cols-3 gap-1 text-center">
                                         {(["ultra", "major", "mustHit"] as const).map((tier) => (
@@ -1470,10 +1473,6 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             );
                                         })}
                                     </div>
-                                </div>
-                                {/* another player's jackpot: shown on the box's bottom edge, taking no room */}
-                                <div className="pointer-events-none absolute inset-x-2 -bottom-2 bg-[#14301f] text-center text-[10px] font-semibold leading-[15px] text-red-200" data-testid="other-win">
-                                    {otherWin ? `Another player won the ${TIER_NAMES[otherWin.tier]}: ${formatMoney(otherWin.amount)}` : ""}
                                 </div>
                             </div>
                     </div>
