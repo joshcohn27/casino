@@ -939,6 +939,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
     const [foldedDeck, setFoldedDeck] = useState<number | null>(null);
     const [foldStep, setFoldStep] = useState(0);
+    // a fold that gives up a hand that could push or win is checked first: what the hand can still do
+    const [foldCheck, setFoldCheck] = useState<null | "win" | "push" | "acehigh">(null);
     useEffect(() => {
         setFoldStep(0);
         if (foldedDeck === null || foldedDeck !== deckNo) return;
@@ -1177,6 +1179,20 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setMessage(getHighPaiGowInfo(d).aceHigh
             ? "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards."
             : "Dealer sets first. Their hand is live on the table. Pick 2 cards for your low hand, or press Ask Dealer for Help.");
+    }
+
+    function foldNow() {
+        setFoldCheck(null);
+        setFoldedDeck(deckNo);
+        setHandAndResolve(true);
+    }
+
+    /** Fold, but first ask when the hand could still push or win. */
+    function askToFold() {
+        if (dealerAceHighInfo?.aceHigh) { setFoldCheck("acehigh"); return; }
+        if (advice && advice.bestResult >= 2) { setFoldCheck("win"); return; }
+        if (advice && advice.bestResult === 1) { setFoldCheck("push"); return; }
+        foldNow();
     }
 
     /** Settle the hand as set, or as folded: a fold gives up the main bet, and side bets settle as usual. */
@@ -1440,6 +1456,30 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             </div>
         )}
         <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+        {foldCheck && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" data-testid="fold-check">
+                <button className="absolute inset-0 bg-black/70" onClick={() => setFoldCheck(null)} aria-label="Close fold check" />
+                <motion.div
+                    initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="relative z-[101] w-full max-w-[380px] rounded-[4px] border border-[#5a8a69] bg-[#0a2311] px-5 py-4 text-center text-text"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div className="text-xl font-bold text-gold-soft">Are you sure you want to fold?</div>
+                    <p className="mt-2 text-[14px] leading-5 text-white/85">
+                        {foldCheck === "win" && "Your hand can still win. Set it right and the main bet wins 1 to 1."}
+                        {foldCheck === "push" && "Your hand can still push. Set it right and you get your main bet back."}
+                        {foldCheck === "acehigh" && "The dealer has ace-high pai gow, so your main bet pushes. Folding loses it."}
+                    </p>
+                    <div className="mt-4 flex justify-center gap-2">
+                        <button className={BTN_NEUTRAL} onClick={foldNow}>Fold Anyway</button>
+                        <button className={BTN_GOLD} onClick={() => setFoldCheck(null)} autoFocus>Keep Playing</button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
             <TableShell deckNo={deckNo}
                 feltColor="#1a5c2e"
                 gameName="Pai Gow Poker"
@@ -1460,7 +1500,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onDeal={dealHand}
                         onAutoSetBest={autoSetBest}
                         onSetHand={() => setHandAndResolve()}
-                        onFold={() => { setFoldedDeck(deckNo); setHandAndResolve(true); }}
+                        onFold={askToFold}
                         onClear={handleClear}
                         onChangeBet={handleChangeBet}
                     />
