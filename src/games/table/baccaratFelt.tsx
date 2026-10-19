@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { motion } from "motion/react";
 import PlayingCard from "../../shared/components/Card";
 import type { Card as SharedCard } from "../../shared/lib/cards";
-import BetSpot, { ChipStack } from "../../shared/components/BetSpot";
+import { ChipStack } from "../../shared/components/BetSpot";
 import { formatMoney, type ChipDenomination } from "../../shared/lib/money";
 
 // The Baccarat felt: the printed card boxes, the curved betting bands, and a card you can
@@ -266,11 +266,12 @@ const middle = (id: BandId, x: number) => (yAt(BANDS[id].rIn, x) + yAt(BANDS[id]
 const pct = (x: number) => `${(x / W) * 100}%`;
 const CHIPS_X = 110;      // where a band's chips sit
 const SIDE_X = 560;       // where the Dragon 7 and Panda 8 spots sit
+const SIDE_DIM = 70;      // their size: room for the name on one line, in Large text too
 
 export type BandBet = { chips: ChipDenomination[]; total: number; selected: boolean; winner: boolean };
 
-function Band({ id, title, pays, bet, canBet, onSelect, onRemove }: {
-    id: BandId; title: string; pays?: string; bet: BandBet; canBet: boolean;
+function Band({ id, title, pays, paysLong, bet, canBet, onSelect, onRemove }: {
+    id: BandId; title: string; pays?: string; paysLong?: string; bet: BandBet; canBet: boolean;
     onSelect: () => void; onRemove: () => void;
 }) {
     const { top, bottom } = bandBox(id);
@@ -302,10 +303,12 @@ function Band({ id, title, pays, bet, canBet, onSelect, onRemove }: {
                     />
                 </svg>
             </button>
-            {/* the printed name, across the middle of the band */}
-            <div className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center leading-tight" style={{ left: pct(CX), top: midX }}>
+            {/* the printed name, across the middle of the band (a little left on a phone, clear of
+                the Dragon 7 and Panda 8 chips) */}
+            <div className="absolute left-[40%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center leading-tight sm:left-1/2" style={{ top: midX }}>
                 <span className={`whitespace-nowrap font-extrabold tracking-[0.1em] sm:tracking-[0.25em] ${id === "tie" ? "text-[12px] sm:text-[13px]" : "text-[15px] sm:text-[17px]"} ${bet.winner ? "text-gold" : "text-white/90"}`}>{title}</span>
-                {pays && <span className="whitespace-nowrap text-[11px] font-semibold text-white/75">{pays}</span>}
+                {pays && <span className={`whitespace-nowrap text-[11px] font-semibold text-white/75 ${paysLong ? "sm:hidden" : ""}`}>{pays}</span>}
+                {paysLong && <span className="hidden whitespace-nowrap text-[11px] font-semibold text-white/75 sm:inline">{paysLong}</span>}
             </div>
             {/* the chips, and how much is on the band */}
             <div className="pointer-events-auto absolute -translate-x-1/2 -translate-y-full" style={{ left: pct(CHIPS_X), top: chipY + 14 }}>
@@ -331,28 +334,38 @@ export function BettingLayout({ bets, canBet, onSelect, onRemove, dragon, panda 
     onSelect: (id: BandId) => void; onRemove: (id: BandId) => void;
     dragon: SideBet; panda: SideBet;
 }) {
-    const side = (id: "dragon" | "panda", band: BandId, bet: SideBet, label: string, sub: string) => (
-        <div className="absolute -translate-x-1/2" style={{ left: pct(SIDE_X), top: middle(band, SIDE_X) - 32 }}>
-            <BetSpot
-                testId={id}
-                chips={bet.chips}
-                totalBet={bet.total}
-                label={label}
-                sublabel={sub}
-                dim={64}
-                floatChips
-                isSelected={bet.selected}
-                isWinner={bet.winner}
-                onSelect={bet.onSelect}
-                onRemove={bet.onRemove}
-                canBet={canBet}
-            />
-        </div>
-    );
+    const side = (id: "dragon" | "panda", band: BandId, bet: SideBet, label: string, sub: string) => {
+        const y = middle(band, SIDE_X);
+        const selected = canBet && bet.selected;
+        const ring = bet.winner ? "border-[3px] border-solid border-gold" : selected ? "border-[3px] border-solid border-white" : "border-2 border-dashed border-white/45";
+        return (
+            <div className="pointer-events-none absolute inset-0" data-bet-spot={id} data-selected={selected ? "true" : "false"} data-total={bet.total}>
+                <button
+                    onClick={bet.onSelect}
+                    disabled={!canBet}
+                    aria-pressed={selected}
+                    className={`pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full leading-tight transition-colors ${ring} ${bet.winner || selected ? "bg-black/35" : "bg-black/20"} ${canBet ? "cursor-pointer hover:bg-black/40" : "cursor-default"}`}
+                    style={{ left: pct(SIDE_X), top: y, width: SIDE_DIM, height: SIDE_DIM }}
+                >
+                    <span className="whitespace-nowrap text-[12px] font-bold text-white">{label}</span>
+                    <span className="whitespace-nowrap text-[11px] text-white/80">{sub}</span>
+                </button>
+                {/* the chips sit just left of the spot, so two spots never cover each other */}
+                <div className="pointer-events-auto absolute -translate-x-1/2 -translate-y-full" style={{ left: `calc(${pct(SIDE_X)} - ${SIDE_DIM / 2 + 30}px)`, top: y + 14 }}>
+                    {bet.chips.length > 0 && <ChipStack chips={bet.chips} onRemove={canBet ? bet.onRemove : undefined} />}
+                </div>
+                {bet.total > 0 && (
+                    <div className="absolute hidden -translate-x-full -translate-y-1/2 whitespace-nowrap text-[12px] font-bold text-gold-soft sm:block" style={{ left: `calc(${pct(SIDE_X)} - ${SIDE_DIM / 2 + 60}px)`, top: y }}>
+                        {formatMoney(bet.total)}
+                    </div>
+                )}
+            </div>
+        );
+    };
     return (
         <div className="relative w-full max-w-[700px] select-none" style={{ height: H }} data-testid="betting-layout">
             <Band id="tie" title="TIE PAYS 8 TO 1" bet={bets.tie} canBet={canBet} onSelect={() => onSelect("tie")} onRemove={() => onRemove("tie")} />
-            <Band id="banker" title="BANKER" pays="1 to 1 · pushes on a 3-card 7" bet={bets.banker} canBet={canBet} onSelect={() => onSelect("banker")} onRemove={() => onRemove("banker")} />
+            <Band id="banker" title="BANKER" pays="1 to 1" paysLong="1 to 1 · pushes on a 3-card 7" bet={bets.banker} canBet={canBet} onSelect={() => onSelect("banker")} onRemove={() => onRemove("banker")} />
             <Band id="player" title="PLAYER" pays="1 to 1" bet={bets.player} canBet={canBet} onSelect={() => onSelect("player")} onRemove={() => onRemove("player")} />
             {side("dragon", "banker", dragon, "Dragon 7", "40 to 1")}
             {side("panda", "player", panda, "Panda 8", "25 to 1")}

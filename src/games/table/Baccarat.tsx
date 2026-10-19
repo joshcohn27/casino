@@ -1071,12 +1071,12 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         <ModeSwitch squeeze={squeeze} disabled={!(stage === "betting" || stage === "done")} onChange={changeMode} />
                     </div>
 
-                    {/* On the felt either side of the cards: what pays, and when a third card is drawn */}
+                    {/* On the felt either side of the cards: when a third card is drawn, and what pays */}
                     <div className="hidden xl:absolute xl:left-2 xl:top-[76px] xl:block xl:w-[272px]">
-                        <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
+                        <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} />
                     </div>
                     <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
-                        <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} />
+                        <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
                     </div>
 
                     {/* The printed card boxes: Player and Banker, side by side from 640px */}
