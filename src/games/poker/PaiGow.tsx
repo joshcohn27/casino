@@ -749,6 +749,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Lose both hands: main bet lost.",
         "• Dealer wins all ties on both hands.",
         "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
+        "• You can fold instead of setting your hand. You lose the main bet; Fortune, Ace High and the table jackpot still pay.",
     ]],
     ["Ask Dealer for Help", [
         "• Pressing Ask Dealer for Help calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
@@ -764,7 +765,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Dealer ace-high without joker pays 5 to 1.",
         "• Dealer ace-high with joker pays 15 to 1.",
         "• Both player and dealer ace-high pays 40 to 1.",
-        "• Note: a pair of Aces (even with a joker) does not qualify — the dealer must have no pair at all in their 7 cards.",
+        "• Note: a pair of Aces (even with a joker) does not qualify. The dealer must have no pair at all in their 7 cards.",
     ]],
 ] as const;
 

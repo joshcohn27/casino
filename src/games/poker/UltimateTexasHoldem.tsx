@@ -236,7 +236,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         <div className="space-y-4 text-base leading-6 text-text">
                             {[
                                 ["How the Hand Starts", ["• You place an Ante. The Blind always matches the Ante exactly.", "• Trips is optional from $0 to $100.", "• 6 Card Bonus is optional ($0 or $5 to $25).", "• You and the dealer each get 2 cards. Four hidden cards are dealt for the 6 Card Bonus."]],
-                                ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, Ante, Blind, Play, and Trips lose immediately."]],
+                                ["Betting Decisions", ["• Preflop: bet 4x or 3x your Ante, or check.", "• Flop: bet 2x your Ante, or check.", "• River: bet 1x your Ante, or fold.", "• If you fold, the Ante and Blind lose. Trips and the 6 Card Bonus still pay on your hand."]],
                                 ["Dealer Qualification", ["• Dealer qualifies with any Pair or better.", "• If the dealer doesn't qualify, your Ante is returned whether you win or lose the hand.", "• Folding always loses the Ante."]],
                                 ["Main Bet Resolution", ["• Beat qualifying dealer: Ante and Play win 1 to 1.", "• Dealer doesn't qualify, you win: Ante pushes, Play wins 1 to 1.", "• Tie: Ante, Blind, and Play push.", "• Qualifying dealer wins: Ante, Blind, and Play lose.", "• Dealer doesn't qualify but wins: Ante pushes, Blind and Play lose.", "• Blind pays on Straight or better, otherwise pushes on a win."]],
                             ].map(([title, items]) => (
