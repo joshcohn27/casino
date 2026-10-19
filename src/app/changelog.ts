@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.9",
+        date: "2026-10-18",
+        title: "Straight name fix",
+        changes: [
+            ["fixed", "Pai Gow: an ace-high straight was named \"100-High Straight\". It now reads \"Ace-High Straight\"."],
+        ],
+    },
+    {
         version: "4.8.8",
         date: "2026-10-18",
         title: "Pai Gow fold rules",

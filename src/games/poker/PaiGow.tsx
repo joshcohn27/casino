@@ -221,7 +221,7 @@ function evaluateNaturalFive(cards: Card[]): FiveEval {
     if (straightScore !== null) {
         return {
             category: "Straight", score: [4, straightScore],
-            label: straightScore === 99 ? "Wheel Straight" : `${labelValue(straightScore)}-High Straight`, usedJoker: false,
+            label: straightScore === 99 ? "Wheel Straight" : straightScore === 100 ? "Ace-High Straight" : `${labelValue(straightScore)}-High Straight`, usedJoker: false,
         };
     }
     if (counts[0][1] === 3) {
