@@ -281,7 +281,7 @@ function PaysPanel({ winner, pandaHit, dragonHit }: { winner: Winner | null; pan
 }
 
 /** When each hand takes a third card. The rule that applies to the hand on the felt lights up. */
-function ThirdCardPanel({ playerCards, bankerCards }: { playerCards: BacCard[]; bankerCards: BacCard[] }) {
+function ThirdCardPanel({ playerCards, bankerCards, playerThirdDealt }: { playerCards: BacCard[]; bankerCards: BacCard[]; playerThirdDealt: boolean }) {
     const two = (cards: BacCard[]) => (cards.length >= 2 ? (cards[0].baccaratValue + cards[1].baccaratValue) % 10 : null);
     const p2 = two(playerCards), b2 = two(bankerCards);
     const dealt = p2 !== null && b2 !== null;
@@ -289,9 +289,9 @@ function ThirdCardPanel({ playerCards, bankerCards }: { playerCards: BacCard[]; 
     const live = dealt && !natural;
     const playerDraws = live && p2 <= 5;
     const playerStood = live && p2 >= 6;
-    const third = playerCards.length === 3 ? playerCards[2].baccaratValue : null;
-    // Banker rows only light once the Player's third card is on the felt
-    const bankerRow = (lo: number, hi: number) => playerDraws && third !== null && b2 !== null && b2 >= lo && b2 <= hi;
+    // A Banker row lights once the Player's third card is dealt, face up or not: which row
+    // applies depends only on the Banker's first two cards
+    const bankerRow = (lo: number, hi: number) => playerDraws && playerThirdDealt && b2 !== null && b2 >= lo && b2 <= hi;
     return (
         <div data-testid="third-card-panel">
             <FeltPanel title="Third Card Rules">
@@ -1108,7 +1108,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                     {/* On the felt either side of the cards: when a third card is drawn, and what pays.
                         The third card rules can be hidden; the Big Road then takes their place on the left. */}
                     <div className="hidden xl:absolute xl:left-2 xl:top-[76px] xl:block xl:w-[272px]">
-                        {showThirdRules ? <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} /> : <BigRoad history={roadHistory} />}
+                        {showThirdRules ? <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} playerThirdDealt={playerCards.length === 3} /> : <BigRoad history={roadHistory} />}
                     </div>
                     <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
                         <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />

@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.10.1",
+        date: "2026-10-19",
+        title: "Banker rule lights on time",
+        changes: [
+            ["fixed", "Baccarat: when both sides draw, the Banker's third card rule now lights up as soon as the cards are dealt, instead of waiting for the Player's third card to be turned."],
+        ],
+    },
+    {
         version: "4.10.0",
         date: "2026-10-19",
         title: "Hide the Baccarat rules",
