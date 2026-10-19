@@ -58,6 +58,7 @@ const TIE_BET_STORAGE_KEY        = "casino-baccarat-tie-bet";
 const PANDA_BET_STORAGE_KEY      = "casino-baccarat-panda-bet";
 const DRAGON_BET_STORAGE_KEY     = "casino-baccarat-dragon-bet";
 const BACCARAT_SELECTED_CHIP_KEY = "casino-baccarat-selected-chip";
+const THIRD_RULES_KEY            = "casino-baccarat-third-rules";
 
 // ─── Game-logic functions (preserved exactly) ─────────────────────────────────
 
@@ -611,6 +612,14 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         s.baccarat = { ...s.baccarat, squeeze: on };
         saveSettings(s);
     };
+    // the third card rules panel on the left: shown or hidden, remembered between visits
+    const [showThirdRules, setShowThirdRules] = useState(() => {
+        try { return window.localStorage.getItem(THIRD_RULES_KEY) !== "hidden"; } catch { return true; }
+    });
+    const toggleThirdRules = (show: boolean) => {
+        setShowThirdRules(show);
+        try { window.localStorage.setItem(THIRD_RULES_KEY, show ? "shown" : "hidden"); } catch { /* not saved */ }
+    };
     const [faceUp, setFaceUp] = useState<string[]>([]);
     const [mySide, setMySide] = useState<"player" | "banker">("player");
     // whether the hand on the table was dealt for squeezing (the switch may change after)
@@ -1096,16 +1105,29 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         <ModeSwitch squeeze={squeeze} disabled={!(stage === "betting" || stage === "done")} onChange={changeMode} />
                     </div>
 
-                    {/* On the felt either side of the cards: when a third card is drawn, and what pays */}
+                    {/* On the felt either side of the cards: when a third card is drawn, and what pays.
+                        The third card rules can be hidden; the Big Road then takes their place on the left. */}
                     <div className="hidden xl:absolute xl:left-2 xl:top-[76px] xl:block xl:w-[272px]">
-                        <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} />
+                        {showThirdRules ? <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} /> : <BigRoad history={roadHistory} />}
                     </div>
                     <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
                         <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
                     </div>
                     {/* the shoe so far, in the bottom right corner; it starts over when the shoe is shuffled */}
-                    <div className="hidden xl:absolute xl:bottom-0 xl:right-2 xl:block xl:w-[272px]">
-                        <BigRoad history={roadHistory} />
+                    {showThirdRules && (
+                        <div className="hidden xl:absolute xl:bottom-0 xl:right-2 xl:block xl:w-[272px]">
+                            <BigRoad history={roadHistory} />
+                        </div>
+                    )}
+                    <div className="hidden xl:absolute xl:bottom-0 xl:left-2 xl:z-10 xl:block">
+                        <button
+                            onClick={() => toggleThirdRules(!showThirdRules)}
+                            aria-pressed={!showThirdRules}
+                            className="min-h-[44px] rounded-[4px] border border-room-line bg-room-deep px-4 text-sm font-bold text-room-text transition-colors hover:bg-room-raised"
+                            data-testid="rules-toggle"
+                        >
+                            {showThirdRules ? "Hide rules" : "Show rules"}
+                        </button>
                     </div>
 
                     {/* The printed card boxes: Player and Banker, side by side from 640px */}

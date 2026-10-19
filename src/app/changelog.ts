@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.10.0",
+        date: "2026-10-19",
+        title: "Hide the Baccarat rules",
+        changes: [
+            ["new", "Baccarat: a Hide rules button tucks away the third card rules, and the Big Road moves over to the left in their place. Show rules brings them back. The table remembers your choice."],
+        ],
+    },
+    {
         version: "4.9.0",
         date: "2026-10-19",
         title: "Baccarat squeeze",
