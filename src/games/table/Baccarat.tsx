@@ -6,7 +6,7 @@ import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTR
 import { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet, defaultToggle, loadSettings, saveSettings } from "../../shared/state/settings";
-import { BettingLayout, CARD_SIZE, CARD_VARS, HELD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
+import { BettingLayout, BigRoad, CARD_SIZE, CARD_VARS, HELD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -405,7 +405,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     <li>You squeeze the side you bet more on. Your cards come up in front of you while the bets fade back. Drag in from a long edge to count the pips down the side, from a short end to see the middle, or lift the top right or bottom left corner (the corners without the number). Let go and the card drops back; drag past halfway and it turns over and goes back into its box.</li>
                                     <li>The dealer turns the other side. Click one of those cards, or press Flip Dealer Cards (D), whenever you like.</li>
                                     <li>Flip My Cards (R), a double click, or a number key turns your cards over without squeezing.</li>
-                                    <li>Third cards come out only once every card on the table is face up, and the Banker draws only after the Player&apos;s third card is turned.</li>
+                                    <li>Third cards come out only once every card on the table is face up. When both sides draw, both third cards come out together and you choose which to turn first.</li>
                                 </ul>
                             </section>
                             <section>
@@ -581,7 +581,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [deck,        setDeck]        = useState<BacCard[]>(() => createShoe());
     const [playerCards, setPlayerCards] = useState<BacCard[]>([]);
     const [bankerCards, setBankerCards] = useState<BacCard[]>([]);
-    const [_roadHistory, setRoadHistory] = useState<HandHistoryEntry[]>([]);
+    const [roadHistory, setRoadHistory] = useState<HandHistoryEntry[]>([]);
 
     const [playerBet, setPlayerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "player")));
     const [bankerBet, setBankerBet] = useState<number>(() => sanitizeBet(defaultBet("baccarat", "banker")));
@@ -898,6 +898,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     /** Squeeze: four cards go out face down, in the usual order. Then you turn them. */
     const dealSqueeze = async (bets: Bets, shoe: BacCard[]) => {
         handBets.current = bets;
+        setMessage("Dealing...");
         const side = bets.banker > bets.player ? "banker" : "player";
         setMySide(side);
         let nextDeck = shoe;
@@ -917,7 +918,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     };
 
     // Squeeze: once every card on the table is face up, the next card is dealt, or the hand ends.
-    // The same drawing rules as Quick: the Player's third card must be turned before the Banker draws.
+    // The same drawing rules as Quick. When both sides draw, both third cards come out together.
     useEffect(() => {
         if (stage !== "squeeze") return;
         if (![...playerCards, ...bankerCards].every((c) => faceUp.includes(c.id))) return;
@@ -935,6 +936,14 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                 if (natural) { finishHand(p, b, bets, true, shoeRef.current); return; }
                 if (shouldPlayerDraw(pt)) {
                     const c = take(); if (!c) return;
+                    // when the Banker draws too, both third cards come out face down together, and
+                    // you choose which to turn first (still dealt in order: Player, then Banker)
+                    if (shouldBankerDraw(bt, c.baccaratValue)) {
+                        const d = take(); if (!d) return;
+                        setPlayerCards([...p, c]); setBankerCards([...b, d]);
+                        setMessage("Player and Banker each draw a third card.");
+                        return;
+                    }
                     setPlayerCards([...p, c]); setMessage("Player draws a third card.");
                     return;
                 }
@@ -1093,6 +1102,10 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                     </div>
                     <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
                         <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
+                    </div>
+                    {/* the shoe so far, in the bottom right corner; it starts over when the shoe is shuffled */}
+                    <div className="hidden xl:absolute xl:bottom-0 xl:right-2 xl:block xl:w-[272px]">
+                        <BigRoad history={roadHistory} />
                     </div>
 
                     {/* The printed card boxes: Player and Banker, side by side from 640px */}

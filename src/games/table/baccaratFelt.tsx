@@ -32,22 +32,29 @@ function toShared(card: FeltCard, faceUp: boolean): SharedCard {
 
 // Where the pips sit on a real card, as a share of its width and height. Squeezing from a long
 // edge shows the side columns (how many pips down the side), from a short end the middle ones.
-const SIDE_ROWS_6 = [[28, 18], [72, 18], [28, 50], [72, 50], [28, 82], [72, 82]];
-const SIDE_ROWS_8 = [[28, 18], [72, 18], [28, 39], [72, 39], [28, 61], [72, 61], [28, 82], [72, 82]];
+// The side columns sit in from the edges, leaving a margin for the corner numbers.
+const L = 32, R = 68;
+const SIDE_ROWS_6 = [[L, 20], [R, 20], [L, 50], [R, 50], [L, 80], [R, 80]];
+const SIDE_ROWS_8 = [[L, 20], [R, 20], [L, 40], [R, 40], [L, 60], [R, 60], [L, 80], [R, 80]];
 const PIPS: Record<string, number[][]> = {
     A: [[50, 50]],
-    "2": [[50, 18], [50, 82]],
-    "3": [[50, 18], [50, 50], [50, 82]],
-    "4": [[28, 18], [72, 18], [28, 82], [72, 82]],
-    "5": [[28, 18], [72, 18], [50, 50], [28, 82], [72, 82]],
+    "2": [[50, 20], [50, 80]],
+    "3": [[50, 20], [50, 50], [50, 80]],
+    "4": [[L, 20], [R, 20], [L, 80], [R, 80]],
+    "5": [[L, 20], [R, 20], [50, 50], [L, 80], [R, 80]],
     "6": SIDE_ROWS_6,
-    "7": [...SIDE_ROWS_6, [50, 34]],
-    "8": [...SIDE_ROWS_6, [50, 34], [50, 66]],
+    "7": [...SIDE_ROWS_6, [50, 35]],
+    "8": [...SIDE_ROWS_6, [50, 35], [50, 65]],
     "9": [...SIDE_ROWS_8, [50, 50]],
-    "10": [...SIDE_ROWS_8, [50, 28], [50, 72]],
+    "10": [...SIDE_ROWS_8, [50, 30], [50, 70]],
 };
 
 const isRed = (s: FeltSuit) => s === "♥" || s === "♦";
+// spoken names for a card: words, not the suit symbols
+const SUIT_NAMES: Record<FeltSuit, string> = { "♠": "Spades", "♥": "Hearts", "♦": "Diamonds", "♣": "Clubs" };
+const RANK_NAMES: Record<string, string> = { A: "Ace", J: "Jack", Q: "Queen", K: "King" };
+// "10" is two digits wide: drawn a little narrower so it stays in the corner, clear of the pips
+const TEN_INDEX: React.CSSProperties = { fontSize: "calc(var(--cw) * 0.15)", letterSpacing: "-0.08em" };
 
 /** The face of a card with every pip in its place. Corner numbers only once it is turned over. */
 function PipFace({ card, corners }: { card: FeltCard; corners: boolean }) {
@@ -68,7 +75,7 @@ function PipFace({ card, corners }: { card: FeltCard; corners: boolean }) {
                         className="absolute leading-none"
                         style={{
                             left: `${x}%`, top: `${y}%`,
-                            fontSize: card.rank === "A" ? "calc(var(--cw) * 0.5)" : "calc(var(--cw) * 0.24)",
+                            fontSize: card.rank === "A" ? "calc(var(--cw) * 0.5)" : "calc(var(--cw) * 0.2)",
                             transform: `translate(-50%, -50%)${y > 50 ? " rotate(180deg)" : ""}`,
                         }}
                     >
@@ -78,11 +85,11 @@ function PipFace({ card, corners }: { card: FeltCard; corners: boolean }) {
             )}
             {corners && (
                 <>
-                    <span className="absolute left-[5%] top-[3%] flex flex-col items-center font-bold leading-none" style={{ fontSize: "calc(var(--cw) * 0.2)" }}>
-                        <span>{card.rank}</span><span style={{ fontSize: "calc(var(--cw) * 0.15)" }}>{card.suit}</span>
+                    <span className="absolute left-[4%] top-[3%] flex flex-col items-center font-bold leading-none" style={{ fontSize: "calc(var(--cw) * 0.17)" }}>
+                        <span style={card.rank === "10" ? TEN_INDEX : undefined}>{card.rank}</span><span style={{ fontSize: "calc(var(--cw) * 0.13)" }}>{card.suit}</span>
                     </span>
-                    <span className="absolute bottom-[3%] right-[5%] flex rotate-180 flex-col items-center font-bold leading-none" style={{ fontSize: "calc(var(--cw) * 0.2)" }}>
-                        <span>{card.rank}</span><span style={{ fontSize: "calc(var(--cw) * 0.15)" }}>{card.suit}</span>
+                    <span className="absolute bottom-[3%] right-[4%] flex rotate-180 flex-col items-center font-bold leading-none" style={{ fontSize: "calc(var(--cw) * 0.17)" }}>
+                        <span style={card.rank === "10" ? TEN_INDEX : undefined}>{card.rank}</span><span style={{ fontSize: "calc(var(--cw) * 0.13)" }}>{card.suit}</span>
                     </span>
                 </>
             )}
@@ -180,7 +187,7 @@ export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
             data-face-up={faceUp ? "true" : "false"}
             data-key-reveal={active ? (faceUp ? "up" : "down") : undefined}
             data-mine={mine ? "true" : "false"}
-            aria-label={faceUp ? `${card.rank} of ${card.suit}` : mine ? "Your card, face down. Drag from an edge to peel it." : "Dealer card, face down. Click to turn it over."}
+            aria-label={faceUp ? `${RANK_NAMES[card.rank] ?? card.rank} of ${SUIT_NAMES[card.suit]}` : mine ? "Your card, face down. Drag from an edge to peel it." : "Dealer card, face down. Click to turn it over."}
             disabled={!active || faceUp}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -203,8 +210,9 @@ export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
             {faceUp && (
                 <motion.div
                     className="pointer-events-none absolute inset-0 rounded-[inherit]"
-                    initial={{ rotateY: 90 }}
-                    animate={{ rotateY: 0 }}
+                    // turning over: it opens out from almost edge-on (never fully flat, which some browsers mishandle)
+                    initial={{ scaleX: 0.08 }}
+                    animate={{ scaleX: 1 }}
                     transition={{ duration: 0.24, ease: "easeOut" }}
                 >
                     <PipFace card={card} corners />
@@ -382,6 +390,89 @@ export function BettingLayout({ bets, canBet, onSelect, onRemove, dragon, panda 
             <Band id="player" title="PLAYER" pays="1 to 1" bet={bets.player} canBet={canBet} onSelect={() => onSelect("player")} onRemove={() => onRemove("player")} />
             {side("dragon", "banker", dragon, "Dragon 7", "40 to 1")}
             {side("panda", "player", panda, "Panda 8", "25 to 1")}
+        </div>
+    );
+}
+
+// ─── The Big Road: the shoe's history ─────────────────────────────────────────
+
+export type RoadEntry = { winner: "player" | "banker" | "tie"; natural: boolean; pandaHit: boolean; dragonHit: boolean };
+type RoadCell = { col: number; row: number; winner: RoadEntry["winner"]; ties: number; natural: boolean; pandaHit: boolean; dragonHit: boolean };
+
+const ROAD_ROWS = 6;
+const ROAD_COLS = 15;
+const ROAD_CELL = 17;
+
+/**
+ * The Big Road, as a real table's scoreboard draws it: each result goes down the column while the
+ * same side keeps winning, and a new column starts when it changes. A streak that runs out of
+ * rows turns right along the bottom. Ties do not take a place: they are counted on the last result.
+ */
+function buildBigRoad(history: RoadEntry[]): RoadCell[] {
+    const cells: RoadCell[] = [];
+    const taken = new Set<string>();
+    let last: RoadCell | null = null;
+    let streakCol = -1;       // the column where the current streak started
+    let earlyTies = 0;        // ties before the first result: marked on it
+    for (const entry of history) {
+        if (entry.winner === "tie") {
+            if (last) last.ties += 1; else earlyTies += 1;
+            continue;
+        }
+        let col: number, row: number;
+        if (last && last.winner === entry.winner) {
+            // the same side again: down the column, or right along the bottom when it is full
+            const down = last.row + 1;
+            if (down < ROAD_ROWS && !taken.has(`${last.col}-${down}`)) { col = last.col; row = down; }
+            else { col = last.col + 1; row = last.row; }
+        } else {
+            // the other side: a new column, right of where the last streak began
+            col = streakCol + 1; row = 0;
+            streakCol = col;
+        }
+        last = { col, row, winner: entry.winner, ties: 0, natural: entry.natural, pandaHit: entry.pandaHit, dragonHit: entry.dragonHit };
+        if (cells.length === 0) { last.ties = earlyTies; earlyTies = 0; }
+        cells.push(last); taken.add(`${col}-${row}`);
+    }
+    return cells;
+}
+
+export function BigRoad({ history }: { history: RoadEntry[] }) {
+    const cells = buildBigRoad(history);
+    const maxCol = cells.length ? Math.max(...cells.map((c) => c.col)) : 0;
+    // the newest results stay in view: the board shows the last columns, never scrolls
+    const first = Math.max(0, maxCol - ROAD_COLS + 1);
+    const at = new Map(cells.filter((c) => c.col >= first).map((c) => [`${c.col - first}-${c.row}`, c]));
+    const count = (w: RoadEntry["winner"]) => history.filter((h) => h.winner === w).length;
+    return (
+        <div data-testid="big-road">
+            <div className="mb-1 flex items-center justify-between">
+                <span className="text-[13px] font-extrabold text-amber-200">Big Road</span>
+                <span className="flex gap-3 text-[11px] font-bold">
+                    <span className="text-sky-300">Player {count("player")}</span>
+                    <span className="text-rose-300">Banker {count("banker")}</span>
+                    <span className="text-emerald-300">Tie {count("tie")}</span>
+                </span>
+            </div>
+            <div
+                className="grid gap-px rounded-[3px] border border-[#cbb98e] bg-[#cbb98e]"
+                style={{ gridTemplateColumns: `repeat(${ROAD_COLS}, ${ROAD_CELL}px)`, gridTemplateRows: `repeat(${ROAD_ROWS}, ${ROAD_CELL}px)`, width: "max-content" }}
+            >
+                {Array.from({ length: ROAD_ROWS * ROAD_COLS }, (_, i) => {
+                    const row = Math.floor(i / ROAD_COLS), col = i % ROAD_COLS;
+                    const c = at.get(`${col}-${row}`);
+                    const ring = c?.winner === "player" ? "border-sky-600" : c?.winner === "banker" ? "border-rose-600" : "border-emerald-600";
+                    return (
+                        <div key={i} className="relative flex items-center justify-center bg-[#faf7f1]">
+                            {c && <div className={`h-[13px] w-[13px] rounded-full border-[2.5px] ${ring}`} />}
+                            {/* a tie: a green stroke across the result before it */}
+                            {c && c.ties > 0 && <div className="absolute h-[2px] w-[15px] -rotate-45 bg-emerald-600" />}
+                            {/* Dragon 7 or Panda 8: a small dot */}
+                            {c && (c.dragonHit || c.pandaHit) && <div className={`absolute bottom-0 right-0 h-[5px] w-[5px] rounded-full ${c.dragonHit ? "bg-rose-600" : "bg-sky-600"}`} />}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
