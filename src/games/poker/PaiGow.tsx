@@ -8,6 +8,7 @@ import { formatMoney, addChipToStack, type ChipDenomination, buildChipStackFromA
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { sortByPower, type SortMode } from "../../shared/lib/handSort";
 import { SlideBtn } from "../../shared/components/SlideBtn";
+import ConfirmDialog from "../../shared/components/ConfirmDialog";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import { JACKPOT_BET, MUST_HIT_BY, TIER_NAMES, awardTopHand, placeBet, readJackpot, simulateLinkedTables, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
 import { makeRng } from "../../shared/state/progressiveMeter";
@@ -667,6 +668,9 @@ function slotStyle(row: number, col: number, count: number, rowStep: number, z: 
     };
 }
 
+// How a split does against the dealer (2 wins both, 1 one each, 0 loses both), in words.
+const OUTCOME_WORDS = ["loses", "pushes", "wins"];
+
 // A folded hand: the cards turn over one after another, then slide into a pile.
 const FOLD_FLIP_MS = 90;      // between one card turning over and the next
 const FOLD_PILE_MS = 450;     // after the last card turns, before they gather
@@ -942,6 +946,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [foldStep, setFoldStep] = useState(0);
     // a fold that gives up a hand that could push or win is checked first: what the hand can still do
     const [foldCheck, setFoldCheck] = useState<null | "win" | "push" | "acehigh">(null);
+    // setting a split that does worse than the best one asks first: how it does as set, and the better way
+    const [setCheck, setSetCheck] = useState<null | { asSet: number; best: number; bestLow: string }>(null);
     useEffect(() => {
         setFoldStep(0);
         if (foldedDeck === null || foldedDeck !== deckNo) return;
@@ -1194,6 +1200,15 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         if (advice && advice.bestResult >= 2) { setFoldCheck("win"); return; }
         if (advice && advice.bestResult === 1) { setFoldCheck("push"); return; }
         foldNow();
+    }
+
+    /** Set the hand, but first ask when another split does better against the dealer. */
+    function askToSet() {
+        if (!dealerAceHighInfo?.aceHigh && advice && selectedResult !== null && selectedResult < advice.bestResult) {
+            setSetCheck({ asSet: selectedResult, best: advice.bestResult, bestLow: advice.recommended.frontEval.label });
+            return;
+        }
+        setHandAndResolve();
     }
 
     /** Settle the hand as set, or as folded: a fold gives up the main bet, and side bets settle as usual. */
@@ -1458,28 +1473,28 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         )}
         <RulesModal open={showRules} onClose={() => setShowRules(false)} />
         {foldCheck && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" data-testid="fold-check">
-                <button className="absolute inset-0 bg-black/70" onClick={() => setFoldCheck(null)} aria-label="Close fold check" />
-                <motion.div
-                    initial={{ opacity: 0, y: 16, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="relative z-[101] w-full max-w-[380px] rounded-[4px] border border-[#5a8a69] bg-[#0a2311] px-5 py-4 text-center text-text"
-                    role="dialog"
-                    aria-modal="true"
-                >
-                    <div className="text-xl font-bold text-gold-soft">Are you sure you want to fold?</div>
-                    <p className="mt-2 text-[14px] leading-5 text-white/85">
-                        {foldCheck === "win" && "Your hand can still win. Set it right and the main bet wins 1 to 1."}
-                        {foldCheck === "push" && "Your hand can still push. Set it right and you get your main bet back."}
-                        {foldCheck === "acehigh" && "The dealer has ace-high pai gow, so your main bet pushes. Folding loses it."}
-                    </p>
-                    <div className="mt-4 flex justify-center gap-2">
-                        <button className={BTN_NEUTRAL} onClick={foldNow}>Fold Anyway</button>
-                        <button className={BTN_GOLD} onClick={() => setFoldCheck(null)} autoFocus>Keep Playing</button>
-                    </div>
-                </motion.div>
-            </div>
+            <ConfirmDialog
+                testId="fold-check"
+                title="Are you sure you want to fold?"
+                body={foldCheck === "win" ? "Your hand can still win. Set it right and the main bet wins 1 to 1."
+                    : foldCheck === "push" ? "Your hand can still push. Set it right and you get your main bet back."
+                    : "The dealer has ace-high pai gow, so your main bet pushes. Folding loses it."}
+                keepLabel="Keep Playing"
+                goLabel="Fold Anyway"
+                onKeep={() => setFoldCheck(null)}
+                onGo={foldNow}
+            />
+        )}
+        {setCheck && (
+            <ConfirmDialog
+                testId="set-check"
+                title="Are you sure you want to set this hand?"
+                body={`Set like this, your main bet ${OUTCOME_WORDS[setCheck.asSet]}. Set it with Low ${setCheck.bestLow} and it ${OUTCOME_WORDS[setCheck.best]}.`}
+                keepLabel="Change My Hand"
+                goLabel="Set Anyway"
+                onKeep={() => setSetCheck(null)}
+                onGo={() => { setSetCheck(null); setHandAndResolve(); }}
+            />
         )}
             <TableShell deckNo={deckNo}
                 feltColor="#1a5c2e"
@@ -1500,7 +1515,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onChipSelect={handleChipSelect}
                         onDeal={dealHand}
                         onAutoSetBest={autoSetBest}
-                        onSetHand={() => setHandAndResolve()}
+                        onSetHand={askToSet}
                         onFold={askToFold}
                         onClear={handleClear}
                         onChangeBet={handleChangeBet}
