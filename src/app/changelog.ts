@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.8",
+        date: "2026-10-18",
+        title: "Pai Gow fold rules",
+        changes: [
+            ["improved", "Pai Gow: the rules now explain folding. You lose the main bet; Fortune, Ace High and the table jackpot still pay."],
+        ],
+    },
+    {
         version: "4.8.7",
         date: "2026-10-18",
         title: "Pai Gow fold check",

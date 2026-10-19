@@ -463,7 +463,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "Three of a Kind pays 3 to 1.",
                         "Two Pair pays 2 to 1.",
                         "Pair of Jacks or Better pays 1 to 1.",
-                        "Pair of 6s through 10s pushes: all bets returned with no profit.",
+                        "Pair of 6s through 10s pushes — all bets returned with no profit.",
                         "All other hands lose.",
                     ]} />
                     <Section title="3 Card Bonus" items={[

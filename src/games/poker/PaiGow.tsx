@@ -765,7 +765,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Dealer ace-high without joker pays 5 to 1.",
         "• Dealer ace-high with joker pays 15 to 1.",
         "• Both player and dealer ace-high pays 40 to 1.",
-        "• Note: a pair of Aces (even with a joker) does not qualify. The dealer must have no pair at all in their 7 cards.",
+        "• Note: a pair of Aces (even with a joker) does not qualify — the dealer must have no pair at all in their 7 cards.",
     ]],
 ] as const;
 
