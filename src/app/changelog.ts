@@ -29,6 +29,7 @@ export const CHANGELOG: ChangeEntry[] = [
             ["new", "In Squeeze, the dealer turns the other side whenever you say: click a card, or Flip Dealer Cards. When both sides draw, both third cards come out together and you choose which to see first."],
             ["new", "Switch between Quick and Squeeze above the table, or pick your default on the Settings page."],
             ["improved", "Baccarat has a new table: curved Tie, Banker and Player rows like a real EZ Baccarat layout, printed card boxes, and the third card dealt sideways."],
+            ["new", "Baccarat: the Big Road is back in the bottom right corner, showing every result in the shoe. It starts over when the shoe is shuffled."],
         ],
     },
     {
