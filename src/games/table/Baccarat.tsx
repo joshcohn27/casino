@@ -1,13 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
-import PlayingCard from "../../shared/components/Card";
-import type { Card as SharedCard } from "../../shared/lib/cards";
 import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTRAL, BTN_GOLD } from "../../shared/lib/money";
-import BetSpot, { BetBar } from "../../shared/components/BetSpot";
+import { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
-import { defaultBet } from "../../shared/state/settings";
+import { defaultBet, defaultToggle, loadSettings, saveSettings } from "../../shared/state/settings";
+import { BettingLayout, CARD_SIZE, CARD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +26,7 @@ type Props = {
     setBankroll: React.Dispatch<React.SetStateAction<number>>;
 };
 
-type Stage = "betting" | "dealing" | "done";
+type Stage = "betting" | "dealing" | "squeeze" | "done";
 type Winner = "player" | "banker" | "tie";
 type BetSpotId = "player" | "tie" | "banker" | "panda" | "dragon";
 
@@ -50,6 +49,8 @@ const SHUFFLE_PENETRATION = 0.82;
 const RESHUFFLE_REMAINING_CARDS = Math.ceil(SHOE_SIZE * (1 - SHUFFLE_PENETRATION));
 const SHUFFLE_DELAY_MS = 1800;
 const CARD_REVEAL_DELAY_MS = 1100;
+const SQUEEZE_DEAL_MS = 320;     // between face-down cards going out
+const SQUEEZE_STEP_MS = 650;     // after the last card turns, before the next card or the result
 
 const PLAYER_BET_STORAGE_KEY     = "casino-baccarat-player-bet";
 const BANKER_BET_STORAGE_KEY     = "casino-baccarat-banker-bet";
@@ -158,17 +159,6 @@ function shouldShuffle(shoe: BacCard[]) {
     return shoe.length <= RESHUFFLE_REMAINING_CARDS || shoe.length < 12;
 }
 
-// ─── Shared-card adapter ──────────────────────────────────────────────────────
-
-function toShared(card: BacCard, faceUp: boolean): SharedCard {
-    return {
-        id:   card.id,
-        suit: card.suit as SharedCard["suit"],
-        rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
-        faceUp,
-    };
-}
-
 // ─── Animation constants (matching Blackjack) ─────────────────────────────────
 
 const CARD_VARIANTS = {
@@ -182,17 +172,8 @@ const CARD_TRANSITION = (delay: number) => ({
     delay,
 });
 
-const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function Chip({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="inline-flex rounded-[2px] border border-rose-300/25 bg-black/30 px-3 py-1 text-sm font-bold text-rose-100">
-            {children}
-        </div>
-    );
-}
 
 function TableLabel({ onRules }: { onRules: () => void }) {
     return (
@@ -217,42 +198,6 @@ function TableLabel({ onRules }: { onRules: () => void }) {
                 <span>Banker pushes on 3-card 7</span>
                 <span className="text-white/75">·</span>
                 <span>Tie pays 8 to 1</span>
-            </div>
-        </div>
-    );
-}
-
-function HandLane({ label, cards, handTotal, outcome }: {
-    label: string;
-    cards: BacCard[];
-    handTotal: number | null;
-    outcome: "neutral" | "win" | "lose" | "tie";
-}) {
-    return (
-        <div className={`flex flex-col items-center gap-2 rounded-[4px] border p-3 transition-all duration-300
-            ${outcome === "win"
-                ? "border-amber-300/40 bg-amber-300/8 ring-2 ring-amber-300/20"
-                : outcome === "tie"
-                ? "border-white/20 bg-white/5"
-                : "border-white/10 bg-black/15"}`}
-        >
-            <Chip>
-                {label}{handTotal !== null ? ` · ${handTotal}` : ""}
-            </Chip>
-            <div className="flex min-h-[94px] flex-wrap items-center justify-center gap-2">
-                <AnimatePresence initial={false}>
-                    {cards.map((card, i) => (
-                        <motion.div
-                            key={card.id}
-                            variants={CARD_VARIANTS}
-                            initial="initial"
-                            animate="animate"
-                            transition={CARD_TRANSITION(i * 0.08)}
-                        >
-                            <PlayingCard card={toShared(card, true)} className={CARD_CLS} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
             </div>
         </div>
     );
@@ -453,6 +398,18 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                             </section>
                             <section>
                                 <h3 className="mb-1.5 text-rose-300">
+                                    Squeeze
+                                </h3>
+                                <ul className="space-y-1 text-[13px] text-white/90">
+                                    <li>Switch to Squeeze above the table (or set it as your default in Settings) and the cards come out face down.</li>
+                                    <li>You squeeze the side you bet more on. Drag in from a long edge to count the pips down the side, or from a short end to see the middle. Let go and the card drops back; drag past halfway and it turns over.</li>
+                                    <li>The dealer turns the other side. Click one of those cards, or press Flip Dealer Cards (D), whenever you like.</li>
+                                    <li>Flip My Cards (R), a double click, or a number key turns your cards over without squeezing.</li>
+                                    <li>Third cards come out only once every card on the table is face up, and the Banker draws only after the Player&apos;s third card is turned.</li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h3 className="mb-1.5 text-rose-300">
                                     Natural
                                 </h3>
                                 <ul className="space-y-1 text-[13px] text-white/90">
@@ -474,14 +431,17 @@ function BaccaratBar({
     stage, isShuffling, totalBet, bankroll,
     selectedChip, onChipSelect,
     onClear, onDeal, onChangeBet,
+    myFaceDown, dealerFaceDown, onTurnMine, onTurnDealer,
 }: {
     stage: Stage; isShuffling: boolean; totalBet: number; bankroll: number;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
     onClear: () => void; onDeal: () => void; onChangeBet: () => void;
+    myFaceDown: number; dealerFaceDown: number; onTurnMine: () => void; onTurnDealer: () => void;
 }) {
     const isBetting = stage === "betting";
     const isDone    = stage === "done";
     const isDealing = stage === "dealing";
+    const isSqueeze = stage === "squeeze";
 
     const canDeal       = (isBetting || isDone) && !isShuffling && totalBet > 0 && bankroll >= totalBet;
     const canChangeBet  = isDone;
@@ -495,7 +455,7 @@ function BaccaratBar({
                 <ChipTray
                     selectedChip={selectedChip}
                     onSelect={onChipSelect}
-                    disabled={isDealing || isShuffling}
+                    disabled={isDealing || isSqueeze || isShuffling}
                 />
             </div>
 
@@ -524,6 +484,16 @@ function BaccaratBar({
                             <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canDeal}>Rebet &amp; Deal</button>
                         </SlideBtn>
                     )}
+                    {isSqueeze && (
+                        <SlideBtn key="turn-dealer">
+                            <button data-hotkey="D" className={BTN_NEUTRAL} onClick={onTurnDealer} disabled={dealerFaceDown === 0}>Flip Dealer Cards</button>
+                        </SlideBtn>
+                    )}
+                    {isSqueeze && (
+                        <SlideBtn key="turn-mine">
+                            <button data-hotkey="R" className={BTN_GOLD} onClick={onTurnMine} disabled={myFaceDown === 0}>Flip My Cards</button>
+                        </SlideBtn>
+                    )}
 
                     {isDealing && (
                         <motion.span
@@ -545,9 +515,64 @@ function BaccaratBar({
     );
 }
 
+/** Quick or Squeeze. Change it between hands. */
+function ModeSwitch({ squeeze, disabled, onChange }: { squeeze: boolean; disabled: boolean; onChange: (squeeze: boolean) => void }) {
+    const opt = (on: boolean, label: string) => (
+        <button
+            onClick={() => onChange(on)}
+            disabled={disabled}
+            aria-pressed={squeeze === on}
+            className={`min-h-[44px] px-4 text-sm font-bold transition-colors ${squeeze === on ? "bg-room-red text-room-text" : "bg-room-deep text-room-muted hover:bg-room-raised"} disabled:opacity-60`}
+        >
+            {label}
+        </button>
+    );
+    return (
+        <div className="flex overflow-hidden rounded-[4px] border border-room-line" data-testid="mode-switch" title="Squeeze: cards come face down and you peel your own">
+            {opt(false, "Quick")}
+            {opt(true, "Squeeze")}
+        </div>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type BetOverrides = Partial<Record<BetSpotId, number>>;
+type Bets = Record<BetSpotId, number>;
+
+/** What the hand pays on every bet. The same rules for Quick and Squeeze. */
+function settle(player: BacCard[], banker: BacCard[], bets: Bets) {
+    const winner    = getWinner(player, banker);
+    const bankerPush = isNoCommissionBankerPush(banker, winner);
+    const pandaHit  = isPanda8(player, banker);
+    const dragonHit = isDragon7(player, banker);
+    let payout = 0;
+    if (bets.player > 0) {
+        if (winner === "player")      payout += bets.player * 2;
+        else if (winner === "tie")    payout += bets.player;
+    }
+    if (bets.banker > 0) {
+        if (winner === "banker") {
+            payout += bankerPush ? bets.banker : bets.banker * 2;
+        } else if (winner === "tie")  payout += bets.banker;
+    }
+    if (bets.tie > 0) {
+        if (winner === "tie")         payout += bets.tie * 9;
+    }
+    if (bets.panda > 0) {
+        if (pandaHit)                 payout += bets.panda * 26;
+    }
+    if (bets.dragon > 0) {
+        if (dragonHit)                payout += bets.dragon * 41;
+    }
+    return { winner, pandaHit, dragonHit, payout };
+}
+
+/** The cards from the left up to the first one still face down: what the table can see. */
+function shown(cards: BacCard[], up: (c: BacCard) => boolean) {
+    const i = cards.findIndex((c) => !up(c));
+    return i < 0 ? cards : cards.slice(0, i);
+}
 
 export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
@@ -576,6 +601,23 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [message,     setMessage]     = useState("Select a chip, click a betting zone, then press Deal.");
     const [isShuffling, setIsShuffling] = useState(false);
     const [showRules,   setShowRules]   = useState(false);
+
+    // Squeeze: the cards come face down. You peel the side you bet more on; the dealer turns the
+    // other side's cards when you say. The Settings page sets the default; the switch here changes it.
+    const [squeeze, setSqueeze] = useState(() => defaultToggle("baccarat", "squeeze"));
+    const changeMode = (on: boolean) => {
+        setSqueeze(on);
+        const s = loadSettings();
+        s.baccarat = { ...s.baccarat, squeeze: on };
+        saveSettings(s);
+    };
+    const [faceUp, setFaceUp] = useState<string[]>([]);
+    const [mySide, setMySide] = useState<"player" | "banker">("player");
+    // whether the hand on the table was dealt for squeezing (the switch may change after)
+    const handIsSqueeze = useRef(false);
+    const handBets = useRef<Bets>({ player: 0, banker: 0, tie: 0, panda: 0, dragon: 0 });
+    const shoeRef = useRef<BacCard[]>(deck);
+    useEffect(() => { shoeRef.current = deck; }, [deck]);
 
     // Deal runs one at a time, so a double-click cannot take the bet twice. The lock is held
     // a moment longer so a hand that ends instantly is not dealt over by the second click.
@@ -617,9 +659,13 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     }, []);
 
     const totalBet   = sanitizeBet(playerBet) + sanitizeBet(bankerBet) + sanitizeBet(tieBet) + sanitizeBet(pandaBet) + sanitizeBet(dragonBet);
-    const playerTot  = useMemo(() => baccaratTotal(playerCards), [playerCards]);
-    const bankerTot  = useMemo(() => baccaratTotal(bankerCards), [bankerCards]);
     const canBet     = stage === "betting" && !isShuffling;
+
+    // in Squeeze a card counts only once it is face up; in Quick every card is face up
+    const isUp = (c: BacCard) => !squeezing || faceUp.includes(c.id);
+    const squeezing = handIsSqueeze.current && (playerCards.length > 0 || bankerCards.length > 0);
+    const visiblePlayer = shown(playerCards, isUp);
+    const visibleBanker = shown(bankerCards, isUp);
 
     const getChips = (s: BetSpotId) => {
         if (s === "player") return playerChips;
@@ -701,18 +747,42 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         return { card, nextDeck: next };
     };
 
+    /** Pay the hand and show the result. */
+    const finishHand = (player: BacCard[], banker: BacCard[], bets: Bets, handIsNatural: boolean, nextDeck: BacCard[]) => {
+        const { winner: finalWinner, pandaHit, dragonHit, payout } = settle(player, banker, bets);
+
+        setBankroll((b) => b + payout);
+        setDeck(nextDeck);
+        setWinner(finalWinner);
+        setPandaHitResult(pandaHit);
+        setDragonHitResult(dragonHit);
+        setLastPayout(payout);
+        setStage("done");
+        setRoadHistory((prev) => [
+            ...prev,
+            { winner: finalWinner, natural: handIsNatural, pandaHit, dragonHit },
+        ]);
+
+        if (dragonHit)                  setMessage("Banker wins with a 3-card 7. Dragon 7 hits. Banker bets push.");
+        else if (pandaHit)              setMessage("Player wins with a 3-card 8. Panda 8 hits.");
+        else if (finalWinner === "tie") setMessage(`Tie ${baccaratTotal(player)}-${baccaratTotal(banker)}.`);
+        else                            setMessage(finalWinner === "player" ? "Player wins." : "Banker wins.");
+    };
+
     const deal = async () => {
         if (isShuffling) return;
 
         const ov = dealOverridesRef.current;
         dealOverridesRef.current = null;
 
-        const nextPlayerBet = sanitizeBet(ov?.player ?? playerBet);
-        const nextBankerBet = sanitizeBet(ov?.banker ?? bankerBet);
-        const nextTieBet    = sanitizeBet(ov?.tie    ?? tieBet);
-        const nextPandaBet  = sanitizeBet(ov?.panda  ?? pandaBet);
-        const nextDragonBet = sanitizeBet(ov?.dragon ?? dragonBet);
-        const wagerTotal    = nextPlayerBet + nextBankerBet + nextTieBet + nextPandaBet + nextDragonBet;
+        const bets: Bets = {
+            player: sanitizeBet(ov?.player ?? playerBet),
+            banker: sanitizeBet(ov?.banker ?? bankerBet),
+            tie:    sanitizeBet(ov?.tie    ?? tieBet),
+            panda:  sanitizeBet(ov?.panda  ?? pandaBet),
+            dragon: sanitizeBet(ov?.dragon ?? dragonBet),
+        };
+        const wagerTotal = bets.player + bets.banker + bets.tie + bets.panda + bets.dragon;
 
         if (wagerTotal <= 0) { setMessage("You need at least one wager to deal."); return; }
         if (bankroll < wagerTotal) { setMessage("Not enough bankroll for those wagers."); return; }
@@ -730,6 +800,10 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         setLastPayout(0);
         setPlayerCards([]);
         setBankerCards([]);
+        setFaceUp([]);
+        handIsSqueeze.current = squeeze;
+
+        if (squeeze) { await dealSqueeze(bets, nextDeck); return; }
 
         let player: BacCard[] = [];
         let banker: BacCard[] = [];
@@ -818,52 +892,79 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
             await wait(CARD_REVEAL_DELAY_MS);
         }
 
-        const finalWinner = getWinner(player, banker);
-        const bankerPush  = isNoCommissionBankerPush(banker, finalWinner);
-        const pandaHit    = isPanda8(player, banker);
-        const dragonHit   = isDragon7(player, banker);
-
-        let payout = 0;
-
-        if (nextPlayerBet > 0) {
-            if (finalWinner === "player")      payout += nextPlayerBet * 2;
-            else if (finalWinner === "tie")    payout += nextPlayerBet;
-        }
-        if (nextBankerBet > 0) {
-            if (finalWinner === "banker") {
-                payout += bankerPush ? nextBankerBet : nextBankerBet * 2;
-            } else if (finalWinner === "tie")  payout += nextBankerBet;
-        }
-        if (nextTieBet > 0) {
-            if (finalWinner === "tie")         payout += nextTieBet * 9;
-        }
-        if (nextPandaBet > 0) {
-            if (pandaHit)                      payout += nextPandaBet * 26;
-        }
-        if (nextDragonBet > 0) {
-            if (dragonHit)                     payout += nextDragonBet * 41;
-        }
-
-        setBankroll((b) => b + payout);
-        setDeck(nextDeck);
-        setWinner(finalWinner);
-        setPandaHitResult(pandaHit);
-        setDragonHitResult(dragonHit);
-        setLastPayout(payout);
-        setStage("done");
-        setRoadHistory((prev) => [
-            ...prev,
-            { winner: finalWinner, natural: handIsNatural, pandaHit, dragonHit },
-        ]);
-
-        if (dragonHit)                  setMessage("Banker wins with a 3-card 7. Dragon 7 hits. Banker bets push.");
-        else if (pandaHit)              setMessage("Player wins with a 3-card 8. Panda 8 hits.");
-        else if (finalWinner === "tie") setMessage(`Tie ${baccaratTotal(player)}-${baccaratTotal(banker)}.`);
-        else                            setMessage(finalWinner === "player" ? "Player wins." : "Banker wins.");
+        finishHand(player, banker, bets, handIsNatural, nextDeck);
     };
 
+    /** Squeeze: four cards go out face down, in the usual order. Then you turn them. */
+    const dealSqueeze = async (bets: Bets, shoe: BacCard[]) => {
+        handBets.current = bets;
+        const side = bets.banker > bets.player ? "banker" : "player";
+        setMySide(side);
+        let nextDeck = shoe;
+        const player: BacCard[] = [], banker: BacCard[] = [];
+        for (const to of ["player", "banker", "player", "banker"] as const) {
+            const draw = drawOne(nextDeck);
+            if (!draw.card) return;
+            nextDeck = draw.nextDeck;
+            if (to === "player") { player.push(draw.card); setPlayerCards([...player]); }
+            else { banker.push(draw.card); setBankerCards([...banker]); }
+            setDeck(nextDeck);
+            await wait(SQUEEZE_DEAL_MS);
+        }
+        shoeRef.current = nextDeck;
+        setStage("squeeze");
+        setMessage(`Peel your ${side === "player" ? "Player" : "Banker"} cards: drag in from an edge. Click a dealer card to turn it.`);
+    };
+
+    // Squeeze: once every card on the table is face up, the next card is dealt, or the hand ends.
+    // The same drawing rules as Quick: the Player's third card must be turned before the Banker draws.
+    useEffect(() => {
+        if (stage !== "squeeze") return;
+        if (![...playerCards, ...bankerCards].every((c) => faceUp.includes(c.id))) return;
+        const id = window.setTimeout(() => {
+            const p = playerCards, b = bankerCards, bets = handBets.current;
+            const take = () => {
+                const draw = drawOne(shoeRef.current);
+                shoeRef.current = draw.nextDeck;
+                setDeck(draw.nextDeck);
+                return draw.card;
+            };
+            const pt = baccaratTotal(p.slice(0, 2)), bt = baccaratTotal(b.slice(0, 2));
+            const natural = isNatural(pt) || isNatural(bt);
+            if (p.length === 2 && b.length === 2) {
+                if (natural) { finishHand(p, b, bets, true, shoeRef.current); return; }
+                if (shouldPlayerDraw(pt)) {
+                    const c = take(); if (!c) return;
+                    setPlayerCards([...p, c]); setMessage("Player draws a third card.");
+                    return;
+                }
+                if (shouldBankerDrawTwoCardTotal(bt)) {
+                    const c = take(); if (!c) return;
+                    setBankerCards([...b, c]); setMessage("Player stands. Banker draws a third card.");
+                    return;
+                }
+                finishHand(p, b, bets, false, shoeRef.current);
+                return;
+            }
+            if (p.length === 3 && b.length === 2 && shouldBankerDraw(bt, p[2].baccaratValue)) {
+                const c = take(); if (!c) return;
+                setBankerCards([...b, c]); setMessage("Banker draws a third card.");
+                return;
+            }
+            finishHand(p, b, bets, false, shoeRef.current);
+        }, SQUEEZE_STEP_MS);
+        return () => window.clearTimeout(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stage, faceUp, playerCards, bankerCards]);
+
+    const turnOver = (ids: string[]) => setFaceUp((up) => [...up, ...ids.filter((id) => !up.includes(id))]);
+    const myCards = mySide === "player" ? playerCards : bankerCards;
+    const dealerCards = mySide === "player" ? bankerCards : playerCards;
+    const myFaceDown = stage === "squeeze" ? myCards.filter((c) => !faceUp.includes(c.id)) : [];
+    const dealerFaceDown = stage === "squeeze" ? dealerCards.filter((c) => !faceUp.includes(c.id)) : [];
+
     const nextRound = (clearChips = false) => {
-        setPlayerCards([]); setBankerCards([]);
+        setPlayerCards([]); setBankerCards([]); setFaceUp([]);
         setWinner(null); setPandaHitResult(false); setDragonHitResult(false);
         setLastPayout(0); setLastWagered(0);
         setStage("betting");
@@ -878,9 +979,48 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         );
     };
 
-    const playerWon = winner === "player";
-    const bankerWon = winner === "banker";
-    const tieWon    = winner === "tie";
+    const outcomeOf = (side: Winner): "neutral" | "win" | "tie" => winner === side ? "win" : winner === "tie" ? "tie" : "neutral";
+
+    /** One side's cards: face up in Quick; in Squeeze, face down until turned. */
+    const renderCard = (card: BacCard, side: "player" | "banker", i: number) => {
+        const inner = squeezing ? (
+            <SqueezeCard
+                card={card}
+                faceUp={faceUp.includes(card.id)}
+                mine={side === mySide}
+                active={stage === "squeeze"}
+                sideways={i === 2}
+                onTurn={() => turnOver([card.id])}
+            />
+        ) : (
+            <PlayingCard card={toShared(card, true)} className={CARD_SIZE} />
+        );
+        const dealt = (
+            <motion.div key={card.id} variants={CARD_VARIANTS} initial="initial" animate="animate" transition={CARD_TRANSITION(0)}>
+                {inner}
+            </motion.div>
+        );
+        return i === 2 ? <Sideways key={card.id}>{dealt}</Sideways> : dealt;
+    };
+    const box = (side: "player" | "banker") => {
+        const cards = side === "player" ? playerCards : bankerCards;
+        const seen = side === "player" ? visiblePlayer : visibleBanker;
+        return (
+            <CardBox
+                label={side === "player" ? "PLAYER" : "BANKER"}
+                total={seen.length > 0 ? baccaratTotal(seen) : null}
+                outcome={outcomeOf(side)}
+                third={cards[2] ? renderCard(cards[2], side, 2) : null}
+            >
+                {cards[0] ? renderCard(cards[0], side, 0) : <CardPlace />}
+                {cards[1] ? renderCard(cards[1], side, 1) : <CardPlace />}
+            </CardBox>
+        );
+    };
+
+    const band = (id: "player" | "banker" | "tie", chips: ChipDenomination[], total: number) => ({
+        chips, total, selected: selectedSpot === id, winner: winner === id,
+    });
 
     return (
         <>
@@ -888,10 +1028,10 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
 
             {isShuffling && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <div className="rounded-[4px] border border-rose-300/25 bg-black/65 px-10 py-8 text-center">
-                        <div className="text-sm font-extrabold text-rose-200">Baccarat</div>
-                        <div className="mt-2 text-3xl font-extrabold text-white">Shuffling Shoe</div>
-                        <div className="mt-2 text-sm text-rose-100/80">Please wait…</div>
+                    <div className="rounded-[4px] border border-room-line bg-room-panel px-10 py-8 text-center">
+                        <div className="text-sm font-extrabold text-room-muted">Baccarat</div>
+                        <div className="mt-2 text-3xl font-extrabold text-room-text">Shuffling Shoe</div>
+                        <div className="mt-2 text-sm text-room-muted">Please wait…</div>
                     </div>
                 </div>
             )}
@@ -915,49 +1055,34 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         }}
                         onDeal={() => void dealOnce()}
                         onChangeBet={() => nextRound(false)}
+                        myFaceDown={myFaceDown.length}
+                        dealerFaceDown={dealerFaceDown.length}
+                        onTurnMine={() => turnOver(myFaceDown.map((c) => c.id))}
+                        onTurnDealer={() => turnOver(dealerFaceDown.map((c) => c.id))}
                     />
                 }
             >
-                <div className="relative flex flex-1 flex-col items-center gap-3">
+                <div className="relative flex flex-1 flex-col items-center gap-3 lg:gap-2">
 
                     <TableLabel onRules={() => setShowRules(true)} />
+
+                    {/* Quick or Squeeze: beside the title on a desktop, under it on smaller screens */}
+                    <div className="lg:absolute lg:right-2 lg:top-0">
+                        <ModeSwitch squeeze={squeeze} disabled={!(stage === "betting" || stage === "done")} onChange={changeMode} />
+                    </div>
 
                     {/* On the felt either side of the cards: what pays, and when a third card is drawn */}
                     <div className="hidden xl:absolute xl:left-2 xl:top-[76px] xl:block xl:w-[272px]">
                         <PaysPanel winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
                     </div>
                     <div className="hidden xl:absolute xl:right-2 xl:top-[76px] xl:block xl:w-[272px]">
-                        <ThirdCardPanel playerCards={playerCards} bankerCards={bankerCards} />
+                        <ThirdCardPanel playerCards={visiblePlayer} bankerCards={visibleBanker} />
                     </div>
 
-                    {/* Hand lanes — stacked on mobile, side by side on sm: */}
-                    <div className="flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
-                        <div className="flex-1">
-                            <HandLane
-                                label="Player"
-                                cards={playerCards}
-                                handTotal={playerCards.length ? playerTot : null}
-                                outcome={
-                                    winner === "player" ? "win"
-                                    : winner === "tie"  ? "tie"
-                                    : winner === "banker" ? "lose"
-                                    : "neutral"
-                                }
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <HandLane
-                                label="Banker"
-                                cards={bankerCards}
-                                handTotal={bankerCards.length ? bankerTot : null}
-                                outcome={
-                                    winner === "banker" ? "win"
-                                    : winner === "tie"  ? "tie"
-                                    : winner === "player" ? "lose"
-                                    : "neutral"
-                                }
-                            />
-                        </div>
+                    {/* The printed card boxes: Player and Banker, side by side from 640px */}
+                    <div className={`flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4 ${CARD_VARS}`} data-testid="card-area">
+                        {box("player")}
+                        {box("banker")}
                     </div>
 
                     <BetBar
@@ -967,90 +1092,26 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         showResult={stage === "done"}
                     />
 
-                    {/* One fixed line: the message while the hand plays, then the result. It never changes
-                        height, so the bet spots below do not move. */}
-                    <div className="flex min-h-[28px] items-center justify-center" data-testid="status-line">
+                    {/* One fixed line: the message while the hand plays, then the result. It keeps its
+                        height (room for two lines on a phone), so the layout below does not move. */}
+                    <div className="flex min-h-[40px] items-center justify-center px-2 text-center lg:min-h-[32px]" data-testid="status-line">
                         {winner ? (
                             <ResultBanner winner={winner} pandaHit={pandaHitResult} dragonHit={dragonHitResult} />
                         ) : (
-                            <p className="text-sm font-semibold text-rose-100/70">
-                                {canBet && selectedSpot === null ? "Tap a betting spot, then tap chips to bet." : message}
+                            <p className="text-sm font-semibold leading-5 text-white/80">
+                                {canBet && selectedSpot === null ? "Tap a betting area, then tap chips to bet." : message}
                             </p>
                         )}
                     </div>
 
-                    {/* Side bets: Panda 8 and Dragon 7 */}
-                    <div className="flex items-end justify-center gap-8">
-                        <BetSpot
-                            testId="panda"
-                            chips={pandaChips}
-                            totalBet={pandaBet}
-                            label="Panda 8"
-                            sublabel="25 to 1"
-                            dim={82}
-                            isSelected={selectedSpot === "panda"}
-                            isWinner={pandaHitResult}
-                            onSelect={() => handleZoneClick("panda")}
-                            onRemove={() => clearSpot("panda")}
-                            canBet={canBet}
-                        />
-                        <BetSpot
-                            testId="dragon"
-                            chips={dragonChips}
-                            totalBet={dragonBet}
-                            label="Dragon 7"
-                            sublabel="40 to 1"
-                            dim={82}
-                            isSelected={selectedSpot === "dragon"}
-                            isWinner={dragonHitResult}
-                            onSelect={() => handleZoneClick("dragon")}
-                            onRemove={() => clearSpot("dragon")}
-                            canBet={canBet}
-                        />
-                    </div>
-
-                    {/* Main bets: Player | Tie | Banker */}
-                    <div className="flex items-end justify-center gap-4 sm:gap-6">
-                        <BetSpot
-                            testId="player"
-                            chips={playerChips}
-                            totalBet={playerBet}
-                            label="Player"
-                            sublabel="1 to 1"
-                            dim={110}
-                            isSelected={selectedSpot === "player"}
-                            isWinner={playerWon}
-                            onSelect={() => handleZoneClick("player")}
-                            onRemove={() => clearSpot("player")}
-                            canBet={canBet}
-                        />
-                        <BetSpot
-                            testId="tie"
-                            chips={tieChips}
-                            totalBet={tieBet}
-                            label="Tie"
-                            sublabel="8 to 1"
-                            dim={110}
-                            isSelected={selectedSpot === "tie"}
-                            isWinner={tieWon}
-                            onSelect={() => handleZoneClick("tie")}
-                            onRemove={() => clearSpot("tie")}
-                            canBet={canBet}
-                        />
-                        <BetSpot
-                            testId="banker"
-                            chips={bankerChips}
-                            totalBet={bankerBet}
-                            label="Banker"
-                            sublabel="1 to 1 / push 3-card 7"
-                            dim={110}
-                            isSelected={selectedSpot === "banker"}
-                            isWinner={bankerWon}
-                            onSelect={() => handleZoneClick("banker")}
-                            onRemove={() => clearSpot("banker")}
-                            canBet={canBet}
-                        />
-                    </div>
+                    <BettingLayout
+                        bets={{ player: band("player", playerChips, playerBet), banker: band("banker", bankerChips, bankerBet), tie: band("tie", tieChips, tieBet) }}
+                        canBet={canBet}
+                        onSelect={handleZoneClick}
+                        onRemove={clearSpot}
+                        dragon={{ chips: dragonChips, total: dragonBet, selected: selectedSpot === "dragon", winner: dragonHitResult, onSelect: () => handleZoneClick("dragon"), onRemove: () => clearSpot("dragon") }}
+                        panda={{ chips: pandaChips, total: pandaBet, selected: selectedSpot === "panda", winner: pandaHitResult, onSelect: () => handleZoneClick("panda"), onRemove: () => clearSpot("panda") }}
+                    />
 
                 </div>
             </TableShell>

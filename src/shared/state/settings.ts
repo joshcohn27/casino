@@ -42,10 +42,11 @@ export const GAME_SETTINGS: GameSettings[] = [
         side("kingsBounty", "King's Bounty", 100), side("luckyLadies", "Lucky Ladies", 100), side("trilux", "TriLux", 100),
         side("matchDealer", "Match the Dealer", 100), side("fortune", "Fortune", 100),
     ], toggles: [{ key: "blazing", label: "Blazing 7s", hint: "Put the $5 Blazing 7s progressive bet on every hand automatically", fallback: false }] },
-    allStepped({ id: "baccarat", name: "Baccarat", bets: [
+    { ...allStepped({ id: "baccarat", name: "Baccarat", bets: [
         side("player", "Player", MAIN_MAX), side("banker", "Banker", MAIN_MAX), side("tie", "Tie", MAIN_MAX),
         side("panda", "Panda 8", MAIN_MAX), side("dragon", "Dragon 7", MAIN_MAX),
     ] }),
+      toggles: [{ key: "squeeze", label: "Squeeze", hint: "Deal face down so you peel your own cards by hand", fallback: false }] },
     allStepped({ id: "uth", name: "Ultimate Texas Hold'em", bets: [main("ante", "Ante (Blind matches)"), side("trips", "Trips", 100), side("six", "6 Card Bonus", 25, 0, 5)] }),
     { ...allStepped({ id: "paigow", name: "Pai Gow Poker", bets: [main("main", "Main"), side("fortune", "Fortune", MAIN_MAX), side("aceHigh", "Ace High", MAIN_MAX)] }),
       toggles: [{ key: "jackpot", label: "Jackpot", hint: "Put the $5 table jackpot bet on every hand automatically", fallback: false }] },
