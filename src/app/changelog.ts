@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.8.11",
+        date: "2026-10-18",
+        title: "Card Ladder suit order",
+        changes: [
+            ["improved", "Card Ladder: the suit buttons now go Spades, Hearts, Clubs, Diamonds, so the colors alternate."],
+        ],
+    },
+    {
         version: "4.8.10",
         date: "2026-10-18",
         title: "Pai Gow set check",

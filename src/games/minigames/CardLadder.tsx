@@ -204,8 +204,8 @@ export default function CardLadder({ bankroll, setBankroll }: Props) {
         ] : [
             { call: "♠", label: "♠ Spades", hotkey: "S", cls: BTN_NEUTRAL },
             { call: "♥", label: "♥ Hearts", hotkey: "H", cls: BTN_RED },
-            { call: "♦", label: "♦ Diamonds", hotkey: "D", cls: BTN_RED },
             { call: "♣", label: "♣ Clubs", hotkey: "C", cls: BTN_NEUTRAL },
+            { call: "♦", label: "♦ Diamonds", hotkey: "D", cls: BTN_RED },
         ];
 
     return (
