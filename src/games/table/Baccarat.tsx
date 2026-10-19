@@ -6,7 +6,7 @@ import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTR
 import { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet, defaultToggle, loadSettings, saveSettings } from "../../shared/state/settings";
-import { BettingLayout, CARD_SIZE, CARD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
+import { BettingLayout, CARD_SIZE, CARD_VARS, HELD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -402,7 +402,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                                 </h3>
                                 <ul className="space-y-1 text-[13px] text-white/90">
                                     <li>Switch to Squeeze above the table (or set it as your default in Settings) and the cards come out face down.</li>
-                                    <li>You squeeze the side you bet more on. Drag in from a long edge to count the pips down the side, or from a short end to see the middle. Let go and the card drops back; drag past halfway and it turns over.</li>
+                                    <li>You squeeze the side you bet more on. Your cards come up in front of you while the bets fade back. Drag in from a long edge to count the pips down the side, from a short end to see the middle, or lift the top right or bottom left corner (the corners without the number). Let go and the card drops back; drag past halfway and it turns over and goes back into its box.</li>
                                     <li>The dealer turns the other side. Click one of those cards, or press Flip Dealer Cards (D), whenever you like.</li>
                                     <li>Flip My Cards (R), a double click, or a number key turns your cards over without squeezing.</li>
                                     <li>Third cards come out only once every card on the table is face up, and the Banker draws only after the Player&apos;s third card is turned.</li>
@@ -913,7 +913,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         }
         shoeRef.current = nextDeck;
         setStage("squeeze");
-        setMessage(`Peel your ${side === "player" ? "Player" : "Banker"} cards: drag in from an edge. Click a dealer card to turn it.`);
+        setMessage(`Peel your ${side === "player" ? "Player" : "Banker"} cards: drag in from an edge or corner. Click a dealer card to turn it.`);
     };
 
     // Squeeze: once every card on the table is face up, the next card is dealt, or the hand ends.
@@ -982,7 +982,12 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const outcomeOf = (side: Winner): "neutral" | "win" | "tie" => winner === side ? "win" : winner === "tie" ? "tie" : "neutral";
 
     /** One side's cards: face up in Quick; in Squeeze, face down until turned. */
+    // Squeeze: your face-down cards are held up in front of you, over the faded bets. Turned
+    // over, a card goes back into its box on the table.
+    const holding = squeezing && stage === "squeeze";
+    const inHand = (card: BacCard, side: "player" | "banker") => holding && side === mySide && !faceUp.includes(card.id);
     const renderCard = (card: BacCard, side: "player" | "banker", i: number) => {
+        if (inHand(card, side)) return i === 2 ? null : <CardPlace key={card.id} />;
         const inner = squeezing ? (
             <SqueezeCard
                 card={card}
@@ -1017,6 +1022,17 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
             </CardBox>
         );
     };
+
+    const front = !holding ? [] : myCards.slice(0, 2).some((c) => !faceUp.includes(c.id)) ? myCards.slice(0, 2) : myCards.slice(2).filter((c) => !faceUp.includes(c.id));
+    const inFront = (
+        <div className={`pointer-events-none absolute inset-0 flex items-center justify-center gap-4 sm:gap-6 ${HELD_VARS}`} data-testid="in-front">
+            {front.map((card) => faceUp.includes(card.id) ? <CardPlace key={card.id} /> : (
+                <motion.div key={card.id} className="pointer-events-auto" initial={{ opacity: 0, y: 40, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                    <SqueezeCard card={card} faceUp={false} mine active onTurn={() => turnOver([card.id])} />
+                </motion.div>
+            ))}
+        </div>
+    );
 
     const band = (id: "player" | "banker" | "tie", chips: ChipDenomination[], total: number) => ({
         chips, total, selected: selectedSpot === id, winner: winner === id,
@@ -1104,6 +1120,9 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         )}
                     </div>
 
+                    {/* the bets stay on the felt; while you squeeze they fade back and your cards come up in front */}
+                    <div className="relative flex w-full justify-center">
+                    <div className={`flex w-full justify-center transition-opacity duration-300 ${holding ? "pointer-events-none opacity-20" : ""}`}>
                     <BettingLayout
                         bets={{ player: band("player", playerChips, playerBet), banker: band("banker", bankerChips, bankerBet), tie: band("tie", tieChips, tieBet) }}
                         canBet={canBet}
@@ -1112,6 +1131,9 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                         dragon={{ chips: dragonChips, total: dragonBet, selected: selectedSpot === "dragon", winner: dragonHitResult, onSelect: () => handleZoneClick("dragon"), onRemove: () => clearSpot("dragon") }}
                         panda={{ chips: pandaChips, total: pandaBet, selected: selectedSpot === "panda", winner: pandaHitResult, onSelect: () => handleZoneClick("panda"), onRemove: () => clearSpot("panda") }}
                     />
+                    </div>
+                    {inFront}
+                    </div>
 
                 </div>
             </TableShell>

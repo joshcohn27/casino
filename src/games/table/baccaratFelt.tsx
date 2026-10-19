@@ -16,6 +16,8 @@ export type FeltCard = { id: string; rank: string; suit: FeltSuit; baccaratValue
 // --cw / --ch: card width and height. Bigger on a desktop, so there is room to peel.
 export const CARD_VARS = "[--cw:56px] [--ch:80px] sm:[--cw:66px] sm:[--ch:94px] lg:[--cw:76px] lg:[--ch:106px]";
 const CARD_SIZE = "h-[var(--ch)] w-[var(--cw)] rounded-[10px]";
+// the cards you hold up in front of you to squeeze: much bigger, the height of the betting area
+export const HELD_VARS = "[--cw:110px] [--ch:154px] sm:[--cw:130px] sm:[--ch:182px] lg:[--cw:150px] lg:[--ch:210px]";
 
 function toShared(card: FeltCard, faceUp: boolean): SharedCard {
     return {
@@ -90,13 +92,17 @@ function PipFace({ card, corners }: { card: FeltCard; corners: boolean }) {
 
 // ─── A card dealt face down, peeled or turned over ────────────────────────────
 
-type Edge = "left" | "right" | "top" | "bottom";
+// an edge, or one of the two corners with no number in them (top right, bottom left)
+type Edge = "left" | "right" | "top" | "bottom" | "topRight" | "bottomLeft";
+const CORNER = 0.25;       // how near a corner a press must be to lift that corner
 const PEEL_MAX = 0.8;      // as far as a peel goes before the card simply turns over
 const PEEL_TURN = 0.55;    // let go past this and the card turns over
 
 /**
- * One card in squeeze mode. Your own cards: drag in from any edge to peel it up and look, let go
- * and it drops back, or drag past halfway and it turns over. The dealer's cards: click to turn.
+ * One card in squeeze mode. Your own cards: drag in from any edge, or from the top right or bottom
+ * left corner, to peel it up and look. Let go and it drops back, or drag past halfway and it
+ * turns over. The two corners with the number in them are not lifted: a press there peels the
+ * nearest edge. The dealer's cards: click to turn.
  * A number key or a double click turns any card over.
  */
 export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
@@ -115,7 +121,10 @@ export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
     };
     const amountFor = (e: React.PointerEvent) => {
         const s = start.current!; const p = local(e);
-        const d = s.edge === "left" ? (p.lx - s.lx) / s.w : s.edge === "right" ? (s.lx - p.lx) / s.w : s.edge === "top" ? (p.ly - s.ly) / s.h : (s.ly - p.ly) / s.h;
+        const dx = (p.lx - s.lx) / s.w, dy = (p.ly - s.ly) / s.h;
+        // a corner lifts along the diagonal, in towards the middle
+        const d = s.edge === "left" ? dx : s.edge === "right" ? -dx : s.edge === "top" ? dy : s.edge === "bottom" ? -dy
+            : s.edge === "topRight" ? (dy - dx) / 2 : (dx - dy) / 2;
         return Math.max(0, Math.min(PEEL_MAX, d));
     };
     const turn = () => { start.current = null; setPeel(null); onTurn(); };
@@ -125,7 +134,8 @@ export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
         const p = local(e);
         const u = p.lx / p.w, v = p.ly / p.h;
         const edges: [number, Edge][] = [[u, "left"], [1 - u, "right"], [v, "top"], [1 - v, "bottom"]];
-        const edge = edges.sort((a, b) => a[0] - b[0])[0][1];
+        const edge: Edge = u > 1 - CORNER && v < CORNER ? "topRight" : u < CORNER && v > 1 - CORNER ? "bottomLeft"
+            : edges.sort((a, b) => a[0] - b[0])[0][1];
         start.current = { ...p, edge };
         ref.current!.setPointerCapture(e.pointerId);
         setPeel({ edge, amount: 0, dragging: true });
@@ -150,8 +160,11 @@ export function SqueezeCard({ card, faceUp, mine, active, sideways, onTurn }: {
     const hide = `${((1 - a) * 100).toFixed(1)}%`;
     const clip = !peel ? "inset(0 100% 0 0)"
         : peel.edge === "left" ? `inset(0 ${hide} 0 0)` : peel.edge === "right" ? `inset(0 0 0 ${hide})`
-        : peel.edge === "top" ? `inset(0 0 ${hide} 0)` : `inset(${hide} 0 0 0)`;
-    const fold: React.CSSProperties | null = !peel || a <= 0 ? null
+        : peel.edge === "top" ? `inset(0 0 ${hide} 0)` : peel.edge === "bottom" ? `inset(${hide} 0 0 0)`
+        // a corner: a triangle whose sides grow with the lift
+        : peel.edge === "topRight" ? `polygon(${100 - a * 200}% 0, 100% 0, 100% ${a * 200}%)`
+        : `polygon(0 ${100 - a * 200}%, 0 100%, ${a * 200}% 100%)`;
+    const fold: React.CSSProperties | null = !peel || a <= 0 || peel.edge === "topRight" || peel.edge === "bottomLeft" ? null
         : peel.edge === "left" ? { left: `${a * 100}%`, top: 0, bottom: 0, width: 12, background: "linear-gradient(to right, rgba(0,0,0,0.35), transparent)" }
         : peel.edge === "right" ? { right: `${a * 100}%`, top: 0, bottom: 0, width: 12, background: "linear-gradient(to left, rgba(0,0,0,0.35), transparent)" }
         : peel.edge === "top" ? { top: `${a * 100}%`, left: 0, right: 0, height: 12, background: "linear-gradient(to bottom, rgba(0,0,0,0.35), transparent)" }

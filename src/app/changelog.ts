@@ -25,7 +25,7 @@ export const CHANGELOG: ChangeEntry[] = [
         date: "2026-10-19",
         title: "Baccarat squeeze",
         changes: [
-            ["new", "Baccarat: Squeeze mode. The cards come out face down and you peel your own side by hand: drag in from a long edge to count the side pips, or from a short end to see the middle, before turning it over."],
+            ["new", "Baccarat: Squeeze mode. The cards come out face down, and your side comes up big in front of you while the bets fade back. Peel by hand: drag in from a long edge to count the side pips, from a short end to see the middle, or lift a corner, before turning it over."],
             ["new", "In Squeeze, the dealer turns the other side whenever you say: click a card, or Flip Dealer Cards. Third cards come out in the real order."],
             ["new", "Switch between Quick and Squeeze above the table, or pick your default on the Settings page."],
             ["improved", "Baccarat has a new table: curved Tie, Banker and Player rows like a real EZ Baccarat layout, printed card boxes, and the third card dealt sideways."],
