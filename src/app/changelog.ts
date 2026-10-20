@@ -21,6 +21,18 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.11.0",
+        date: "2026-10-19",
+        title: "A new Roulette table",
+        changes: [
+            ["new", "Roulette: a real-looking wheel. The white ball rides the track the other way, drops, and settles in the winning pocket, which lights up."],
+            ["improved", "Roulette: the layout looks like a real table, with black and red numbers, printed outside bets, and chips in the same colours as every other table."],
+            ["improved", "Roulette: on a phone the layout stands upright and fits the screen, with no sideways scrolling."],
+            ["improved", "Roulette: Bet, Returned and Net, and Clear, Change Bet and Rebet & Spin, like the other tables. Your chips stay on the layout after a spin."],
+            ["fixed", "Roulette: a quick click on the layout always places the bet."],
+        ],
+    },
+    {
         version: "4.10.1",
         date: "2026-10-19",
         title: "Banker rule lights on time",

@@ -50,7 +50,7 @@ src/
     table/        Roulette, Baccarat
     minigames/    CardLadder
   shared/
-    components/   TableShell, Card, BetSpot, ChipTray, ActionBar, SlideBtn, HandRow,
+    components/   TableShell, Card, BetSpot, ChipTray, SlideBtn, HandRow,
                   BlackjackHand, SessionBadge
     state/        bankroll and session providers, settings, progressive meter
     lib/          cards, deck, hand sorting, money, keyboard shortcuts
