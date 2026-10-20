@@ -361,13 +361,6 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                                 i
                             </button>
                         </div>
-                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-sm font-semibold text-white/75">
-                            <span>American wheel</span>
-                            <span>·</span>
-                            <span>0 and 00</span>
-                            <span>·</span>
-                            <span>Straight up pays 35 to 1</span>
-                        </div>
                     </div>
 
                     {/* the bet, what came back, and the net: centred under the title */}
