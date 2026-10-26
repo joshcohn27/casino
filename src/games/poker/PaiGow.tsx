@@ -152,10 +152,6 @@ const SEAT_KEY = "casino-paigow-seat";
 function stackFor(place: "dealer" | Seat, n: number) {
     return ((n - 1 + DEAL_ROUND.indexOf(place)) % 7) + 1;
 }
-/** Whose each stack is, stack 1 first, for the deal line. */
-function stackOwners(n: number) {
-    return Array.from({ length: 7 }, (_, i) => DEAL_ROUND.find((place) => stackFor(place, n) === i + 1)!);
-}
 const stackCards = (deck: Card[], stack: number) => deck.slice((stack - 1) * 7, stack * 7);
 
 
@@ -773,6 +769,13 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
         "• You can fold instead of setting your hand. You lose the main bet; Fortune, Ace High and the table jackpot still pay.",
     ]],
+    ["The Deal and Your Seat", [
+        "• Pick your seat: 1, 2, 3, 5, 6 or 7 (there is no seat 4). You can change it any time; it applies from the next hand.",
+        "• Each hand, the shuffled deck is set out in seven stacks of seven cards. The last 4 cards are not used.",
+        "• A random deal number from 1 to 7 picks which stack is the dealer's.",
+        "• The other stacks go round the table in order: dealer, then seat 7 on the dealer's far left, round to seat 1 on the dealer's right.",
+        "• So your seat and the deal number decide which stack is yours, as at a real table. It does not change your odds.",
+    ]],
     ["Ask Dealer for Help", [
         "• Pressing Ask Dealer for Help calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
         "• The outcome check indicator shows whether your current split matches, beats, or falls short of that optimal outcome.",
@@ -830,12 +833,8 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
-/**
- * Your seat, and how the last hand was dealt: the number, and the seven stacks in order with
- * yours and the dealer's marked. It keeps one height, so nothing moves when a hand is dealt.
- */
+/** Your seat, and the number the last hand was dealt from. It keeps one height. */
 function DealLine({ seat, onSeat, number }: { seat: Seat; onSeat: (s: Seat) => void; number: number | null }) {
-    const owners = number ? stackOwners(number) : null;
     return (
         <div className="mb-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="deal-line">
             <label className="flex items-center gap-2 text-sm font-semibold text-white/80">
@@ -852,26 +851,6 @@ function DealLine({ seat, onSeat, number }: { seat: Seat; onSeat: (s: Seat) => v
             <div className="flex items-center gap-2" data-deal-number={number ?? ""}>
                 <span className="text-sm font-semibold text-white/80">Deal number</span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-deep bg-ink text-base font-extrabold text-gold-soft">{number ?? "-"}</span>
-            </div>
-            {/* the seven stacks, stack 1 first: whose each one is */}
-            <div className="flex gap-1" aria-label="Who got each stack">
-                {Array.from({ length: 7 }, (_, i) => {
-                    const owner = owners?.[i] ?? null;
-                    const mine = owner === seat, dealer = owner === "dealer";
-                    return (
-                        <div
-                            key={i}
-                            className={`flex h-11 w-9 flex-col items-center justify-center rounded-[4px] border leading-tight ${mine ? "border-gold bg-amber-300/15" : dealer ? "border-red-400/80 bg-red-500/15" : "border-white/25 bg-black/20"}`}
-                            data-stack={i + 1}
-                            data-owner={owner ?? ""}
-                        >
-                            <span className="text-[10px] text-white/60">{i + 1}</span>
-                            <span className={`text-[11px] font-bold ${mine ? "text-gold-soft" : dealer ? "text-red-200" : "text-white/75"}`}>
-                                {owner === null ? "-" : dealer ? "Dlr" : mine ? "You" : `S${owner}`}
-                            </span>
-                        </div>
-                    );
-                })}
             </div>
         </div>
     );
