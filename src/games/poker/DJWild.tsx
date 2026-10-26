@@ -703,7 +703,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[80px] sm:h-[94px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="dealer-hand">
+                            <span className="min-h-[18px] text-[11px] font-semibold leading-[18px] text-amber-100" data-testid="dealer-hand">
                                 {dealerSorted && dealerHand ? dealerHand.label : ""}
                             </span>
                         </div>
@@ -726,7 +726,7 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[80px] sm:h-[94px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="player-hand">
+                            <span className="min-h-[18px] text-[11px] font-semibold leading-[18px] text-amber-100" data-testid="player-hand">
                                 {playerReady && playerHand ? playerHand.label : ""}
                             </span>
                             <span className="text-[13px] font-bold text-white/75">Player</span>

@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.13.2",
+        date: "2026-10-25",
+        title: "Nothing moves on phones and tablets",
+        changes: [
+            ["fixed", "On phones and tablets, the bets no longer slide down when cards are dealt in Ultimate Texas Hold'em, Pai Gow, I Luv Suits and DJ Wild."],
+            ["fixed", "On phones, the buttons at the bottom fit on one row, so the bar keeps one height in Pai Gow and Mississippi Stud."],
+        ],
+    },
+    {
         version: "4.13.1",
         date: "2026-10-25",
         title: "Blackjack tables hold still",

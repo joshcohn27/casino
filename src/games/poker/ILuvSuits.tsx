@@ -542,7 +542,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[70px] sm:h-[82px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="dealer-hand">
+                            <span className="min-h-[18px] text-[11px] font-semibold leading-[18px] text-amber-100" data-testid="dealer-hand">
                                 {dealerSorted && dealerHand
                                     ? `${describeFlushHand(dealerHand)}${done && result && !result.dealerQualified ? " (does not qualify)" : ""}`
                                     : ""}
@@ -567,7 +567,7 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                             ) : (
                                 <div className="h-[70px] sm:h-[82px]" />
                             )}
-                            <span className="min-h-[16px] text-[11px] font-semibold text-amber-100" data-testid="player-hand">
+                            <span className="min-h-[18px] text-[11px] font-semibold leading-[18px] text-amber-100" data-testid="player-hand">
                                 {playerReady && playerHand ? describeFlushHand(playerHand) : ""}
                             </span>
                             <span className="text-[13px] font-bold text-white/75">Player</span>

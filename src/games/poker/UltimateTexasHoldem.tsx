@@ -815,7 +815,8 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                         </div>
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{message}</p>
                         {/* The bet results. Their row is always here, so nothing moves when they appear. */}
-                        <div className="flex min-h-[46px] items-center justify-center">
+                        {/* room for two lines on a phone, where the results wrap */}
+                        <div className="flex min-h-[96px] items-center justify-center sm:min-h-[46px]">
                             {resolvedHand && payout && roundDone && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} data-testid="settlement">
                                 <div className="flex flex-wrap items-center justify-center gap-1.5">

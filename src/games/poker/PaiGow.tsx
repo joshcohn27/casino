@@ -1697,7 +1697,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                     {/* ── CENTER: cards ───────────────────────────────────── */}
                     {/* On narrow screens the bets sit under this column, so it keeps the height of a dealt hand
                         from the start: dealing the cards then pushes nothing down. */}
-                    <div data-pg-center className={`order-1 flex min-h-[440px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[480px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
+                    <div data-pg-center className={`order-1 flex min-h-[460px] w-full flex-col items-center gap-3 px-2 py-2 sm:min-h-[500px] lg:order-2 lg:min-h-0 lg:flex-1 lg:gap-2`}>
 
                         {/* Message: first in the column, so the cards being dealt and the notes under them never move it */}
                         <p className="text-center text-sm font-semibold text-amber-50" data-testid="message">{displayMessage}</p>

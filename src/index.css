@@ -242,6 +242,11 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
    buttons appearing (Clear, Deal, Change Bet) or going away (while the hand plays) can never
    make the bar grow or shrink, not even by a pixel. */
 [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) { min-height: 56px; }
+/* On a phone the bar's buttons are a little narrower (12px each side, still 44px tall), so a
+   table's full set fits one row and the bar never grows a second row mid-hand. */
+@media (max-width: 639px) {
+  [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) button { padding-left: 12px; padding-right: 12px; }
+}
 /* Classic Blackjack offers four buttons after a hand. On a phone only three fit one row, so the
    extra one (Double & Deal, the only one with no key) is left off there. */
 @media (max-width: 639px) {
@@ -289,5 +294,5 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
 
 /* Pai Gow: Large text makes the dealt hands taller, so the cards area holds a little more room
    on phones and tablets and nothing below it moves at the deal. */
-@media (max-width: 639px) { html[data-font="large"] [data-pg-center] { min-height: 456px; } }
-@media (min-width: 640px) and (max-width: 1023px) { html[data-font="large"] [data-pg-center] { min-height: 500px; } }
+@media (max-width: 639px) { html[data-font="large"] [data-pg-center] { min-height: 480px; } }
+@media (min-width: 640px) and (max-width: 1023px) { html[data-font="large"] [data-pg-center] { min-height: 520px; } }
