@@ -1725,6 +1725,32 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             </div>
                                         );
                                     })}
+                                    {/* Dealer has ace-high pai gow: a white marker chip beside the low hand, as a dealer
+                                        would set out, shown before you turn your own cards (so you can sweat yours) */}
+                                    <AnimatePresence>
+                                        {dealerIsSet && dealerAceHighInfo?.aceHigh && (
+                                            <motion.div
+                                                key="ace-high-chip"
+                                                initial={{ opacity: 0, scale: 0.6 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                                className="pointer-events-none absolute z-30 flex h-[42px] w-[42px] flex-col items-center justify-center rounded-full bg-white text-center text-[10px] font-extrabold leading-[11px] text-slate-900"
+                                                style={{
+                                                    // in the clear pocket below the high hand and left of the low hand
+                                                    left: "calc(50% - var(--cw) - 32px)",
+                                                    top: `calc(var(--ch) * ${(1 + DEALER_ROW_STEP) / 2 + 0.5})`,
+                                                    translate: "-50% -50%",
+                                                    border: "3px solid #cbd5e1",
+                                                    boxShadow: "inset 0 0 0 3px #ffffff, inset 0 0 0 4px #94a3b8, 0 4px 10px rgba(0,0,0,0.45)",
+                                                }}
+                                                data-testid="ace-high-chip"
+                                            >
+                                                <span>ACE</span>
+                                                <span>HIGH</span>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
                                 <div className="flex min-h-[16px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px]">

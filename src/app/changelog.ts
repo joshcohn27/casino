@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.13.3",
+        date: "2026-10-25",
+        title: "Ace high marker",
+        changes: [
+            ["new", "Pai Gow: when the dealer has ace-high pai gow, a white Ace High chip appears beside the dealer's hand before you turn your cards, so you can sweat your own ace high."],
+        ],
+    },
+    {
         version: "4.13.2",
         date: "2026-10-25",
         title: "Nothing moves on phones and tablets",
