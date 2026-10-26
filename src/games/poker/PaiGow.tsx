@@ -605,15 +605,19 @@ function evaluateFortune(cards: Card[]): FortuneResult {
     if (isNaturalSevenCardStraightFlush(cards)) return { category: "Natural 7 Card Straight Flush", multiplier: FORTUNE_PAYTABLE_1["Natural 7 Card Straight Flush"] };
     if (hasRoyalPlusRM(cards)) return { category: "Royal Flush + Royal Match", multiplier: FORTUNE_PAYTABLE_1["Royal Flush + Royal Match"] };
     if (isWildSevenCardStraightFlush(cards)) return { category: "Wild 7 Card Straight Flush", multiplier: FORTUNE_PAYTABLE_1["Wild 7 Card Straight Flush"] };
-    const bestFive = combinations(cards, 5).map((combo) => evaluateFive(combo)).sort((a, b) => compareFive(b, a))[0];
-    if (bestFive.category === "Five Aces") return { category: "5 Aces", multiplier: FORTUNE_PAYTABLE_1["5 Aces"] };
-    if (bestFive.category === "Royal Flush") return { category: "Royal Flush", multiplier: FORTUNE_PAYTABLE_1["Royal Flush"] };
-    if (bestFive.category === "Straight Flush") return { category: "Straight Flush", multiplier: FORTUNE_PAYTABLE_1["Straight Flush"] };
-    if (bestFive.category === "Quads") return { category: "4 of a Kind", multiplier: FORTUNE_PAYTABLE_1["4 of a Kind"] };
-    if (bestFive.category === "Full House") return { category: "Full House", multiplier: FORTUNE_PAYTABLE_1["Full House"] };
-    if (bestFive.category === "Flush") return { category: "Flush", multiplier: FORTUNE_PAYTABLE_1["Flush"] };
-    if (bestFive.category === "Trips") return { category: "3 of a Kind", multiplier: FORTUNE_PAYTABLE_1["3 of a Kind"] };
-    if (bestFive.category === "Straight") return { category: "Straight", multiplier: FORTUNE_PAYTABLE_1["Straight"] };
+    // Fortune pays the best line on its own pay table that any five of the seven cards make. That is
+    // not always the best poker hand: three of a kind pays more than a straight (3 to 1 against
+    // 2 to 1), so cards that make both are paid as three of a kind.
+    const FORTUNE_OF: Partial<Record<FiveEval["category"], Exclude<FortuneCategory, "No Fortune">>> = {
+        "Five Aces": "5 Aces", "Royal Flush": "Royal Flush", "Straight Flush": "Straight Flush", Quads: "4 of a Kind",
+        "Full House": "Full House", Flush: "Flush", Trips: "3 of a Kind", Straight: "Straight",
+    };
+    let best: Exclude<FortuneCategory, "No Fortune"> | null = null;
+    for (const combo of combinations(cards, 5)) {
+        const category = FORTUNE_OF[evaluateFive(combo).category];
+        if (category && (best === null || FORTUNE_PAYTABLE_1[category] > FORTUNE_PAYTABLE_1[best])) best = category;
+    }
+    if (best) return { category: best, multiplier: FORTUNE_PAYTABLE_1[best] };
     if (countSevenCardPairs(cards) === 3) return { category: "Three Pair", multiplier: FORTUNE_PAYTABLE_1["Three Pair"] };
     return { category: "No Fortune", multiplier: -1 };
 }

@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.15.1",
+        date: "2026-10-26",
+        title: "Fortune pays the best line",
+        changes: [
+            ["fixed", "Pai Gow Fortune: when your cards make both a straight and three of a kind, you are now paid for three of a kind (3 to 1), the better line on the pay table, instead of the straight (2 to 1)."],
+        ],
+    },
+    {
         version: "4.15.0",
         date: "2026-10-26",
         title: "Pai Gow by deal number",
