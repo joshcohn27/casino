@@ -295,10 +295,44 @@ export default function Stats({ onBack }: Props) {
                                 <div className="space-y-2">
                                     {Object.entries(year.bets)
                                         .sort((a, b) => (year.games[b[0]]?.hands ?? 0) - (year.games[a[0]]?.hands ?? 0))
-                                        .map(([gameId, bets]) => <GameBets key={gameId} name={gameName(gameId)} bets={bets} />)}
+                                        .map(([gameId, bets]) => <GameBets key={gameId} name={gameName(gameId)} bets={Object.fromEntries(Object.entries(bets).filter(([name]) => !name.startsWith("Deal number")))} />)}
                                 </div>
                             )}
                         </Section>
+
+                        {year.bets?.paigow && Object.keys(year.bets.paigow).some((k) => k.startsWith("Deal number")) && (
+                            <Section title="Pai Gow by deal number" testId="deal-numbers">
+                                <p className="mb-2 text-[12px] text-room-muted">Your main bet, by the deal number each hand came from. Won means you won both hands; a split is a push.</p>
+                                <table className="w-full table-fixed text-[13px] tabular-nums sm:text-sm">
+                                    <thead>
+                                        <tr className="text-left text-room-muted">
+                                            <th className="py-1 font-semibold">Number</th>
+                                            <th className="py-1 text-right font-semibold">Hands</th>
+                                            <th className="py-1 text-right font-semibold">Won</th>
+                                            <th className="py-1 text-right font-semibold">Pushed</th>
+                                            <th className="py-1 text-right font-semibold">Lost</th>
+                                            <th className="hidden py-1 text-right font-semibold sm:table-cell">Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+                                            const b = year.bets!.paigow[`Deal number ${n}`];
+                                            const net = b ? b.returned - b.wagered : 0;
+                                            return (
+                                                <tr key={n} className="border-t border-room-line" data-deal-number-row={n}>
+                                                    <td className="py-1.5 font-bold">{n}</td>
+                                                    <td className="py-1.5 text-right">{b ? b.placed : 0}</td>
+                                                    <td className="py-1.5 text-right font-semibold text-emerald-300">{b ? pct(b.won, b.placed) : "-"}</td>
+                                                    <td className="py-1.5 text-right">{b ? pct(b.pushed, b.placed) : "-"}</td>
+                                                    <td className="py-1.5 text-right text-red-300">{b ? pct(b.placed - b.won - b.pushed, b.placed) : "-"}</td>
+                                                    <td className={`hidden py-1.5 text-right font-semibold sm:table-cell ${netClass(net)}`}>{b ? signed(net) : "-"}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </Section>
+                        )}
 
                         <Section title="Bests and worsts" testId="bests">
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

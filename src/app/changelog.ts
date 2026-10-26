@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.15.0",
+        date: "2026-10-26",
+        title: "Pai Gow by deal number",
+        changes: [
+            ["new", "Your Stats: a Pai Gow table showing how often you win, push and lose for each deal number from 1 to 7."],
+        ],
+    },
+    {
         version: "4.14.1",
         date: "2026-10-25",
         title: "Pai Gow side bets swapped",

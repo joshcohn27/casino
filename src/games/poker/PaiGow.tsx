@@ -1030,6 +1030,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [envyShown, setEnvyShown] = useState(false);
     useEffect(() => { if (!envyShown) return; const id = window.setTimeout(() => setEnvyShown(false), 7000); return () => window.clearTimeout(id); }, [envyShown]);
     const seatAtDeal = useRef<Seat>(3);
+    const numberAtDeal = useRef<number>(1);
     const recordBet = useBetRecorder();
     // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
     // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
@@ -1263,6 +1264,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const d = stackCards(freshDeck, stackFor("dealer", number));
         setDealNumber(number);
         seatAtDeal.current = seat;
+        numberAtDeal.current = number;
         // Envy: every other seat is played; any of them with four of a kind or better pays you
         setEnvyHits(SEATS.filter((other) => other !== seat).flatMap((other) => {
             const cards = stackCards(freshDeck, stackFor(other, number));
@@ -1342,6 +1344,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         }
         // for the yearly stats: what each bet brought back, measured as each block adds to the total
         recordBet("Main", mainBet, mainReturn, folded ? undefined : "Won both hands");
+        // the main bet again, under the deal number the hand came from, for win % by number
+        recordBet(`Deal number ${numberAtDeal.current}`, mainBet, mainReturn, "Won both hands");
         let mark = mainReturn;
         if (fortuneBet > 0 && fortunePreview) {
             if (fortunePreview.multiplier > 0) {
