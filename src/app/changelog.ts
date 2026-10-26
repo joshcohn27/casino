@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.14.0",
+        date: "2026-10-25",
+        title: "Fortune Envy Bonus",
+        changes: [
+            ["new", "Pai Gow: the Fortune Envy Bonus. With a Fortune bet of $5 or more, you win when another seat at the table makes four of a kind or better: $5 for four of a kind, up to $5,000 for a natural 7-card straight flush."],
+            ["new", "Each seat that hits pays you, and a notice shows who hit, what they made and their cards. The amounts are in a new Envy column on the Fortune pay table."],
+        ],
+    },
+    {
         version: "4.13.4",
         date: "2026-10-25",
         title: "Royal Match fixed",

@@ -633,6 +633,20 @@ const JACKPOT_ROWS: [string, string, string[]][] = [
 const METER_TICK_MS = 2500;
 const NOTICE_MS = 6000;
 
+// Fortune Envy: what you are paid when ANOTHER seat makes one of these hands, if your Fortune bet
+// is at least $5. The dealer's hand and your own never count; each seat that hits pays you.
+const ENVY_PAYS: Record<string, number> = {
+    "Natural 7 Card Straight Flush": 5000,
+    "Royal Flush + Royal Match": 1000,
+    "Wild 7 Card Straight Flush": 500,
+    "5 Aces": 250,
+    "Royal Flush": 50,
+    "Straight Flush": 20,
+    "4 of a Kind": 5,
+};
+const ENVY_MIN_FORTUNE = 5;
+type EnvyHit = { seat: Seat; category: string; amount: number; cards: Card[] };
+
 function sidebetRows() {
     return [
         ["Natural 7 Card Straight Flush", 5000],
@@ -727,23 +741,40 @@ function toShared(card: Card, faceUp: boolean): SharedCard {
 
 type PayoutEntry = readonly [string, number | string];
 
-function PayoutColumn({ title, entries, highlight }: {
+function PayoutColumn({ title, entries, highlight, envy, envyHit }: {
     title: string;
     entries: ReadonlyArray<PayoutEntry>;
     highlight?: string | null;
+    /** an Envy amount for some rows, shown in a column of its own */
+    envy?: Record<string, number>;
+    /** rows another seat hit this hand */
+    envyHit?: ReadonlySet<string>;
 }) {
     return (
         <div className="flex flex-col gap-0.5 pt-1.5">
             <div className="mb-0.5 text-center text-[13px] font-extrabold text-amber-200">
                 {title}
             </div>
+            {envy && (
+                <div className="flex items-center justify-end gap-2 px-1.5 text-[10px] font-bold text-white/60">
+                    <span>Pays</span>
+                    <span className="w-[46px] text-right">Envy</span>
+                </div>
+            )}
             {entries.map(([hand, pays]) => {
                 const isHit = highlight === hand;
+                const envyAmount = envy?.[hand];
+                const isEnvyHit = !!envyHit?.has(hand);
                 return (
                     <div key={hand} className={`flex items-center justify-between gap-2 rounded px-1.5 py-px text-[11px] transition ${isHit ? "bg-amber-300/12" : ""}`}>
                         <span className={isHit ? "font-extrabold text-amber-100" : "text-white/75"}>{hand}</span>
-                        <span className={`shrink-0 font-bold text-gold`}>
-                            {typeof pays === "number" ? `${pays} to 1` : pays}
+                        <span className="flex shrink-0 items-center gap-2">
+                            <span className="font-bold text-gold">{typeof pays === "number" ? `${pays} to 1` : pays}</span>
+                            {envy && (
+                                <span className={`w-[46px] text-right font-bold ${isEnvyHit ? "rounded bg-emerald-400/20 text-emerald-200" : "text-gold"}`}>
+                                    {envyAmount ? `$${envyAmount.toLocaleString("en-US")}` : ""}
+                                </span>
+                            )}
                         </span>
                     </div>
                 );
@@ -787,6 +818,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• The Fortune side bet pays based on the best 5-card hand in your 7 cards, regardless of how you set the hand.",
         "• Three Pair pushes (returns your bet).",
         "• Royal Flush + Royal Match: a royal flush, with your other two cards a King and Queen of the same suit.",
+        "• Envy Bonus: with a Fortune bet of $5 or more, you are also paid when another seat at the table makes four of a kind or better. See the Envy column: $5 for four of a kind up to $5,000 for a natural 7-card straight flush. Each seat that hits pays you. The dealer's hand and your own do not count.",
         "• All other qualifying hands pay as shown in the payout table.",
     ]],
     ["Ace High Side Bet", [
@@ -994,6 +1026,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     });
     const chooseSeat = (v: Seat) => { setSeat(v); try { window.localStorage.setItem(SEAT_KEY, String(v)); } catch { /* not kept */ } };
     const [dealNumber, setDealNumber] = useState<number | null>(null);
+    const [envyHits, setEnvyHits] = useState<EnvyHit[]>([]);
+    const [envyShown, setEnvyShown] = useState(false);
+    useEffect(() => { if (!envyShown) return; const id = window.setTimeout(() => setEnvyShown(false), 7000); return () => window.clearTimeout(id); }, [envyShown]);
     const seatAtDeal = useRef<Seat>(3);
     const recordBet = useBetRecorder();
     // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
@@ -1228,6 +1263,14 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const d = stackCards(freshDeck, stackFor("dealer", number));
         setDealNumber(number);
         seatAtDeal.current = seat;
+        // Envy: every other seat is played; any of them with four of a kind or better pays you
+        setEnvyHits(SEATS.filter((other) => other !== seat).flatMap((other) => {
+            const cards = stackCards(freshDeck, stackFor(other, number));
+            const category = evaluateFortune(cards).category;
+            const amount = ENVY_PAYS[category];
+            return amount ? [{ seat: other, category, amount, cards }] : [];
+        }));
+        setEnvyShown(false);
         setMainBet(normalizedMain);
         setFortuneBet(normalizedFortune);
         setAceHighBet(normalizedAceHigh);
@@ -1310,6 +1353,14 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 lines.push("Fortune pushes on Three Pair.");
             } else {
                 lines.push("Fortune loses.");
+            }
+            // Envy: paid on top of the Fortune bet, for each other seat that hit
+            if (fortuneBet >= ENVY_MIN_FORTUNE && envyHits.length > 0) {
+                for (const hit of envyHits) {
+                    mainReturn += hit.amount;
+                    lines.push(`Envy: Seat ${hit.seat} made ${hit.category}. You win ${formatMoney(hit.amount)}.`);
+                }
+                setEnvyShown(true);
             }
             recordBet("Fortune", fortuneBet, mainReturn - mark, fortunePreview.category);
             mark = mainReturn;
@@ -1564,6 +1615,42 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 onGo={() => { setSetCheck(null); setHandAndResolve(); }}
             />
         )}
+            {/* Envy: who hit, what they made, their seven cards, and what it paid you. It floats, so
+                nothing on the table moves, and it goes after a few seconds or at the next deal. */}
+            <AnimatePresence>
+                {envyShown && envyHits.length > 0 && (
+                    <motion.div
+                        key="envy"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="fixed inset-x-0 top-[72px] z-40 flex justify-center px-4"
+                        data-testid="envy-notice"
+                    >
+                        <button
+                            onClick={() => setEnvyShown(false)}
+                            className="flex max-w-[560px] flex-col gap-2 rounded-[4px] border-2 border-emerald-400/70 bg-room-panel px-4 py-3 text-left shadow-2xl"
+                            aria-label="Dismiss the Envy notice"
+                        >
+                            <span className="text-[15px] font-extrabold text-emerald-300">
+                                Envy Bonus! You win {formatMoney(envyHits.reduce((t, h) => t + h.amount, 0))}
+                            </span>
+                            {envyHits.map((hit) => (
+                                <span key={hit.seat} className="flex flex-col gap-1">
+                                    <span className="text-sm text-room-text">
+                                        Seat {hit.seat} made <span className="font-bold">{hit.category}</span>: +{formatMoney(hit.amount)}
+                                    </span>
+                                    <span className="flex gap-1">
+                                        {powerOrder(hit.cards).map((id) => hit.cards.find((c) => c.id === id)!).map((card) => (
+                                            <PlayingCard key={card.id} card={toShared(card, true)} className="h-[56px] w-[40px] rounded-[6px]" />
+                                        ))}
+                                    </span>
+                                </span>
+                            ))}
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <TableShell deckNo={deckNo}
                 feltColor="#1a5c2e"
                 gameName="Pai Gow Poker"
@@ -1930,6 +2017,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                             title="Fortune Bonus"
                             entries={sidebetRows()}
                             highlight={fortuneHighlight}
+                            envy={ENVY_PAYS}
+                            envyHit={stage === "showdown" ? new Set(envyHits.map((h) => h.category)) : undefined}
                         />
                         <div className="mt-1.5">
                             <PayoutColumn
