@@ -137,9 +137,27 @@ function createDeck(): Card[] {
     return shuffle(out);
 }
 
-function draw(deck: Card[], count: number): [Card[], Card[]] {
-    return [deck.slice(0, count), deck.slice(count)];
+// ─── The deal: seven stacks of seven ──────────────────────────────────────────
+// As at a real table: the shuffled deck is set out in seven stacks of seven (the last 4 cards
+// are not used), and a number from 1 to 7 says which stack is the dealer's. The stacks go
+// round in a fixed order: the dealer, then seat 7 on the dealer's far left, round to seat 1 on
+// the dealer's right. There is no seat 4.
+
+export const SEATS = [1, 2, 3, 5, 6, 7] as const;
+export type Seat = (typeof SEATS)[number];
+const DEAL_ROUND: ("dealer" | Seat)[] = ["dealer", 7, 6, 5, 3, 2, 1];
+const SEAT_KEY = "casino-paigow-seat";
+
+/** Which stack (1 to 7) goes to a place at the table, when the dealer's stack is number n. */
+function stackFor(place: "dealer" | Seat, n: number) {
+    return ((n - 1 + DEAL_ROUND.indexOf(place)) % 7) + 1;
 }
+/** Whose each stack is, stack 1 first, for the deal line. */
+function stackOwners(n: number) {
+    return Array.from({ length: 7 }, (_, i) => DEAL_ROUND.find((place) => stackFor(place, n) === i + 1)!);
+}
+const stackCards = (deck: Card[], stack: number) => deck.slice((stack - 1) * 7, stack * 7);
+
 
 function valueOf(card: Card) {
     if (card.rank === "JOKER") return 15;
@@ -812,9 +830,56 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
+/**
+ * Your seat, and how the last hand was dealt: the number, and the seven stacks in order with
+ * yours and the dealer's marked. It keeps one height, so nothing moves when a hand is dealt.
+ */
+function DealLine({ seat, onSeat, number }: { seat: Seat; onSeat: (s: Seat) => void; number: number | null }) {
+    const owners = number ? stackOwners(number) : null;
+    return (
+        <div className="mb-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="deal-line">
+            <label className="flex items-center gap-2 text-sm font-semibold text-white/80">
+                Seat
+                <select
+                    value={seat}
+                    onChange={(e) => onSeat(Number(e.target.value) as Seat)}
+                    className="min-h-[44px] rounded-[4px] border border-room-line bg-room-deep px-3 text-sm font-bold text-room-text"
+                    data-testid="seat-picker"
+                >
+                    {SEATS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+            </label>
+            <div className="flex items-center gap-2" data-deal-number={number ?? ""}>
+                <span className="text-sm font-semibold text-white/80">Deal number</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-deep bg-ink text-base font-extrabold text-gold-soft">{number ?? "-"}</span>
+            </div>
+            {/* the seven stacks, stack 1 first: whose each one is */}
+            <div className="flex gap-1" aria-label="Who got each stack">
+                {Array.from({ length: 7 }, (_, i) => {
+                    const owner = owners?.[i] ?? null;
+                    const mine = owner === seat, dealer = owner === "dealer";
+                    return (
+                        <div
+                            key={i}
+                            className={`flex h-11 w-9 flex-col items-center justify-center rounded-[4px] border leading-tight ${mine ? "border-gold bg-amber-300/15" : dealer ? "border-red-400/80 bg-red-500/15" : "border-white/25 bg-black/20"}`}
+                            data-stack={i + 1}
+                            data-owner={owner ?? ""}
+                        >
+                            <span className="text-[10px] text-white/60">{i + 1}</span>
+                            <span className={`text-[11px] font-bold ${mine ? "text-gold-soft" : dealer ? "text-red-200" : "text-white/75"}`}>
+                                {owner === null ? "-" : dealer ? "Dlr" : mine ? "You" : `S${owner}`}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function TableLabel({ onRules }: { onRules: () => void }) {
     return (
-        <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-1">
+        <div className="mb-2 flex shrink-0 select-none flex-col items-center gap-1">
             <div className="flex items-center gap-2">
                 <h1
                     className="text-center text-2xl font-bold text-gold-soft"
@@ -940,6 +1005,13 @@ function PaiGowBar({
 export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
+    // your seat: remembered, and it can change any time (it applies from the next deal)
+    const [seat, setSeat] = useState<Seat>(() => {
+        try { const v = Number(window.localStorage.getItem(SEAT_KEY)); return (SEATS as readonly number[]).includes(v) ? (v as Seat) : 3; } catch { return 3; }
+    });
+    const chooseSeat = (v: Seat) => { setSeat(v); try { window.localStorage.setItem(SEAT_KEY, String(v)); } catch { /* not kept */ } };
+    const [dealNumber, setDealNumber] = useState<number | null>(null);
+    const seatAtDeal = useRef<Seat>(3);
     const recordBet = useBetRecorder();
     // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
     // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
@@ -1167,10 +1239,12 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         }
         setDeckNo((n) => n + 1);
         const freshDeck = createDeck();
-        let next = freshDeck;
-        let p: Card[]; let d: Card[];
-        [p, next] = draw(next, 7);
-        [d, next] = draw(next, 7);
+        // the number picks the dealer's stack; the seat picks yours
+        const number = 1 + Math.floor(Math.random() * 7);
+        const p = stackCards(freshDeck, stackFor(seat, number));
+        const d = stackCards(freshDeck, stackFor("dealer", number));
+        setDealNumber(number);
+        seatAtDeal.current = seat;
         setMainBet(normalizedMain);
         setFortuneBet(normalizedFortune);
         setAceHighBet(normalizedAceHigh);
@@ -1295,6 +1369,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             }
             recordBet("Table Jackpot", jackpotBet, mainReturn - mark, JACKPOT_TOP_HANDS.has(hand) ? hand : JACKPOT_FIXED[hand] ? (hand === "Royal Flush + Royal Match" ? "Royal Flush" : hand) : "Must Hit");
         }
+        // and the whole hand under the seat it was played from
+        recordBet(`Seat ${seatAtDeal.current}`, wagerAtDeal, mainReturn, "Won the hand");
         setBankroll((b) => b + mainReturn);
         setNet(mainReturn - wagerAtDeal);
         setRoundReturned(mainReturn);
@@ -1538,6 +1614,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 {/* the right column is 324px with its gap and edge, so the same room on the left keeps the title centered on the page */}
                 <div className="lg:pl-[324px]">
                     <TableLabel onRules={() => setShowRules(true)} />
+                    <DealLine seat={seat} onSeat={chooseSeat} number={dealNumber} />
                 </div>
 
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:pl-6">
