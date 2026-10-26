@@ -1718,17 +1718,6 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 <span className={`text-[10px] font-extrabold ${jackpotOn ? "text-white" : "text-white/75"}`}>${JACKPOT_BET}</span>
                             </button>
                             <BetSpot
-                                testId="fortune"
-                                chips={fortuneChips} totalBet={fortuneBet}
-                                label="Fortune" sublabel="optional"
-                                dim={82}
-                                isSelected={selectedSpot === "fortune"}
-                                isWinner={fortuneWon}
-                                canBet={canBet}
-                                onSelect={() => handleZoneClick("fortune")}
-                                onRemove={() => clearSpot("fortune")}
-                            />
-                            <BetSpot
                                 testId="aceHigh"
                                 chips={aceHighChips} totalBet={aceHighBet}
                                 label="Ace High" sublabel="optional"
@@ -1738,6 +1727,17 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 canBet={canBet}
                                 onSelect={() => handleZoneClick("aceHigh")}
                                 onRemove={() => clearSpot("aceHigh")}
+                            />
+                            <BetSpot
+                                testId="fortune"
+                                chips={fortuneChips} totalBet={fortuneBet}
+                                label="Fortune" sublabel="optional"
+                                dim={82}
+                                isSelected={selectedSpot === "fortune"}
+                                isWinner={fortuneWon}
+                                canBet={canBet}
+                                onSelect={() => handleZoneClick("fortune")}
+                                onRemove={() => clearSpot("fortune")}
                             />
                         </div>
 
