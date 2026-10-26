@@ -332,13 +332,13 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function SideBetBar({
     stage, isShuffling, canDeal, hasBets, canDouble, doubleForLess, canSplit, isResolvingAction,
     selectedChip, onChipSelect,
-    onClear, onChangeBet, onDeal, onReveal,
+    onClear, onReset, onChangeBet, onDeal, onReveal,
     onHit, onStay, onDouble, onSplit,
 }: {
     stage: Stage; isShuffling: boolean; canDeal: boolean; hasBets: boolean;
     canDouble: boolean; doubleForLess: boolean; canSplit: boolean; isResolvingAction: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onChangeBet: () => void; onDeal: () => void; onReveal: () => void;
+    onClear: () => void; onReset: () => void; onChangeBet: () => void; onDeal: () => void; onReveal: () => void;
     onHit: () => void; onStay: () => void; onDouble: () => void; onSplit: () => void;
 }) {
     const isBetting = stage === "betting";
@@ -360,6 +360,11 @@ function SideBetBar({
                     {(isBetting || isDone) && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || (isBetting && !hasBets)}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {isBetting && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
                     {isDone && (
@@ -863,6 +868,12 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
         if (stage === "betting") { setSpotBets(EMPTY_BETS); setBlazingOn(false); setSelectedSpot("main"); }
     };
 
+    // Reset: back to the bets and the Blazing 7s light saved in Settings
+    const resetBets = () => {
+        if (stage !== "betting") return;
+        setSpotBets(startingBets()); setBlazingOn(defaultToggle("sidebetblackjack", "blazing")); setSelectedSpot("main");
+    };
+
     const canSplit =
         stage === "player" && activeHand.length === 2 && hands.length < MAX_HANDS &&
         activeHand[0]?.value === activeHand[1]?.value && bankroll >= (bets[active] ?? 0);
@@ -960,6 +971,7 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearBet}
+                        onReset={resetBets}
                         onChangeBet={() => backToBetting(false)}
                         onDeal={() => void dealOnce()}
                         onReveal={() => revealWaiter.current?.()}

@@ -574,14 +574,14 @@ function FreeBetBar({
     canDouble, doubleForLess, canSplit, isFreeDouble, isFreeSplitAction, isResolvingAction,
     canDealFromDone,
     selectedChip, onChipSelect,
-    onClear, onChangeBet, onDeal, onHit, onStay, onDouble, onSplit,
+    onClear, onReset, onChangeBet, onDeal, onHit, onStay, onDouble, onSplit,
 }: {
     stage: Stage; isShuffling: boolean; bet: number; buyIn: number; bankroll: number;
     canDouble: boolean; doubleForLess: boolean; canSplit: boolean; isFreeDouble: boolean; isFreeSplitAction: boolean;
     isResolvingAction: boolean;
     canDealFromDone: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onChangeBet: () => void; onDeal: () => void; onHit: () => void; onStay: () => void;
+    onClear: () => void; onReset: () => void; onChangeBet: () => void; onDeal: () => void; onHit: () => void; onStay: () => void;
     onDouble: () => void; onSplit: () => void;
 }) {
     const isBetting = stage === "betting";
@@ -613,6 +613,11 @@ function FreeBetBar({
                     {canClear && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || buyIn <= 0}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {isBetting && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
 
@@ -1271,6 +1276,17 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         setSelectedZone(null);
     };
 
+    // Reset: back to the bets saved in Settings
+    const resetBets = () => {
+        if (stage !== "betting") return;
+        const main = defaultBet("freebetblackjack", "main");
+        const push22 = defaultBet("freebetblackjack", "push22");
+        const potOfGold = defaultBet("freebetblackjack", "potOfGold");
+        setBet(main); setChipStack(buildChipStackFromAmount(main));
+        setPush22Bet(push22); setPush22Stack(buildChipStackFromAmount(push22));
+        setPotOfGoldBet(potOfGold); setPotOfGoldStack(buildChipStackFromAmount(potOfGold));
+    };
+
     const changeBet = () => {
         setDealer([]); setHands([]); setActive(0); setDealerRevealedCount(1);
         setStage("betting"); setFreeBetTokens(0);
@@ -1349,6 +1365,7 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearAll}
+                        onReset={resetBets}
                         onChangeBet={changeBet}
                         onDeal={() => void dealOnce()}
                         onHit={() => void runAction(hit)}

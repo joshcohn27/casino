@@ -521,6 +521,14 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setSelectedZone("ante");
     }
 
+    // Reset: back to the bets saved in Settings
+    function handleReset() {
+        setAnteChips(buildChipStackFromAmount(defaultBet("threecardpoker", "ante")));
+        setPpChips(buildChipStackFromAmount(defaultBet("threecardpoker", "pairplus")));
+        setScChips(buildChipStackFromAmount(defaultBet("threecardpoker", "sixcard")));
+        setSelectedZone("ante");
+    }
+
     // ─── Result lines ─────────────────────────────────────────────────────────
 
     // the bets are passed in when the hand is settled in the same step it was dealt (no Ante),
@@ -793,6 +801,11 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                     >
                                         Clear
                                     </button>
+                                </SlideBtn>
+                            )}
+                            {stage === "betting" && (
+                                <SlideBtn key="reset">
+                                    <button data-hotkey="E" className={BTN_NEUTRAL} onClick={handleReset}>Reset</button>
                                 </SlideBtn>
                             )}
                             {stage === "betting" && (

@@ -318,6 +318,15 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
         setMessage("Set your bets and press Deal.");
     };
 
+    // Reset: back to the bets saved in Settings
+    const handleReset = () => {
+        if (busy.current) return;
+        setAnteChips(buildChipStackFromAmount(defaultBet("iluvsuits", "ante")));
+        setFlushRushChips(buildChipStackFromAmount(defaultBet("iluvsuits", "flushRush")));
+        setSuperFlushChips(buildChipStackFromAmount(defaultBet("iluvsuits", "superFlush")));
+        setSelectedZone("ante");
+    };
+
     // ── Derived render values ─────────────────────────────────────────────────
 
     const canDeal = pendingAnte >= MIN_ANTE && bankroll >= pendingTotal + pendingAnte;
@@ -362,6 +371,11 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
                                 {isBetting && (
                                     <SlideBtn key="clear">
                                         <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingTotal <= 0}>Clear</button>
+                                    </SlideBtn>
+                                )}
+                                {isBetting && (
+                                    <SlideBtn key="reset">
+                                        <button data-hotkey="E" className={BTN_NEUTRAL} onClick={handleReset}>Reset</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (

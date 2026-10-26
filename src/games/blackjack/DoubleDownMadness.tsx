@@ -326,7 +326,7 @@ function DDMBar({
     canDouble, doubleForLess, canHit, canStand, canTakeInsurance,
     doubleWagersCount, canDealFromDone,
     selectedChip, onChipSelect,
-    onClear, onDeal, onChangeBet, onTakeInsurance, onNoInsurance,
+    onClear, onReset, onDeal, onChangeBet, onTakeInsurance, onNoInsurance,
     onHit, onStand, onDouble,
 }: {
     stage: Stage; isShuffling: boolean;
@@ -334,7 +334,7 @@ function DDMBar({
     canDouble: boolean; doubleForLess: boolean; canHit: boolean; canStand: boolean; canTakeInsurance: boolean;
     doubleWagersCount: number; canDealFromDone: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onDeal: () => void; onChangeBet: () => void;
+    onClear: () => void; onReset: () => void; onDeal: () => void; onChangeBet: () => void;
     onTakeInsurance: () => void; onNoInsurance: () => void;
     onHit: () => void; onStand: () => void; onDouble: () => void;
 }) {
@@ -371,6 +371,11 @@ function DDMBar({
                     {canClear && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={bet <= 0 && sideBet <= 0}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {isBetting && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
 
@@ -976,6 +981,15 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         }
     };
 
+    // Reset: back to the bets saved in Settings
+    const resetBets = () => {
+        if (stage !== "betting") return;
+        const main = defaultBet("doubledownmadness", "main");
+        const push22 = defaultBet("doubledownmadness", "push22");
+        setBet(main); setChipStack(buildChipStackFromAmount(main));
+        setPush22Bet(push22); setPush22Stack(buildChipStackFromAmount(push22));
+    };
+
     const dealerCardsHiddenIndexes = dealerCards
         .map((_, idx) => idx)
         .filter((idx) => idx >= dealerRevealCount);
@@ -1018,6 +1032,7 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearBets}
+                        onReset={resetBets}
                         onDeal={() => void runAction(deal, 300)}
                         onChangeBet={handleChangeBet}
                         onTakeInsurance={() => void runAction(takeInsurance)}

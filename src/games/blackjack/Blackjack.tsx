@@ -223,13 +223,13 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
 function BlackjackBar({
     stage, isShuffling, bet, bankroll, canDouble, doubleForLess, canSplit, isResolvingAction,
     selectedChip, onChipSelect,
-    onClear, onChangeBet, onDeal, onDoubleAndDeal,
+    onClear, onReset, onChangeBet, onDeal, onDoubleAndDeal,
     onHit, onStay, onDouble, onSplit,
 }: {
     stage: Stage; isShuffling: boolean; bet: number; bankroll: number;
     canDouble: boolean; doubleForLess: boolean; canSplit: boolean; isResolvingAction: boolean;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onChangeBet: () => void; onDeal: () => void; onDoubleAndDeal: () => void;
+    onClear: () => void; onReset: () => void; onChangeBet: () => void; onDeal: () => void; onDoubleAndDeal: () => void;
     onHit: () => void; onStay: () => void; onDouble: () => void; onSplit: () => void;
 }) {
     const isBetting = stage === "betting";
@@ -267,6 +267,11 @@ function BlackjackBar({
                     {canClear && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || bet <= 0}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {isBetting && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
 
@@ -720,6 +725,13 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         if (stage === "betting") { setBet(0); setChipStack([]); setBaseBet(0); }
     };
 
+    // Reset: back to the bet saved in Settings
+    const resetBet = () => {
+        if (stage !== "betting") return;
+        const d = defaultBet("blackjack", "main");
+        setBet(d); setChipStack(buildChipStackFromAmount(d)); setBaseBet(d);
+    };
+
     const changeBet = () => {
         // Returns to betting stage keeping current bet amount so player can adjust
         nextRound(false);
@@ -775,6 +787,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                         selectedChip={selectedChip}
                         onChipSelect={handleChipSelect}
                         onClear={clearBet}
+                        onReset={resetBet}
                         onChangeBet={changeBet}
                         onDeal={() => void dealOnce()}
                         onDoubleAndDeal={doubleAndDeal}

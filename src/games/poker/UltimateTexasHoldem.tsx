@@ -523,6 +523,12 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
 
     const handleClear = () => { handleClearAndReset(); setSelectedSpot("ante"); };
 
+    // Reset: back to the bets saved in Settings
+    const handleReset = () => {
+        setAnte(defaultBet("uth", "ante")); setTrips(defaultBet("uth", "trips")); setSixCardBonus(defaultBet("uth", "six"));
+        setSelectedSpot("ante");
+    };
+
     // ── Derived render values ─────────────────────────────────────────────────
     const committedBet = isBetting ? totalMainWager : wagerAtDeal + play;
     const canDeal = ante >= MIN_MAIN_BET;
@@ -560,6 +566,11 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 {isBetting && (
                                     <SlideBtn key="clear">
                                         <button data-hotkey="Q" onClick={handleClear} disabled={!canAct || totalMainWager <= 0} className={BTN_NEUTRAL}>Clear</button>
+                                    </SlideBtn>
+                                )}
+                                {isBetting && (
+                                    <SlideBtn key="reset">
+                                        <button data-hotkey="E" className={BTN_NEUTRAL} onClick={handleReset}>Reset</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (

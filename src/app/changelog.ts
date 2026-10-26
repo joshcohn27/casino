@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.16.0",
+        date: "2026-10-26",
+        title: "Reset your bets to your saved defaults",
+        changes: [
+            ["new", "Every table has a Reset button next to Clear while you place bets. It puts each bet back to the default you saved in Settings, including the jackpot, Blazing 7s and progressive switches. Shortcut: E."],
+        ],
+    },
+    {
         version: "4.15.1",
         date: "2026-10-26",
         title: "Fortune pays the best line",

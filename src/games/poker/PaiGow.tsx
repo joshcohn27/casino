@@ -933,7 +933,7 @@ function TableLabel({ onRules }: { onRules: () => void }) {
 
 function PaiGowBar({
     stage, selectedChip, selectedIsLegal, selectedFrontIds, canRebet, dealerSetting, playerReady, autoFinishing,
-    onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onFold, onClear, onChangeBet,
+    onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onFold, onClear, onReset, onChangeBet,
 }: {
     stage: Stage;
     selectedChip: ChipDenomination;
@@ -952,6 +952,8 @@ function PaiGowBar({
     /** Give up the main bet and end the hand. Side bets still settle. */
     onFold: () => void;
     onClear: () => void;
+    /** Back to the bets saved in Settings */
+    onReset: () => void;
     onChangeBet: () => void;
 }) {
     return (
@@ -962,6 +964,11 @@ function PaiGowBar({
                     {stage === "betting" && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "betting" && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (
@@ -1505,6 +1512,19 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         setSelectedSpot("main");
     };
 
+    // Reset: back to the bets and the jackpot light saved in Settings
+    const handleReset = () => {
+        if (stage !== "betting") return;
+        const main = defaultBet("paigow", "main");
+        const fortune = defaultBet("paigow", "fortune");
+        const aceHigh = defaultBet("paigow", "aceHigh");
+        setMainBet(main); setMainChips(buildChipStackFromAmount(main));
+        setFortuneBet(fortune); setFortuneChips(buildChipStackFromAmount(fortune));
+        setAceHighBet(aceHigh); setAceHighChips(buildChipStackFromAmount(aceHigh));
+        setJackpotOn(defaultToggle("paigow", "jackpot"));
+        setSelectedSpot("main");
+    };
+
     // ── Derived render values ─────────────────────────────────────────────────
     const dealerSetting = stage === "setting" && revealStep < DEALER_SET;
     const dealerIsSet = revealStep >= DEALER_SET && dealerBestSplit !== null;
@@ -1681,6 +1701,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onSetHand={askToSet}
                         onFold={askToFold}
                         onClear={handleClear}
+                        onReset={handleReset}
                         onChangeBet={handleChangeBet}
                     />
                 }

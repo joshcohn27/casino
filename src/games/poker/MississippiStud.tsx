@@ -558,6 +558,13 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         setSelectedZone("ante");
     }
 
+    // Reset: back to the bets saved in Settings
+    function handleReset() {
+        setAnteChips(buildChipStackFromAmount(defaultBet("mississippistud", "ante")));
+        setBonusChips(buildChipStackFromAmount(defaultBet("mississippistud", "bonus")));
+        setSelectedZone("ante");
+    }
+
     // ─── Game actions ─────────────────────────────────────────────────────────
 
     function handleDeal() {
@@ -772,6 +779,11 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                     {stage === "betting" && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {stage === "betting" && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={handleReset}>Reset</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (

@@ -432,12 +432,12 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function BaccaratBar({
     stage, isShuffling, totalBet, bankroll,
     selectedChip, onChipSelect,
-    onClear, onDeal, onChangeBet,
+    onClear, onReset, onDeal, onChangeBet,
     myFaceDown, dealerFaceDown, onTurnMine, onTurnDealer,
 }: {
     stage: Stage; isShuffling: boolean; totalBet: number; bankroll: number;
     selectedChip: ChipDenomination; onChipSelect: (c: ChipDenomination) => void;
-    onClear: () => void; onDeal: () => void; onChangeBet: () => void;
+    onClear: () => void; onReset: () => void; onDeal: () => void; onChangeBet: () => void;
     myFaceDown: number; dealerFaceDown: number; onTurnMine: () => void; onTurnDealer: () => void;
 }) {
     const isBetting = stage === "betting";
@@ -467,6 +467,11 @@ function BaccaratBar({
                     {canClear && (
                         <SlideBtn key="clear">
                             <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={onClear} disabled={isShuffling || totalBet <= 0}>Clear</button>
+                        </SlideBtn>
+                    )}
+                    {isBetting && (
+                        <SlideBtn key="reset">
+                            <button data-hotkey="E" className={BTN_NEUTRAL} onClick={onReset}>Reset</button>
                         </SlideBtn>
                     )}
                     {isDone && (
@@ -727,6 +732,21 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
         if (!canBet) return;
         setPlayerBet(0); setBankerBet(0); setTieBet(0); setPandaBet(0); setDragonBet(0);
         setPlayerChips([]); setBankerChips([]); setTieChips([]); setPandaChips([]); setDragonChips([]);
+        setSelectedSpot(null);
+    };
+
+    // Reset: back to the bets saved in Settings
+    const resetBets = () => {
+        if (!canBet) return;
+        const player = sanitizeBet(defaultBet("baccarat", "player"));
+        const banker = sanitizeBet(defaultBet("baccarat", "banker"));
+        const tie = sanitizeBet(defaultBet("baccarat", "tie"));
+        const panda = sanitizeBet(defaultBet("baccarat", "panda"));
+        const dragon = sanitizeBet(defaultBet("baccarat", "dragon"));
+        setPlayerBet(player); setBankerBet(banker); setTieBet(tie); setPandaBet(panda); setDragonBet(dragon);
+        setPlayerChips(buildChipStackFromAmount(player)); setBankerChips(buildChipStackFromAmount(banker));
+        setTieChips(buildChipStackFromAmount(tie)); setPandaChips(buildChipStackFromAmount(panda));
+        setDragonChips(buildChipStackFromAmount(dragon));
         setSelectedSpot(null);
     };
 
@@ -1096,6 +1116,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
                             if (stage === "done") nextRound(true);
                             else clearAllBets();
                         }}
+                        onReset={resetBets}
                         onDeal={() => void dealOnce()}
                         onChangeBet={() => nextRound(false)}
                         myFaceDown={myFaceDown.length}

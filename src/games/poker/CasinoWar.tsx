@@ -263,6 +263,13 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         setStage("betting");
         setMessage("Place your bet and press Deal.");
     };
+    // Reset: back to the bets saved in Settings
+    const handleReset = () => {
+        if (busy.current) return;
+        setMainChips(buildChipStackFromAmount(defaultBet("casinowar", "main")));
+        setTieChips(buildChipStackFromAmount(defaultBet("casinowar", "tie")));
+        setSelectedZone("main");
+    };
     const handleChangeBet = () => {
         if (busy.current) return;
         clearTable();
@@ -408,6 +415,11 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
                                 {isBetting && (
                                     <SlideBtn key="clear">
                                         <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingMain === 0 && pendingTie === 0}>Clear</button>
+                                    </SlideBtn>
+                                )}
+                                {isBetting && (
+                                    <SlideBtn key="reset">
+                                        <button data-hotkey="E" className={BTN_NEUTRAL} onClick={handleReset}>Reset</button>
                                     </SlideBtn>
                                 )}
                                 {isBetting && (
