@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.13.4",
+        date: "2026-10-25",
+        title: "Royal Match fixed",
+        changes: [
+            ["fixed", "Pai Gow Fortune: Royal Flush + Royal Match now needs a King and Queen of the same suit beside the royal flush, as at a real table. Before, any pair counted."],
+        ],
+    },
+    {
         version: "4.13.3",
         date: "2026-10-25",
         title: "Ace high marker",

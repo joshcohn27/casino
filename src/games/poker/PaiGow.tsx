@@ -592,8 +592,11 @@ function hasRoyalPlusRM(cards: Card[]) {
         const comboIds = new Set(combo.map((c) => c.id));
         const leftovers = cards.filter((c) => !comboIds.has(c.id));
         if (leftovers.length !== 2) continue;
-        const leftVals = leftovers.map((c) => (isJoker(c) ? 14 : valueOf(c)));
-        if (leftVals[0] === leftVals[1]) return true;
+        // a Royal Match is a King and a Queen of the same suit (real cards, not the Joker)
+        const [a, b] = leftovers;
+        if (isJoker(a) || isJoker(b) || a.suit !== b.suit) continue;
+        const ranks = [a.rank, b.rank].sort().join("");
+        if (ranks === "KQ") return true;
     }
     return false;
 }
@@ -783,6 +786,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
     ["Fortune Bonus", [
         "• The Fortune side bet pays based on the best 5-card hand in your 7 cards, regardless of how you set the hand.",
         "• Three Pair pushes (returns your bet).",
+        "• Royal Flush + Royal Match: a royal flush, with your other two cards a King and Queen of the same suit.",
         "• All other qualifying hands pay as shown in the payout table.",
     ]],
     ["Ace High Side Bet", [
