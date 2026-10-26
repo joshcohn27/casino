@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.16.1",
+        date: "2026-10-26",
+        title: "Pai Gow jackpot runs on the real clock",
+        changes: [
+            ["improved", "Pai Gow table jackpot: the other linked tables now play like a real pit. Two to four tables, a hand about every 90 seconds, 1 to 6 players, and only some of them take the jackpot bet."],
+            ["improved", "The meters keep climbing while you are away and catch up when you come back. On its own, the Must Hit by $500 pays somewhere within about 3 days."],
+            ["improved", "Your own jackpot bets count for much more now: playing makes the Must Hit come sooner, and you win a big share of the hits while you are at the table."],
+        ],
+    },
+    {
         version: "4.16.0",
         date: "2026-10-26",
         title: "Reset your bets to your saved defaults",

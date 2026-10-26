@@ -10,7 +10,7 @@ import { sortByPower, type SortMode } from "../../shared/lib/handSort";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import ConfirmDialog from "../../shared/components/ConfirmDialog";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
-import { JACKPOT_BET, MUST_HIT_BY, TIER_NAMES, awardTopHand, placeBet, readJackpot, simulateLinkedTables, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
+import { JACKPOT_BET, LINKED_TICK_MS, MUST_HIT_BY, TIER_NAMES, advanceLinkedTables, awardTopHand, placeBet, readJackpot, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
 import { makeRng } from "../../shared/state/progressiveMeter";
 import { TableContext, useBetRecorder } from "../../shared/state/sessionContext";
 import { resultLineClass } from "../../shared/lib/resultTone";
@@ -634,7 +634,6 @@ const JACKPOT_ROWS: [string, string, string[]][] = [
     ["Four of a Kind", "$375", ["4 of a Kind"]],
     ["Full House", "$25", ["Full House"]],
 ];
-const METER_TICK_MS = 2500;
 const NOTICE_MS = 6000;
 
 // Fortune Envy: what you are paid when ANOTHER seat makes one of these hands, if your Fortune bet
@@ -1088,11 +1087,14 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     useEffect(() => {
         if (!tableActive) return;
         const rng = makeRng(Date.now());
-        const id = window.setInterval(() => {
-            const next = simulateLinkedTables(metersRef.current, 2 + (Date.now() % 4), rng);
-            setMeters(next.meters);
+        // the other tables played on while this one was away: catch up first, then keep pace
+        const tick = () => {
+            const next = advanceLinkedTables(metersRef.current, rng);
+            if (next.meters !== metersRef.current) { metersRef.current = next.meters; setMeters(next.meters); }
             if (next.win) setOtherWin(next.win);
-        }, METER_TICK_MS);
+        };
+        tick();
+        const id = window.setInterval(tick, LINKED_TICK_MS);
         return () => window.clearInterval(id);
     }, [tableActive]);
     useEffect(() => { if (!otherWin) return; const id = window.setTimeout(() => setOtherWin(null), NOTICE_MS); return () => window.clearTimeout(id); }, [otherWin]);
