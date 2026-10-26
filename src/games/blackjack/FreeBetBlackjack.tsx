@@ -421,7 +421,9 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
     void stage;
 
     return (
-        <div className={`flex flex-col items-center gap-2 rounded-[4px] border p-3 transition-colors duration-300
+        // compact, so a dealt hand takes little more room than the bet circles it replaces: the
+        // total and the bet share one line
+        <div className={`flex flex-col items-center gap-1 rounded-[4px] border p-2 transition-colors duration-300
             ${isActive ? "border-amber-300/50 bg-amber-300/[0.08] ring-2 ring-amber-300/20" : "border-white/10 bg-black/15"}`}
         >
             <div className="flex items-center gap-2">
@@ -429,11 +431,9 @@ function HandBox({ hand, index, isActive, stage, dealerTotal }: {
                 {result && <Badge result={result} />}
             </div>
             <BlackjackHand cards={hand.cards.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
-            <div className="text-sm font-bold text-amber-100">
-                {t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}
-            </div>
-            <div className="text-xs text-white/75">
-                {betTag} {formatMoney(hand.baseBet.amount)}{doubleSuffix}
+            <div className="flex flex-wrap items-baseline justify-center gap-x-2 text-center">
+                <span className="text-sm font-bold text-amber-100">{t}{isSoft(hand.cards) ? " soft" : ""}{bust ? " · Bust" : ""}</span>
+                <span className="text-xs text-white/75">{betTag} {formatMoney(hand.baseBet.amount)}{doubleSuffix}</span>
             </div>
         </div>
     );
@@ -597,16 +597,13 @@ function FreeBetBar({
         <div className="flex flex-col gap-2 border-t border-line bg-ink px-4 py-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-3">
 
             {/* Left: chip tray */}
+            {/* the tray stays through the dealer's turn too, so the bar keeps one height */}
             <div className="flex items-center">
-                {!isDealer ? (
-                    <ChipTray
-                        selectedChip={selectedChip}
-                        onSelect={onChipSelect}
-                        disabled={isPlayer || isDone || isShuffling}
-                    />
-                ) : (
-                    <div className="w-px" />
-                )}
+                <ChipTray
+                    selectedChip={selectedChip}
+                    onSelect={onChipSelect}
+                    disabled={isPlayer || isDealer || isDone || isShuffling}
+                />
             </div>
 
             {/* Center: stage buttons */}

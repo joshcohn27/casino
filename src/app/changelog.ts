@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.13.1",
+        date: "2026-10-25",
+        title: "Blackjack tables hold still",
+        changes: [
+            ["fixed", "Blackjack, Free Bet and Side Bet Blackjack: the table no longer grows when the cards are dealt. Each hand's bet now sits in its label or beside its total."],
+            ["fixed", "Free Bet and Side Bet Blackjack: the chips stay in the bottom bar during the dealer's turn, so the bar keeps one height."],
+        ],
+    },
+    {
         version: "4.13.0",
         date: "2026-10-25",
         title: "Pick your Pai Gow seat",

@@ -195,18 +195,19 @@ function HandBox({ hand, bet, index, isActive, stage, dealerTotal, dealerBusted 
     const bust = t > 21;
     const result = stage === "done" ? resultLabel(t, dealerTotal, bust, dealerBusted) : null;
     return (
-        <div className={`flex flex-col items-center gap-2 rounded-[4px] border p-3 transition-colors duration-300
+        // compact, so a dealt hand takes little more room than the bet circle it replaces and the
+        // table does not grow when the cards come out: the bet sits in the label
+        <div className={`flex flex-col items-center gap-1.5 rounded-[4px] border p-2 transition-colors duration-300
             ${isActive ? "border-amber-300/50 bg-amber-300/8 ring-2 ring-amber-300/20" : "border-white/10 bg-black/15"}`}
         >
             <div className="flex items-center gap-2">
-                <Chip>Hand {index + 1}</Chip>
+                <Chip>Hand {index + 1} · {formatMoney(bet)}</Chip>
                 {result && <Badge result={result} />}
             </div>
             <BlackjackHand cards={hand.map((card) => ({ ...toShared(card, true), sideways: card.sideways }))} />
             <div className="text-sm font-bold text-amber-100">
                 {t}{isSoft(hand) ? " soft" : ""}{bust ? " · Bust" : ""}
             </div>
-            <div className="text-xs text-white/75">Bet {formatMoney(bet)}</div>
         </div>
     );
 }
@@ -784,7 +785,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
                     />
                 }
             >
-                <div className="relative flex flex-1 flex-col items-center gap-5 py-2">
+                <div className="relative flex flex-1 flex-col items-center gap-4 py-2">
 
                     <TableLabel />
 
