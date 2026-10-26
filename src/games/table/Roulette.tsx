@@ -7,6 +7,7 @@ import { BetBar } from "../../shared/components/BetSpot";
 import { BTN_GOLD, BTN_NEUTRAL, type ChipDenomination, formatMoney, popLastChip } from "../../shared/lib/money";
 import { RouletteWheel } from "./rouletteWheel";
 import { RouletteBoard } from "./rouletteBoard";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,6 +127,12 @@ const SPOT_MAP  = new Map(ALL_SPOTS.map(s=>[s.id,s]));
 // ─── Table pieces ─────────────────────────────────────────────────────────────
 
 const SPIN_MS = 4800;
+// how each kind of bet is named in the yearly stats
+const BET_KIND: Record<BetType, string> = {
+    straight: "Straight up", split: "Split", street: "Street", corner: "Corner", line: "Six line", basket: "Top line",
+    red: "Red", black: "Black", even: "Even", odd: "Odd", low: "1 to 18", high: "19 to 36",
+    dozen1: "Dozen", dozen2: "Dozen", dozen3: "Dozen", column1: "Column", column2: "Column", column3: "Column",
+};
 const HOW_TO_BET = "Click a number, the line between two for a split, a corner for four, or a row's outer edge for a street.";
 
 const PAYS: [string, string][] = [
@@ -244,6 +251,7 @@ interface Props { bankroll: number; setBankroll: React.Dispatch<React.SetStateAc
 
 export default function Roulette({ bankroll, setBankroll }: Props) {
     const [selectedChip, setSelectedChip] = useState<ChipDenomination>(5);
+    const recordBet = useBetRecorder();
     const [bets, setBets] = useState<Record<string, number>>({});
     const [message, setMessage] = useState(HOW_TO_BET);
     const [stage, setStage] = useState<Stage>("betting");
@@ -308,6 +316,7 @@ export default function Roulette({ bankroll, setBankroll }: Props) {
                 const won = spot.numbers.includes(result);
                 const returned = won ? amount + amount * spot.payout : 0;
                 const settled: SettledBet = { id, label: spot.label, amount, won, payout: spot.payout, returned };
+                recordBet(BET_KIND[spot.type], amount, returned, `Number ${result}`);
                 if (won) { winningBets.push(settled); totalReturn += returned; }
                 else losingBets.push(settled);
             });

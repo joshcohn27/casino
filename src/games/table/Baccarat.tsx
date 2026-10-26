@@ -6,6 +6,7 @@ import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_NEUTR
 import { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet, defaultToggle, loadSettings, saveSettings } from "../../shared/state/settings";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 import { BettingLayout, BigRoad, CARD_SIZE, CARD_VARS, HELD_VARS, CardBox, CardPlace, PlayingCard, Sideways, SqueezeCard, toShared } from "./baccaratFelt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -547,26 +548,28 @@ function settle(player: BacCard[], banker: BacCard[], bets: Bets) {
     const bankerPush = isNoCommissionBankerPush(banker, winner);
     const pandaHit  = isPanda8(player, banker);
     const dragonHit = isDragon7(player, banker);
-    let payout = 0;
+    // what each bet returns, stake included
+    const ret: Bets = { player: 0, banker: 0, tie: 0, panda: 0, dragon: 0 };
     if (bets.player > 0) {
-        if (winner === "player")      payout += bets.player * 2;
-        else if (winner === "tie")    payout += bets.player;
+        if (winner === "player")      ret.player = bets.player * 2;
+        else if (winner === "tie")    ret.player = bets.player;
     }
     if (bets.banker > 0) {
         if (winner === "banker") {
-            payout += bankerPush ? bets.banker : bets.banker * 2;
-        } else if (winner === "tie")  payout += bets.banker;
+            ret.banker = bankerPush ? bets.banker : bets.banker * 2;
+        } else if (winner === "tie")  ret.banker = bets.banker;
     }
     if (bets.tie > 0) {
-        if (winner === "tie")         payout += bets.tie * 9;
+        if (winner === "tie")         ret.tie = bets.tie * 9;
     }
     if (bets.panda > 0) {
-        if (pandaHit)                 payout += bets.panda * 26;
+        if (pandaHit)                 ret.panda = bets.panda * 26;
     }
     if (bets.dragon > 0) {
-        if (dragonHit)                payout += bets.dragon * 41;
+        if (dragonHit)                ret.dragon = bets.dragon * 41;
     }
-    return { winner, pandaHit, dragonHit, payout };
+    const payout = ret.player + ret.banker + ret.tie + ret.panda + ret.dragon;
+    return { winner, pandaHit, dragonHit, payout, ret };
 }
 
 /** The cards from the left up to the first one still face down: what the table can see. */
@@ -642,6 +645,7 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
     const [lastPayout,  setLastPayout]  = useState(0);
     const [lastWagered, setLastWagered] = useState(0);
 
+    const recordBet = useBetRecorder();
     const [selectedSpot, setSelectedSpot] = useState<BetSpotId | null>(null);
     const [playerChips,  setPlayerChips]  = useState<ChipDenomination[]>([]);
     const [bankerChips,  setBankerChips]  = useState<ChipDenomination[]>([]);
@@ -758,7 +762,12 @@ export default function BaccaratTable({ bankroll, setBankroll }: Props) {
 
     /** Pay the hand and show the result. */
     const finishHand = (player: BacCard[], banker: BacCard[], bets: Bets, handIsNatural: boolean, nextDeck: BacCard[]) => {
-        const { winner: finalWinner, pandaHit, dragonHit, payout } = settle(player, banker, bets);
+        const { winner: finalWinner, pandaHit, dragonHit, payout, ret } = settle(player, banker, bets);
+        recordBet("Player", bets.player, ret.player);
+        recordBet("Banker", bets.banker, ret.banker);
+        recordBet("Tie", bets.tie, ret.tie, "Tie");
+        recordBet("Panda 8", bets.panda, ret.panda, "Panda 8");
+        recordBet("Dragon 7", bets.dragon, ret.dragon, "Dragon 7");
 
         setBankroll((b) => b + payout);
         setDeck(nextDeck);

@@ -12,7 +12,7 @@ import ConfirmDialog from "../../shared/components/ConfirmDialog";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import { JACKPOT_BET, MUST_HIT_BY, TIER_NAMES, awardTopHand, placeBet, readJackpot, simulateLinkedTables, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
 import { makeRng } from "../../shared/state/progressiveMeter";
-import { TableContext } from "../../shared/state/sessionContext";
+import { TableContext, useBetRecorder } from "../../shared/state/sessionContext";
 import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
@@ -940,6 +940,7 @@ function PaiGowBar({
 export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
+    const recordBet = useBetRecorder();
     // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
     // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
     const [foldedDeck, setFoldedDeck] = useState<number | null>(null);
@@ -1239,6 +1240,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             mainReturn += mainBet;
             lines.push("Push. One hand each.");
         }
+        // for the yearly stats: what each bet brought back, measured as each block adds to the total
+        recordBet("Main", mainBet, mainReturn, folded ? undefined : "Won both hands");
+        let mark = mainReturn;
         if (fortuneBet > 0 && fortunePreview) {
             if (fortunePreview.multiplier > 0) {
                 const win = fortuneBet * fortunePreview.multiplier;
@@ -1250,6 +1254,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Fortune loses.");
             }
+            recordBet("Fortune", fortuneBet, mainReturn - mark, fortunePreview.category);
+            mark = mainReturn;
         }
         if (aceHighBet > 0 && dealerAceHighInfo && playerAceHighInfo) {
             if (dealerAceHighInfo.aceHigh && playerAceHighInfo.aceHigh) {
@@ -1264,6 +1270,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Ace High loses.");
             }
+            recordBet("Ace High", aceHighBet, mainReturn - mark, dealerAceHighInfo.aceHigh && playerAceHighInfo.aceHigh ? "Both ace high" : dealerAceHighInfo.hasJoker ? "Dealer ace high with joker" : "Dealer ace high");
+            mark = mainReturn;
         }
         if (jackpotBet > 0 && fortunePreview) {
             const hand = fortunePreview.category;
@@ -1285,6 +1293,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Jackpot: no win.");
             }
+            recordBet("Table Jackpot", jackpotBet, mainReturn - mark, JACKPOT_TOP_HANDS.has(hand) ? hand : JACKPOT_FIXED[hand] ? (hand === "Royal Flush + Royal Match" ? "Royal Flush" : hand) : "Must Hit");
         }
         setBankroll((b) => b + mainReturn);
         setNet(mainReturn - wagerAtDeal);

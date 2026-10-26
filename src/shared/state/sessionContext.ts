@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext } from "react";
+import { recordBet } from "./yearStats";
 
 // A session is a run of hands at one game: how many, how much was bet, and the net result.
 // It is kept in local storage, so a refresh does not lose it. It starts again when a hand is
@@ -47,4 +48,19 @@ export function useHandRecorder(): (bet: number, net: number, adjust?: boolean) 
         if (!record || !id || !active) return;
         record(id, bet, net, adjust);
     }, [record, id, active]);
+}
+
+/**
+ * Returns a function a table calls as each bet settles, for the yearly stats: the bet's name,
+ * how much was on it, how much came back (stake included), and what it hit when it won.
+ * A table that is being held in the background does not count bets.
+ */
+export function useBetRecorder(): (bet: string, wagered: number, returned: number, hit?: string) => void {
+    const table = useContext(TableContext);
+    const id = table?.id;
+    const active = table?.active;
+    return useCallback((bet: string, wagered: number, returned: number, hit?: string) => {
+        if (!id || !active) return;
+        recordBet(id, bet, wagered, returned, hit);
+    }, [id, active]);
 }

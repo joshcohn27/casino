@@ -5,6 +5,7 @@ import PlayingCard from "../../shared/components/Card";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { createShoe, type Card } from "../../shared/lib/cards";
 import { BTN_BASE, BTN_GOLD, BTN_NEUTRAL, formatMoney } from "../../shared/lib/money";
+import { recordLadderRun } from "../../shared/state/yearStats";
 
 // Card Ladder: a free game for winning chips. Four cards come off a fresh 52-card deck,
 // one at a time, and you call something about each before it is turned over. Get all four
@@ -162,6 +163,7 @@ export default function CardLadder({ bankroll, setBankroll }: Props) {
         setCalls((prev) => [...prev, call]);
 
         if (!right) {
+            recordLadderRun(false, 0);
             setStage("lost");
             setTries((n) => n + 1);
             setMessage(`${cardName(card)}. Not ${CALL_LABELS[call].toLowerCase()}. Run over.`);
@@ -170,6 +172,7 @@ export default function CardLadder({ bankroll, setBankroll }: Props) {
             setTries((n) => n + 1);
             setWins((n) => n + 1);
             setBankroll((b) => b + PRIZE);
+            recordLadderRun(true, PRIZE);
             setMessage(`${cardName(card)}. All four right. You win ${formatMoney(PRIZE)}!`);
         } else {
             setMessage(`${cardName(card)}. Right. ${STEPS[nextCards.length].prompt}`);

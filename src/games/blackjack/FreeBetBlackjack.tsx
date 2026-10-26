@@ -9,6 +9,7 @@ import { addChipToStack, type ChipDenomination, formatMoney, buildChipStackFromA
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types (preserved) ───────────────────────────────────────────────────────
 
@@ -715,6 +716,7 @@ function FreeBetBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
+    const recordBet = useBetRecorder();
     // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
     const [deckNo, setDeckNo] = useState(1);
 
@@ -884,6 +886,9 @@ export default function FreeBetBlackjack({ bankroll, setBankroll }: Props) {
         });
 
         const side = settleSideBets(dealerCards, tokenCount, snapshot);
+        // each hand and each side bet on its own, for the yearly stats
+        settledHands.forEach((hand) => recordBet("Hand", getHandMoneyAtRisk(hand), hand.totalReturn, hand.result));
+        side.sideBets.forEach((bet) => recordBet(bet.name, bet.wager, bet.totalReturn, bet.resultText));
         const totalReturned = handsReturn + side.totalReturn;
         const totalRisk = handsRisk + snapshot.push22 + snapshot.potOfGold;
         const totalNet = totalReturned - totalRisk;

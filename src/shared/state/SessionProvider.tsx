@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EMPTY_SESSION, SESSION_KEY, SessionContext, VISIT_KEY, type Session } from "./sessionContext";
+import { recordHandStat } from "./yearStats";
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
@@ -30,6 +31,8 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     }, [session]);
 
     const record = useCallback((gameId: string, bet: number, net: number, adjust = false) => {
+        // the year's stats count every hand too (kept outside the state update, so it runs once)
+        recordHandStat(gameId, bet, net, adjust);
         setSession((prev) => {
             // a hand at a different game ends the old session and starts a new one
             if (prev.gameId !== gameId) return adjust ? prev : { gameId, hands: 1, wagered: cents(bet), net: cents(net) };

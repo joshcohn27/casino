@@ -14,6 +14,7 @@ import {
     compareFirst, compareWar, mainReturn, rankName, surrenderReturn, tieBetReturn, warReturn,
     type FirstResult, type WarResult,
 } from "./casinoWarLogic";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // Casino War: one card each, high card wins. On a tie, go to war or surrender.
 // The rules and payouts are in casinoWarLogic.ts.
@@ -224,6 +225,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
     const [first, setFirst] = useState<FirstResult | null>(null);
     /** Paid as soon as the first two cards are out: the Tie bet. */
     const [tiePaid, setTiePaid] = useState(0);
+    const recordBet = useBetRecorder();
     const [settled, setSettled] = useState<Settled | null>(null);
     const [message, setMessage] = useState("Place your bet and press Deal.");
     // one action at a time: a second press is ignored while cards are being dealt
@@ -311,6 +313,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         const sidePaid = tieBetReturn(side, result);
         if (sidePaid > 0) setBankroll((b) => b + sidePaid);
         setTiePaid(sidePaid);
+        recordBet("Tie", side, sidePaid, "Tie");
         const sideLine = side > 0 ? [sidePaid > 0 ? `Tie bet: wins ${TIE_PAYS} to 1` : "Tie bet: lost"] : [];
 
         if (result === "tie") {
@@ -321,6 +324,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         }
         const back = mainReturn(bet, result);
         if (back > 0) setBankroll((b) => b + back);
+        recordBet("Bet", bet, back, "High card");
         finish(
             { outcome: result, returned: back + sidePaid, lines: [result === "win" ? "Bet: wins 1 to 1" : "Bet: lost", ...sideLine] },
             result === "win" ? `${rankName(playerCard)} beats ${rankName(dealerCard)}. You win.` : `${rankName(dealerCard)} beats ${rankName(playerCard)}. Dealer wins.`,
@@ -334,6 +338,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         busy.current = true;
         const back = surrenderReturn(mainBet);
         setBankroll((b) => b + back);
+        recordBet("Bet", mainBet, back);
         finish({ outcome: "surrender", returned: back + tiePaid, lines: ["Bet: surrendered, half returned", ...sideLine()] }, "You surrender. Half your bet is returned.");
     };
 
@@ -367,6 +372,7 @@ export default function CasinoWar({ bankroll, setBankroll }: Props) {
         const war: WarResult = compareWar(playerCard, dealerCard);
         const back = warReturn(mainBet, raise, war);
         if (back > 0) setBankroll((b) => b + back);
+        recordBet("Bet", mainBet + raise, back, war === "tie" ? "Tie in the war" : "Won the war");
         const outcome: Outcome = war === "win" ? "warWin" : war === "tie" ? "warTie" : "warLose";
         const line = war === "win" ? "War: raise wins 1 to 1, bet returned"
             : war === "tie" ? (TIE_AFTER_TIE_BONUS ? "War tied: raise wins, plus a bonus equal to your bet" : "War tied: raise wins 1 to 1, bet returned")

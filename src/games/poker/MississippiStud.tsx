@@ -17,6 +17,7 @@ import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { resultLineClass } from "../../shared/lib/resultTone";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -486,6 +487,12 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function MississippiStud({ bankroll, setBankroll }: Props) {
+    // for the yearly stats: each bet on its own, as the hand settles
+    const recordBet = useBetRecorder();
+    const reportBets = (b: Parameters<typeof settlePayout>[0], r: ReturnType<typeof settlePayout>) => {
+        recordBet("Ante and streets", b.anteBet + b.thirdBet + b.fourthBet + b.fifthBet, r.mainReturn, b.fiveCardLabel);
+        recordBet("3 Card Bonus", b.threeCBBet, r.bonusReturn, b.threeCardLabel);
+    };
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage]                   = useState<Stage>("betting");
@@ -599,12 +606,14 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
             setFifthBet(betAmount);
             const fc = evaluateFiveCard([...playerCards, ...communityCards]);
             const tc = evaluateThreeCardBonus(communityCards);
-            const settled = settlePayout({
+            const betsAtSettle = {
                 anteBet, thirdBet, fourthBet, fifthBet: betAmount,
                 threeCBBet, fiveCardKey: fc.key, fiveCardLabel: fc.label,
                 threeCardKey: tc.key, threeCardLabel: tc.label, threeCardMult: tc.multiplier,
                 folded: false,
-            });
+            };
+        const settled = settlePayout(betsAtSettle);
+        reportBets(betsAtSettle, settled);
             setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
             setMainReturn(settled.mainReturn);
             setBonusReturn(settled.bonusReturn);
@@ -621,12 +630,14 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         if (resolving.current) return;
         resolving.current = true;
         const tc = communityCards.length === 3 ? evaluateThreeCardBonus(communityCards) : { key: null as ThreeCardKey | null, label: "High Card", multiplier: 0 };
-        const settled = settlePayout({
+        const betsAtSettle = {
             anteBet, thirdBet, fourthBet, fifthBet: 0,
             threeCBBet, fiveCardKey: null, fiveCardLabel: "Folded",
             threeCardKey: tc.key, threeCardLabel: tc.label, threeCardMult: tc.multiplier,
             folded: true,
-        });
+        };
+        const settled = settlePayout(betsAtSettle);
+        reportBets(betsAtSettle, settled);
         setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
         setMainReturn(settled.mainReturn);
         setBonusReturn(settled.bonusReturn);
@@ -697,7 +708,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
         const fc = evaluateFiveCard([...playerCards, ...communityCards]);
         const tc = evaluateThreeCardBonus(communityCards);
-        const settled = settlePayout({
+        const betsAtSettle = {
             anteBet,
             thirdBet: newThird,
             fourthBet: newFourth,
@@ -709,7 +720,9 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
             threeCardLabel: tc.label,
             threeCardMult: tc.multiplier,
             folded: false,
-        });
+        };
+        const settled = settlePayout(betsAtSettle);
+        reportBets(betsAtSettle, settled);
 
         setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
         setMainReturn(settled.mainReturn);

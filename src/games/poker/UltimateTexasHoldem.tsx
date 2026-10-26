@@ -8,6 +8,7 @@ import { type ChipDenomination, buildChipStackFromAmount, popLastChip, BTN_GOLD,
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -282,6 +283,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
     const [ante, setAnte] = useState(() => defaultBet("uth", "ante"));
+    const recordBet = useBetRecorder();
     const blind = ante;
     const [trips, setTrips] = useState(() => defaultBet("uth", "trips"));
     const [sixCardBonus, setSixCardBonus] = useState(() => defaultBet("uth", "six"));
@@ -357,6 +359,12 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         if (sixCardBonus > 0) { if (sixBonus.multiplier > 0) { sixReturn = sixCardBonus + sixCardBonus * sixBonus.multiplier; setPendingSixCardSummary(`6 Card Bonus wins ${sixBonus.multiplier} to 1 on ${sixBonus.category}.`); } else setPendingSixCardSummary("6 Card Bonus loses."); } else setPendingSixCardSummary(null);
         setResolvedHand({ playerBest: playerEval, dealerBest: dealerEval, dealerQualified, compare, folded, blindCategory: playerEval.category, tripsCategory: playerEval.category, sixCardCategory: sixBonus.category, blindMultiplier: BLIND_PAYTABLE[playerEval.category] || 0, tripsMultiplier: TRIPS_PAYTABLE[playerEval.category] || 0, sixCardMultiplier: sixBonus.multiplier });
         setPendingSixCardReturn(sixReturn);
+        // for the yearly stats: each bet on its own
+        recordBet("Ante", ante, anteReturn);
+        recordBet("Blind", blind, blindReturn, playerEval.category);
+        recordBet("Play", playStake, playReturn);
+        recordBet("Trips", trips, tripsReturn, playerEval.category);
+        recordBet("6 Card Bonus", sixCardBonus, sixReturn, sixBonus.category ?? undefined);
         const totalReturn = anteReturn + blindReturn + playReturn + tripsReturn;
         const net = totalReturn - (wagerAtDeal + playStake);
         setBankroll(b => b + totalReturn);
