@@ -9,6 +9,7 @@ import HandRow from "../../shared/components/HandRow";
 import BlackjackHand from "../../shared/components/BlackjackHand";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank = "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "J" | "Q" | "K" | "A";
@@ -359,6 +360,7 @@ function BlackjackBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function BlackjackTable({ bankroll, setBankroll }: Props) {
+    const recordBet = useBetRecorder();
     // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
     const [deckNo, setDeckNo] = useState(1);
 
@@ -423,6 +425,8 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
     const finishRoundWithoutDealer = async (finalHands: Card[][], wagersInPlay: number[] = bets) => {
         const allBusted = finalHands.length > 0 && finalHands.every((h) => total(h) > 21);
         const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
+        // every hand lost: each counts as a losing hand in the yearly stats
+        wagersInPlay.forEach((w) => recordBet("Hand", w, 0));
         setRoundReturned(0);
         setRoundNet(-wagered);
         if (dealer.length > 0) { await revealHole(); await wait(400); }
@@ -472,9 +476,11 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
         handsInPlay.forEach((hand, i) => {
             const pt = total(hand);
             const wager = wagersInPlay[i];
-            if (pt > 21) return;
-            if (dealerBusted || pt > dt) returned += wager * 2;
-            else if (pt === dt) returned += wager;
+            // each hand on its own for the yearly stats
+            if (pt > 21) { recordBet("Hand", wager, 0); return; }
+            if (dealerBusted || pt > dt) { returned += wager * 2; recordBet("Hand", wager, wager * 2, dealerBusted ? "Dealer busts" : "Beat the dealer"); }
+            else if (pt === dt) { returned += wager; recordBet("Hand", wager, wager); }
+            else recordBet("Hand", wager, 0);
         });
 
         const wagered = wagersInPlay.reduce((s, w) => s + w, 0);
@@ -612,6 +618,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
         if (dealerBJ) {
             await revealHole();
+            recordBet("Hand", wager, playerBJ ? wager : 0);
             if (playerBJ) {
                 setRoundReturned(wager); setRoundNet(0);
                 setBankroll((b) => b + wager);
@@ -625,6 +632,7 @@ export default function BlackjackTable({ bankroll, setBankroll }: Props) {
 
         if (playerBJ) {
             const returned = wager * 2.5;
+            recordBet("Hand", wager, returned, "Blackjack");
             await revealHole();
             setRoundReturned(returned); setRoundNet(returned - wager);
             setBankroll((b) => b + returned);

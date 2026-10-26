@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { Link, Route, Routes, useLocation, useNavigate } from "react-router"
 import Feedback from "../pages/Feedback"
 import Settings from "../pages/Settings"
+import Stats from "../pages/Stats"
 import WhatsNew from "../pages/WhatsNew"
 import NotFound from "../pages/NotFound"
 import { VERSION } from "./changelog"
@@ -11,6 +12,7 @@ import { feedMeterFromWager } from "../shared/state/progressiveMeter"
 import { TableContext } from "../shared/state/sessionContext"
 import SessionBadge from "../shared/components/SessionBadge"
 import { useHotkeys } from "../shared/lib/hotkeys"
+import { recordBankrollChange } from "../shared/state/yearStats"
 
 // the site used to reopen the last table from this key. Pages have URLs now, so it is cleared.
 const OLD_SELECTED_GAME_KEY = "casino-selected-game"
@@ -237,6 +239,7 @@ export default function Casino() {
 
     // Setting the bankroll by hand is not a wager, so it must not feed the meter
     const resetBankroll = () => {
+        recordBankrollChange("reset", bankroll, DEFAULT_BANKROLL)
         lastBankroll.current = DEFAULT_BANKROLL
         setBankroll(DEFAULT_BANKROLL)
     }
@@ -244,6 +247,7 @@ export default function Casino() {
     const applyBankroll = () => {
         const value = Number(bankrollInput)
         if (!Number.isFinite(value) || value < 0) return
+        if (Math.floor(value) !== bankroll) recordBankrollChange("set", bankroll, Math.floor(value))
         lastBankroll.current = Math.floor(value)
         setBankroll(Math.floor(value))
     }
@@ -361,6 +365,7 @@ export default function Casino() {
 
                         <NavButton active={pathname === "/feedback"} to="/feedback">Give Feedback</NavButton>
 
+                        {/* Stats sits in the top bar only on screens wide enough for it without changing anything else */}<span className="hidden min-[1480px]:contents" data-nav-stats><NavButton active={pathname === "/stats"} to="/stats">Stats</NavButton></span>
                         <NavButton active={pathname === "/settings"} to="/settings">Settings</NavButton>
                     </div>
 
@@ -445,6 +450,7 @@ export default function Casino() {
 
                             <MenuItem active={pathname === "/feedback"} to="/feedback">Give Feedback</MenuItem>
 
+                            <MenuItem active={pathname === "/stats"} to="/stats">Stats</MenuItem>
                             <MenuItem active={pathname === "/settings"} to="/settings">Settings</MenuItem>
 
                             <MenuItem active={pathname === "/whats-new"} to="/whats-new">What&apos;s New</MenuItem>
@@ -497,6 +503,7 @@ export default function Casino() {
             <Routes>
                 <Route path="/" element={home} />
                 <Route path="/settings" element={<Settings onBack={goHome} />} />
+                <Route path="/stats" element={<Stats onBack={goHome} />} />
                 <Route path="/feedback" element={<Feedback onBack={goHome} />} />
                 <Route path="/whats-new" element={<WhatsNew onBack={goHome} />} />
                 {GAMES.map((g) => (
@@ -515,6 +522,12 @@ export default function Casino() {
                         className="border-b-2 border-transparent font-semibold text-room-text transition-colors hover:border-room-accent"
                     >
                         What&apos;s New
+                    </Link>
+                    <Link
+                        to="/stats"
+                        className="border-b-2 border-transparent font-semibold text-room-text transition-colors hover:border-room-accent"
+                    >
+                        Your Stats
                     </Link>
                     </div>
                 </footer>

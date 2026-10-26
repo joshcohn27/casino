@@ -10,6 +10,7 @@ import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import { resultLineClass } from "../../shared/lib/resultTone";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Rank =
@@ -470,6 +471,7 @@ function DDMBar({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
+    const recordBet = useBetRecorder();
     // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
     const [deckNo, setDeckNo] = useState(1);
     const [deck, setDeck] = useState<Card[]>(() => createShoe());
@@ -608,6 +610,9 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
         if (sideBet > 0) {
             lines.push(`Push 22 loses ${formatMoney(sideBet)}.`);
         }
+        recordBet("Hand", totalRiskOnMain, 0);
+        recordBet("Insurance", currentInsuranceBet, currentInsuranceBet > 0 ? currentInsuranceBet * 3 : 0, "Dealer blackjack");
+        recordBet("Push 22", sideBet, 0);
 
         finishRound(returned, lines, "Dealer Blackjack", totalRiskOnMain);
         return true;
@@ -731,6 +736,14 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
                 lines.push(`Push 22 loses ${formatMoney(sideBet)}.`);
             }
         }
+        // for the yearly stats: Push 22 now, and the main hand when it is decided
+        const sideReturned = returned;
+        recordBet("Push 22", sideBet, sideReturned, "Dealer 22");
+        recordBet("Insurance", insuranceBet, 0);
+        const finishMain = (label: string, risk: number) => {
+            recordBet("Hand", risk, returned - sideReturned, label);
+            finishRound(returned, lines, label, risk);
+        };
 
         if (playerBJ) {
             const suited = isSuitedBlackjack(finalPlayer);
@@ -741,20 +754,20 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
             lines.push(
                 `${suited ? "Suited" : "Unsuited"} blackjack returns ${formatMoney(mainReturn)} (${formatMoney(mainRisk)} back + ${formatMoney(blackjackProfit)} win).`
             );
-            finishRound(returned, lines, suited ? "Suited Blackjack" : "Blackjack", mainRisk);
+            finishMain(suited ? "Suited Blackjack" : "Blackjack", mainRisk);
             return;
         }
 
         if (playerBusted) {
             lines.push(`Main action loses ${formatMoney(mainRisk)}.`);
-            finishRound(returned, lines, "Bust", mainRisk);
+            finishMain("Bust", mainRisk);
             return;
         }
 
         if (dealerHas22) {
             returned += mainRisk;
             lines.push(`Dealer makes 22. Standing wagers push: ${formatMoney(mainRisk)} returned.`);
-            finishRound(returned, lines, "Push 22", mainRisk);
+            finishMain("Push 22", mainRisk);
             return;
         }
 
@@ -762,19 +775,19 @@ export default function DoubleDownMadness({ bankroll, setBankroll }: Props) {
             const mainReturn = mainRisk * 2;
             returned += mainReturn;
             lines.push(`Main action wins even money: ${formatMoney(mainReturn)} returned.`);
-            finishRound(returned, lines, "Win", mainRisk);
+            finishMain("Win", mainRisk);
             return;
         }
 
         if (total(finalPlayer) === total(finalDealer)) {
             returned += mainRisk;
             lines.push(`Push: ${formatMoney(mainRisk)} returned.`);
-            finishRound(returned, lines, "Push", mainRisk);
+            finishMain("Push", mainRisk);
             return;
         }
 
         lines.push(`Main action loses ${formatMoney(mainRisk)}.`);
-        finishRound(returned, lines, "Lose", mainRisk);
+        finishMain("Lose", mainRisk);
     };
 
     const runDealer = async (currentPlayer: Card[], mainRisk: number) => {

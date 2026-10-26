@@ -17,6 +17,7 @@ import { SlideBtn } from "../../shared/components/SlideBtn";
 import { defaultBet } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { resultLineClass } from "../../shared/lib/resultTone";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -440,6 +441,14 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
+    // for the yearly stats: each bet on its own, as the hand settles
+    const recordBet = useBetRecorder();
+    const reportBets = (b: Parameters<typeof settle>[0], r: ReturnType<typeof settle>) => {
+        recordBet("Ante", b.anteBet, r.anteReturn + r.anteBonusWin, r.anteBonusWin > 0 ? `Ante bonus, ${r.playerRank}` : undefined);
+        recordBet("Play", b.playBet, r.playReturn);
+        recordBet("Pair Plus", b.pairPlusBet, r.ppReturn, r.playerRank);
+        recordBet("6 Card Bonus", b.sixCardBet, r.sixCardReturn, r.sixCardRank);
+    };
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
@@ -586,7 +595,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         resolving.current = true;
         setStage("showdown");
         await wait(900);
-        const settled = settle({ playerCards: pCards, dealerCards: dCards, anteBet: 0, pairPlusBet: pp, sixCardBet: sc, playBet: 0, folded: false });
+        const betsAtSettle = { playerCards: pCards, dealerCards: dCards, anteBet: 0, pairPlusBet: pp, sixCardBet: sc, playBet: 0, folded: false };
+        const settled = settle(betsAtSettle);
+        reportBets(betsAtSettle, settled);
         setBankroll(p => p + settled.ppReturn + settled.sixCardReturn);
         setResultInfo(settled);
         setResultLines(buildResultLines(settled, { anteBet: 0, pairPlusBet: pp, sixCardBet: sc }));
@@ -599,7 +610,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         resolving.current = true;
         setStage("showdown");
         await wait(600);
-        const settled = settle({ playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: 0, folded: true });
+        const betsAtSettle = { playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: 0, folded: true };
+        const settled = settle(betsAtSettle);
+        reportBets(betsAtSettle, settled);
         setBankroll(p => p + settled.anteReturn + settled.anteBonusWin + settled.playReturn + settled.ppReturn + settled.sixCardReturn);
         setResultInfo(settled);
         setResultLines(buildResultLines(settled));
@@ -616,7 +629,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setBankroll(p => p - pb);
         setStage("showdown");
         await wait(600);
-        const settled = settle({ playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: pb, folded: false });
+        const betsAtSettle = { playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: pb, folded: false };
+        const settled = settle(betsAtSettle);
+        reportBets(betsAtSettle, settled);
         setBankroll(p => p + settled.anteReturn + settled.anteBonusWin + settled.playReturn + settled.ppReturn + settled.sixCardReturn);
         setResultInfo(settled);
         setResultLines(buildResultLines(settled));

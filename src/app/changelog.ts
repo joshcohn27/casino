@@ -21,6 +21,27 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.13.0",
+        date: "2026-10-25",
+        title: "Pick your Pai Gow seat",
+        changes: [
+            ["new", "Pai Gow: choose your seat (1, 2, 3, 5, 6 or 7; there is no seat 4), and change it any time."],
+            ["new", "Pai Gow deals like a real table: the deck is set out in seven stacks of seven, and a random deal number from 1 to 7, shown each hand, picks the dealer's stack. Your seat decides which stack is yours. The i button explains it."],
+            ["new", "Your Stats shows how each Pai Gow seat has done."],
+        ],
+    },
+    {
+        version: "4.12.0",
+        date: "2026-10-25",
+        title: "Your Stats",
+        changes: [
+            ["new", "A Stats page with your play year by year: hands, total bet, net, hands won, average bet, time played and your longest streaks."],
+            ["new", "Every bet on its own, side bets included: how often you made it, how often it won, what it returned, its biggest win and what it hit."],
+            ["new", "Net by month as a chart, every game side by side, your biggest win and loss, best and worst day, and your Card Ladder and bankroll history."],
+            ["new", "Stats are kept in this browser for five years. Find them in the footer, in the phone menu, and in the top bar on wide screens."],
+        ],
+    },
+    {
         version: "4.11.0",
         date: "2026-10-19",
         title: "A new Roulette table",

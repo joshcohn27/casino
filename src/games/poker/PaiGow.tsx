@@ -12,7 +12,7 @@ import ConfirmDialog from "../../shared/components/ConfirmDialog";
 import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import { JACKPOT_BET, MUST_HIT_BY, TIER_NAMES, awardTopHand, placeBet, readJackpot, simulateLinkedTables, writeJackpot, type Meters, type OtherWin } from "../../shared/state/tableJackpot";
 import { makeRng } from "../../shared/state/progressiveMeter";
-import { TableContext } from "../../shared/state/sessionContext";
+import { TableContext, useBetRecorder } from "../../shared/state/sessionContext";
 import { resultLineClass } from "../../shared/lib/resultTone";
 
 // ─── Game types (preserved) ───────────────────────────────────────────────────
@@ -137,9 +137,23 @@ function createDeck(): Card[] {
     return shuffle(out);
 }
 
-function draw(deck: Card[], count: number): [Card[], Card[]] {
-    return [deck.slice(0, count), deck.slice(count)];
+// ─── The deal: seven stacks of seven ──────────────────────────────────────────
+// As at a real table: the shuffled deck is set out in seven stacks of seven (the last 4 cards
+// are not used), and a number from 1 to 7 says which stack is the dealer's. The stacks go
+// round in a fixed order: the dealer, then seat 7 on the dealer's far left, round to seat 1 on
+// the dealer's right. There is no seat 4.
+
+export const SEATS = [1, 2, 3, 5, 6, 7] as const;
+export type Seat = (typeof SEATS)[number];
+const DEAL_ROUND: ("dealer" | Seat)[] = ["dealer", 7, 6, 5, 3, 2, 1];
+const SEAT_KEY = "casino-paigow-seat";
+
+/** Which stack (1 to 7) goes to a place at the table, when the dealer's stack is number n. */
+function stackFor(place: "dealer" | Seat, n: number) {
+    return ((n - 1 + DEAL_ROUND.indexOf(place)) % 7) + 1;
 }
+const stackCards = (deck: Card[], stack: number) => deck.slice((stack - 1) * 7, stack * 7);
+
 
 function valueOf(card: Card) {
     if (card.rank === "JOKER") return 15;
@@ -755,6 +769,13 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
         "• You can fold instead of setting your hand. You lose the main bet; Fortune, Ace High and the table jackpot still pay.",
     ]],
+    ["The Deal and Your Seat", [
+        "• Pick your seat: 1, 2, 3, 5, 6 or 7 (there is no seat 4). You can change it any time; it applies from the next hand.",
+        "• Each hand, the shuffled deck is set out in seven stacks of seven cards. The last 4 cards are not used.",
+        "• A random deal number from 1 to 7 picks which stack is the dealer's.",
+        "• The other stacks go round the table in order: dealer, then seat 7 on the dealer's far left, round to seat 1 on the dealer's right.",
+        "• So your seat and the deal number decide which stack is yours, as at a real table. It does not change your odds.",
+    ]],
     ["Ask Dealer for Help", [
         "• Pressing Ask Dealer for Help calculates the split that gives you the best possible outcome against the dealer's revealed hand.",
         "• The outcome check indicator shows whether your current split matches, beats, or falls short of that optimal outcome.",
@@ -812,9 +833,32 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
+/** Your seat, and the number the last hand was dealt from. It keeps one height. */
+function DealLine({ seat, onSeat, number }: { seat: Seat; onSeat: (s: Seat) => void; number: number | null }) {
+    return (
+        <div className="mb-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="deal-line">
+            <label className="flex items-center gap-2 text-sm font-semibold text-white/80">
+                Seat
+                <select
+                    value={seat}
+                    onChange={(e) => onSeat(Number(e.target.value) as Seat)}
+                    className="min-h-[44px] rounded-[4px] border border-room-line bg-room-deep px-3 text-sm font-bold text-room-text"
+                    data-testid="seat-picker"
+                >
+                    {SEATS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+            </label>
+            <div className="flex items-center gap-2" data-deal-number={number ?? ""}>
+                <span className="text-sm font-semibold text-white/80">Deal number</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gold-deep bg-ink text-base font-extrabold text-gold-soft">{number ?? "-"}</span>
+            </div>
+        </div>
+    );
+}
+
 function TableLabel({ onRules }: { onRules: () => void }) {
     return (
-        <div className="mb-3 flex shrink-0 select-none flex-col items-center gap-1">
+        <div className="mb-2 flex shrink-0 select-none flex-col items-center gap-1">
             <div className="flex items-center gap-2">
                 <h1
                     className="text-center text-2xl font-bold text-gold-soft"
@@ -940,6 +984,14 @@ function PaiGowBar({
 export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
+    // your seat: remembered, and it can change any time (it applies from the next deal)
+    const [seat, setSeat] = useState<Seat>(() => {
+        try { const v = Number(window.localStorage.getItem(SEAT_KEY)); return (SEATS as readonly number[]).includes(v) ? (v as Seat) : 3; } catch { return 3; }
+    });
+    const chooseSeat = (v: Seat) => { setSeat(v); try { window.localStorage.setItem(SEAT_KEY, String(v)); } catch { /* not kept */ } };
+    const [dealNumber, setDealNumber] = useState<number | null>(null);
+    const seatAtDeal = useRef<Seat>(3);
+    const recordBet = useBetRecorder();
     // the hand (by deck number) the player folded, and how far its fold has played: 1-7 cards
     // turned over, 8 gathered into a pile. Only how the cards look; the fold itself settles at once.
     const [foldedDeck, setFoldedDeck] = useState<number | null>(null);
@@ -1166,10 +1218,12 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         }
         setDeckNo((n) => n + 1);
         const freshDeck = createDeck();
-        let next = freshDeck;
-        let p: Card[]; let d: Card[];
-        [p, next] = draw(next, 7);
-        [d, next] = draw(next, 7);
+        // the number picks the dealer's stack; the seat picks yours
+        const number = 1 + Math.floor(Math.random() * 7);
+        const p = stackCards(freshDeck, stackFor(seat, number));
+        const d = stackCards(freshDeck, stackFor("dealer", number));
+        setDealNumber(number);
+        seatAtDeal.current = seat;
         setMainBet(normalizedMain);
         setFortuneBet(normalizedFortune);
         setAceHighBet(normalizedAceHigh);
@@ -1239,6 +1293,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             mainReturn += mainBet;
             lines.push("Push. One hand each.");
         }
+        // for the yearly stats: what each bet brought back, measured as each block adds to the total
+        recordBet("Main", mainBet, mainReturn, folded ? undefined : "Won both hands");
+        let mark = mainReturn;
         if (fortuneBet > 0 && fortunePreview) {
             if (fortunePreview.multiplier > 0) {
                 const win = fortuneBet * fortunePreview.multiplier;
@@ -1250,6 +1307,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Fortune loses.");
             }
+            recordBet("Fortune", fortuneBet, mainReturn - mark, fortunePreview.category);
+            mark = mainReturn;
         }
         if (aceHighBet > 0 && dealerAceHighInfo && playerAceHighInfo) {
             if (dealerAceHighInfo.aceHigh && playerAceHighInfo.aceHigh) {
@@ -1264,6 +1323,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Ace High loses.");
             }
+            recordBet("Ace High", aceHighBet, mainReturn - mark, dealerAceHighInfo.aceHigh && playerAceHighInfo.aceHigh ? "Both ace high" : dealerAceHighInfo.hasJoker ? "Dealer ace high with joker" : "Dealer ace high");
+            mark = mainReturn;
         }
         if (jackpotBet > 0 && fortunePreview) {
             const hand = fortunePreview.category;
@@ -1285,7 +1346,10 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             } else {
                 lines.push("Jackpot: no win.");
             }
+            recordBet("Table Jackpot", jackpotBet, mainReturn - mark, JACKPOT_TOP_HANDS.has(hand) ? hand : JACKPOT_FIXED[hand] ? (hand === "Royal Flush + Royal Match" ? "Royal Flush" : hand) : "Must Hit");
         }
+        // and the whole hand under the seat it was played from
+        recordBet(`Seat ${seatAtDeal.current}`, wagerAtDeal, mainReturn, "Won the hand");
         setBankroll((b) => b + mainReturn);
         setNet(mainReturn - wagerAtDeal);
         setRoundReturned(mainReturn);
@@ -1529,6 +1593,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 {/* the right column is 324px with its gap and edge, so the same room on the left keeps the title centered on the page */}
                 <div className="lg:pl-[324px]">
                     <TableLabel onRules={() => setShowRules(true)} />
+                    <DealLine seat={seat} onSeat={chooseSeat} number={dealNumber} />
                 </div>
 
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:pl-6">

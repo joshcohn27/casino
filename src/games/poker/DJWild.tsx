@@ -18,6 +18,7 @@ import {
     PROGRESSIVE_BET, PROGRESSIVE_CONTRIBUTION, PROGRESSIVE_PAYTABLE, progressiveRow,
     TRIPS_TABLE_ROWS, createDeck, shuffle, evaluateHand, isWild, tripsMultiplier, suggestAction, settle,
 } from "./djWildLogic";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -235,6 +236,16 @@ function TripsTable({ hitHand, hitNatural }: { hitHand: string | null; hitNatura
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DJWild({ bankroll, setBankroll }: Props) {
+    // for the yearly stats: each bet on its own, as the hand settles
+    const recordBet = useBetRecorder();
+    const reportBets = (b: Parameters<typeof settle>[0], r: ReturnType<typeof settle>) => {
+        recordBet("Ante", b.ante, r.anteReturn);
+        recordBet("Blind", b.ante, r.blindReturn, r.playerHand.category);
+        recordBet("Play", b.play, r.playReturn);
+        recordBet("Trips", b.trips, r.tripsReturn, r.playerHand.category);
+        recordBet("Two-Way Bad Beat", b.badBeat ?? 0, r.badBeatReturn);
+        recordBet("Progressive", b.progressive ? PROGRESSIVE_BET : 0, r.progressiveReturn, r.playerHand.category);
+    };
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
@@ -400,10 +411,12 @@ export default function DJWild({ bankroll, setBankroll }: Props) {
             }
             setPlayerSorted(true);
             await wait(hidden.length > 0 ? 500 : 0);
-            const settled = settle({
+            const betsAtSettle = {
                 player: playerCards, dealer: dealerCards, ante: anteBet, play, trips: tripsBet, folded,
                 badBeat: badBeatBet, progressive: progressiveBet > 0, meter: meterRef.current,
-            });
+            };
+        const settled = settle(betsAtSettle);
+        reportBets(betsAtSettle, settled);
             if (progressiveBet > 0) setMeter(settled.meterAfter);
             setBankroll((b) => b + settled.totalReturn);
             setResult(settled);

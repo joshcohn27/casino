@@ -18,6 +18,7 @@ import {
     readBlazingMeter, writeBlazingMeter, growBlazingMeter, simulateBlazingPlayers,
 } from "./sideBetLogic";
 import { makeRng, ambientHands } from "../../shared/state/progressiveMeter";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // Side Bet Blackjack: classic blackjack (six decks, blackjack pays 3 to 2, dealer stands on
 // all 17s) with six side bets. Every side bet is decided by the first cards dealt: your two
@@ -439,6 +440,7 @@ const startingBets = (): Record<SpotId, number> => ({
 const EMPTY_BETS: Record<SpotId, number> = { main: 0, kingsBounty: 0, luckyLadies: 0, trilux: 0, matchDealer: 0, fortune: 0 };
 
 export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
+    const recordBet = useBetRecorder();
     // two shoes take turns, gold backs then purple: a reshuffle brings out the other one
     const [deckNo, setDeckNo] = useState(1);
 
@@ -526,6 +528,7 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
 
     // every result includes the side bets, which were settled at the deal
     const finishRound = (mainReturned: number, mainWagered: number, text: string) => {
+        recordBet("Main bet", mainWagered, mainReturned, text.startsWith("Blackjack") ? "Blackjack" : "Beat the dealer");
         setRoundReturned(mainReturned + sideReturned.current);
         setRoundNet(mainReturned + sideReturned.current - mainWagered - sideWagered.current);
         if (mainReturned > 0) setBankroll((b) => b + mainReturned);
@@ -764,6 +767,7 @@ export default function SideBetBlackjack({ bankroll, setBankroll }: Props) {
         const settled = settleSideBets(playerHand, dealerHand, sides, blazing);
         sideReturned.current = settled.returned;
         setSideLines(settled.lines);
+        settled.lines.forEach((line) => recordBet(line.name, line.bet, line.returned, line.pays || undefined));
         if (settled.returned > 0) setBankroll((b) => b + settled.returned);
         // a moment to take in a side bet win before the hand carries on
         const jackpot = settled.lines.find((line) => line.id === "blazing" && (line.key === "threeDiamonds" || line.key === "threeSuited"));

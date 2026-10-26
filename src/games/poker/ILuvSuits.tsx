@@ -14,6 +14,7 @@ import {
     HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE,
     createDeck, shuffle, evaluateFlushHand, describeFlushHand, maxRaiseMultiple, suggestAction, settle,
 } from "./iLuvSuitsLogic";
+import { useBetRecorder } from "../../shared/state/sessionContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,6 +142,14 @@ function PayoutColumn({ title, entries, unit, highlight }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ILuvSuits({ bankroll, setBankroll }: Props) {
+    // for the yearly stats: each bet on its own, as the hand settles
+    const recordBet = useBetRecorder();
+    const reportBets = (b: Parameters<typeof settle>[0], r: ReturnType<typeof settle>) => {
+        recordBet("Ante", b.ante, r.anteReturn);
+        recordBet("Play", b.play, r.playReturn);
+        recordBet("Flush Rush", b.flushRush, r.flushRushReturn, r.flushRushMultiplier > 0 ? `Pays ${r.flushRushMultiplier} to 1` : undefined);
+        recordBet("Super Flush Rush", b.superFlush, r.superFlushReturn, r.superFlushMultiplier > 0 ? `${r.superFlushCount}-card straight flush` : undefined);
+    };
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage] = useState<Stage>("betting");
@@ -268,10 +277,12 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
             await wait(SORT_DELAY_MS);
             setDealerSorted(true);
             await wait(500);
-            const settled = settle({
+            const betsAtSettle = {
                 player: playerCards, dealer: dealerCards,
                 ante: anteBet, play, flushRush: flushRushBet, superFlush: superFlushBet, folded,
-            });
+            };
+        const settled = settle(betsAtSettle);
+        reportBets(betsAtSettle, settled);
             setBankroll((b) => b + settled.totalReturn);
             setResult(settled);
             setStage("done");

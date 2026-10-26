@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from "react"
 import { defaultBet } from "../../shared/state/settings"
-import { useHandRecorder } from "../../shared/state/sessionContext"
+import { useBetRecorder, useHandRecorder } from "../../shared/state/sessionContext"
+
+/** "FULL HOUSE" as "Full House", for the yearly stats */
+const handName = (label: string) => label.toLowerCase().replace(/\b([a-z])/g, (c) => c.toUpperCase()).replace(/ Of A /, " of a ").replace(/ Or /, " or ")
 
 type Props = {
     bankroll: number
@@ -384,6 +387,7 @@ function DenomBadge({
 
 export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
     const recordHand = useHandRecorder()
+    const recordBet = useBetRecorder()
     const [stage, setStage] = useState<Stage>("ready")
     const [bet, setBet] = useState(() => defaultBet("videopoker", "credits"))
     const [denom, setDenom] = useState<(typeof DENOM_VALUES)[number]>(() => defaultBet("videopoker", "denom") as (typeof DENOM_VALUES)[number])
@@ -450,6 +454,7 @@ export default function VideoPokerDeuces({ bankroll, setBankroll }: Props) {
             setBankroll((current) => current + result.payout)
         }
         recordHand(totalBet, result.payout - totalBet)
+        recordBet("Deuces Wild", totalBet, result.payout, result.label ? handName(result.label) : undefined)
     }
 
     const onDealDraw = () => {
