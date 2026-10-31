@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.18.0",
+        date: "2026-10-30",
+        title: "Three Card Poker: turn your own cards, or play blind",
+        changes: [
+            ["new", "Three Card Poker: your cards are dealt face down. Tap one, press its number, or press Reveal Cards to turn them over."],
+            ["new", "Three Card Poker: you can Play or Fold without looking. The dealer shows first, then your cards turn over one at a time."],
+            ["improved", "Three Card Poker: the dealer's cards now turn over one at a time, and the Suggest hint waits until all three of your cards are up."],
+        ],
+    },
+    {
         version: "4.17.2",
         date: "2026-10-30",
         title: "Fortune hands can't be folded away",

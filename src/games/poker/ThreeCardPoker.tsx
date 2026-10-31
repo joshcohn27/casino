@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
-import PlayingCard from "../../shared/components/Card";
-import { DeckContext } from "../../shared/lib/deck";
+import HandRow from "../../shared/components/HandRow";
+import { sortByPower } from "../../shared/lib/handSort";
 import type { Card as SharedCard } from "../../shared/lib/cards";
 import {
     addChipToStack,
@@ -78,15 +78,12 @@ const CHIP_KEY = "casino-tcp-chip";
 
 const FELT_COLOR = "#0c4a6e";
 const CARD_CLS = "h-[80px] w-[56px] rounded-[10px] sm:h-[94px] sm:w-[66px] sm:rounded-[12px]";
-const CARD_VARIANTS = {
-    initial: { opacity: 0, y: -18, scale: 0.94 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-};
-const CARD_TRANSITION = (delay: number) => ({
-    duration: 0.32,
-    ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-    delay,
-});
+// Turning cards over: a pause before the hand sorts, the dealer's pace, and the slower turn of
+// any cards the player left face down, which come after the dealer has shown
+const SORT_DELAY_MS = 520;
+const DEALER_FLIP_MS = 300;
+const BLIND_FLIP_MS = 520;
+const ROW_WIDTH = "w-[186px] sm:w-[216px]";
 
 // ─── Utility functions ────────────────────────────────────────────────────────
 
@@ -113,14 +110,15 @@ function draw(deck: Card[], count: number): [Card[], Card[]] {
     return [deck.slice(0, count), deck.slice(count)];
 }
 
-function toShared(card: Card, faceUp: boolean): SharedCard {
+function toRowCard(card: Card): Pick<SharedCard, "id" | "rank" | "suit"> {
     return {
         id: card.id,
         suit: card.suit as SharedCard["suit"],
         rank: (card.rank === "10" ? "T" : card.rank) as SharedCard["rank"],
-        faceUp,
     };
 }
+
+const sortedIds = (cards: Card[]) => sortByPower(cards.map((c) => ({ id: c.id, value: c.value, suit: c.suit })), "groups");
 
 function readStored(key: string, fallback: number): number {
     if (typeof window === "undefined") return fallback;
@@ -320,31 +318,11 @@ function PayoutColumn({ title, entries, highlight }: {
     );
 }
 
-function CardRow({ cards, faceUp, placeholder }: { cards: Card[]; faceUp: boolean; placeholder?: boolean }) {
-    // keyed by deck as well as by name, so a card dealt two hands running is a new card on screen
-    const deckNo = useContext(DeckContext);
-    if (cards.length === 0) {
-        if (!placeholder) return null;
-        return (
-            <div className="flex gap-2">
-                {[0, 1, 2].map(i => (
-                    <div key={i} className={`${CARD_CLS} border border-dashed border-white/15 bg-white/5 rounded-[10px] sm:rounded-[12px]`} />
-                ))}
-            </div>
-        );
-    }
+function EmptyCardRow() {
     return (
         <div className="flex gap-2">
-            {cards.map((card, i) => (
-                <motion.div
-                    key={`${deckNo}-${card.id}`}
-                    variants={CARD_VARIANTS}
-                    initial="initial"
-                    animate="animate"
-                    transition={CARD_TRANSITION(i * 0.08)}
-                >
-                    <PlayingCard card={toShared(card, faceUp)} className={CARD_CLS} />
-                </motion.div>
+            {[0, 1, 2].map(i => (
+                <div key={i} className={`${CARD_CLS} border border-dashed border-white/15 bg-white/5 rounded-[10px] sm:rounded-[12px]`} />
             ))}
         </div>
     );
@@ -419,6 +397,10 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "Settled at showdown regardless of whether you folded or the dealer qualified.",
                         "Pays as shown in the payout table.",
                     ]} />
+                    <Section title="Your Cards" items={[
+                        "Your cards are dealt face down. Tap one to turn it over, press its number, or press Reveal Cards for all three.",
+                        "You can Play or Fold at any time, even without looking. That is playing blind: the dealer shows first, then your cards turn over one at a time.",
+                    ]} />
                     <Section title="Hand Rankings" items={[
                         "Straight Flush beats Three of a Kind in Three Card Poker — note this differs from standard poker where a straight flush also tops the rankings, but Three of a Kind beats a regular Straight here because it is harder to make with only 3 cards.",
                         "High to low: Straight Flush · Three of a Kind · Straight · Flush · Pair · High Card.",
@@ -430,7 +412,7 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "If your highest card is a Jack or lower, always fold.",
                         "The house edge playing this strategy is approximately 3.4% on the Ante and Play.",
                         "Pair Plus has no strategy. It pays on your cards alone, whatever you decide with your Ante.",
-                        "The Suggest indicator on the felt uses this exact strategy and updates in real time as your cards are dealt.",
+                        "The Suggest indicator on the felt uses this exact strategy and appears once all three of your cards are turned over.",
                     ]} />
                 </div>
             </div>
@@ -455,6 +437,10 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     const [deck, setDeck] = useState<Card[]>(() => createDeck());
     const [playerCards, setPlayerCards] = useState<Card[]>([]);
     const [dealerCards, setDealerCards] = useState<Card[]>([]);
+    // Reveal state: the player turns their own cards, or plays blind; the dealer's turn at the end
+    const [peeled, setPeeled] = useState<string[]>([]);
+    const [playerSorted, setPlayerSorted] = useState(false);
+    const [dealerShown, setDealerShown] = useState(0);
 
     const [anteChips, setAnteChips] = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "ante")));
     const [ppChips, setPpChips]     = useState<ChipDenomination[]>(() => buildChipStackFromAmount(defaultBet("threecardpoker", "pairplus")));
@@ -485,6 +471,36 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     useEffect(() => { window.localStorage.setItem(PP_KEY, String(pendingPp)); }, [pendingPp]);
     useEffect(() => { window.localStorage.setItem(SC_KEY, String(pendingSc)); }, [pendingSc]);
     useEffect(() => { window.localStorage.setItem(CHIP_KEY, String(selectedChip)); }, [selectedChip]);
+
+    const peelCard = (cardId: string) => {
+        setPeeled((prev) => (prev.includes(cardId) ? prev : [...prev, cardId]));
+    };
+    const revealAll = () => {
+        playerCards.filter((c) => !peeled.includes(c.id)).forEach((c, i) => {
+            window.setTimeout(() => peelCard(c.id), i * 130);
+        });
+    };
+
+    // Once every card is face up, give the last flip a moment and then sort the hand
+    const allPeeled = playerCards.length === 3 && peeled.length === 3;
+    useEffect(() => {
+        if (!allPeeled || playerSorted) return;
+        const id = window.setTimeout(() => setPlayerSorted(true), SORT_DELAY_MS);
+        return () => window.clearTimeout(id);
+    }, [allPeeled, playerSorted]);
+
+    // The end of the hand: the dealer's cards one at a time, then any the player left face down
+    async function turnCardsForShowdown(pCards: Card[], alreadyUp: string[]) {
+        for (let n = 1; n <= 3; n++) {
+            setDealerShown(n);
+            await wait(DEALER_FLIP_MS);
+        }
+        for (const card of pCards) {
+            if (alreadyUp.includes(card.id)) continue;
+            peelCard(card.id);
+            await wait(BLIND_FLIP_MS);
+        }
+    }
 
     // ─── Bet helpers ──────────────────────────────────────────────────────────
 
@@ -589,6 +605,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setSixCardBet(pendingSc);
         setPlayerCards(pCards);
         setDealerCards(dCards);
+        setPeeled([]);
+        setPlayerSorted(false);
+        setDealerShown(0);
         setDeck(d2);
         setResultInfo(null);
         setResultLines([]);
@@ -602,7 +621,8 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         if (resolving.current) return;
         resolving.current = true;
         setStage("showdown");
-        await wait(900);
+        await wait(600);
+        await turnCardsForShowdown(pCards, []);
         const betsAtSettle = { playerCards: pCards, dealerCards: dCards, anteBet: 0, pairPlusBet: pp, sixCardBet: sc, playBet: 0, folded: false };
         const settled = settle(betsAtSettle);
         reportBets(betsAtSettle, settled);
@@ -617,7 +637,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         if (stage !== "dealt" || resolving.current) return;
         resolving.current = true;
         setStage("showdown");
-        await wait(600);
+        await turnCardsForShowdown(playerCards, peeled);
         const betsAtSettle = { playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: 0, folded: true };
         const settled = settle(betsAtSettle);
         reportBets(betsAtSettle, settled);
@@ -636,7 +656,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         setPlayBet(pb);
         setBankroll(p => p - pb);
         setStage("showdown");
-        await wait(600);
+        await turnCardsForShowdown(playerCards, peeled);
         const betsAtSettle = { playerCards, dealerCards, anteBet, pairPlusBet, sixCardBet, playBet: pb, folded: false };
         const settled = settle(betsAtSettle);
         reportBets(betsAtSettle, settled);
@@ -672,7 +692,6 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
     const canDeal = stage === "betting" && (pendingAnte > 0 || pendingPp > 0) && bankroll >= pendingAnte + pendingPp + pendingSc;
     const canPlay = stage === "dealt" && bankroll >= anteBet;
-    const dealerFaceUp = stage === "showdown" || stage === "done";
 
     const ppHighlight  = resultInfo ? resultInfo.playerRank : undefined;
     const scHighlight  = resultInfo && sixCardBet > 0 ? resultInfo.sixCardRank : undefined;
@@ -699,7 +718,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         : null;
 
     const suggestion =
-        stage === "dealt" && playerCards.length === 3
+        stage === "dealt" && playerSorted
             ? getStrategySuggestion(playerCards)
             : null;
 
@@ -760,6 +779,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
     // the first result line repeats what the Player and Dealer labels already say
     const playerNotes = (
         <>
+            {stage === "dealt" && !allPeeled && (
+                <div className="text-[11px] font-bold text-white/75">Turn your cards over, or play blind.</div>
+            )}
             {suggestion && (
                 <div
                     className={`flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-sm font-bold ${
@@ -813,6 +835,11 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                                     <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={handleDeal} disabled={!canDeal}>
                                         Deal
                                     </button>
+                                </SlideBtn>
+                            )}
+                            {stage === "dealt" && !allPeeled && (
+                                <SlideBtn key="reveal">
+                                    <button data-hotkey="R" className={BTN_NEUTRAL} onClick={revealAll}>Reveal Cards</button>
                                 </SlideBtn>
                             )}
                             {stage === "dealt" && (
@@ -918,8 +945,16 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
                     <div className="flex flex-col items-center gap-2">
                         <div className="text-[13px] font-bold text-white/75">Dealer</div>
                         {/* the status sits beside the cards on desktop and in its own reserved row on phones */}
-                        <div className="relative">
-                            <CardRow cards={dealerCards} faceUp={dealerFaceUp} placeholder />
+                        <div className={`relative ${ROW_WIDTH}`}>
+                            {dealerCards.length === 0 ? <EmptyCardRow /> : (
+                                <HandRow
+                                    testId="dealer-cards"
+                                    size="md"
+                                    cards={dealerCards.map(toRowCard)}
+                                    order={stage === "done" ? sortedIds(dealerCards) : undefined}
+                                    isFaceUp={(id) => dealerCards.findIndex((c) => c.id === id) < dealerShown}
+                                />
+                            )}
                             <div data-side-notes className="absolute left-full top-0 ml-4 hidden h-full items-center whitespace-nowrap lg:flex">{dealerNote}</div>
                         </div>
                         <div className="flex min-h-[16px] items-center lg:hidden">{dealerNote}</div>
@@ -977,8 +1012,19 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
                     {/* Player area */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="relative">
-                            <CardRow cards={playerCards} faceUp placeholder />
+                        <div className={`relative ${ROW_WIDTH}`}>
+                            {playerCards.length === 0 ? <EmptyCardRow /> : (
+                                <HandRow
+                                    testId="player-cards"
+                                    size="md"
+                                    cards={playerCards.map(toRowCard)}
+                                    order={playerSorted || stage === "done" ? sortedIds(playerCards) : undefined}
+                                    isFaceUp={(id) => peeled.includes(id)}
+                                    onCardClick={peelCard}
+                                    canClick={(id) => stage === "dealt" && !peeled.includes(id)}
+                                    cardLabel={(id) => (peeled.includes(id) ? "Card" : "Turn card over")}
+                                />
+                            )}
                             <div data-side-notes className="absolute left-full top-0 ml-4 hidden h-full flex-col items-start justify-center gap-1 whitespace-nowrap lg:flex">{playerNotes}</div>
                         </div>
                         <div className="text-[13px] font-bold text-white/75">Player</div>

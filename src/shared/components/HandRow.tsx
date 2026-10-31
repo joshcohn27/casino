@@ -55,7 +55,7 @@ export default function HandRow({
 
     return (
         <div
-            className={`relative w-full ${cfg.vars}`}
+            className={`relative isolate w-full ${cfg.vars}`}
             style={{ height: "var(--ch)", maxWidth: `calc(${reserve} * (var(--cw) + 6px))` }}
             data-testid={testId}
         >
