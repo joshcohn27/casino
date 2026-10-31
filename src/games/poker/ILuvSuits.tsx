@@ -11,7 +11,7 @@ import { defaultBet } from "../../shared/state/settings";
 import { resultLineClass } from "../../shared/lib/resultTone";
 import {
     type Card, type Settlement,
-    HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE,
+    HAND_SIZE, MIN_ANTE, SUITS, FLUSH_RUSH_PAYTABLE, SUPER_FLUSH_PAYTABLE, longestStraightFlush,
     createDeck, shuffle, evaluateFlushHand, describeFlushHand, maxRaiseMultiple, suggestAction, settle,
 } from "./iLuvSuitsLogic";
 import { useBetRecorder } from "../../shared/state/sessionContext";
@@ -351,7 +351,9 @@ export default function ILuvSuits({ bankroll, setBankroll }: Props) {
     const playView = spotView([], playBet, result?.playReturn ?? 0);
 
     const flushRushHit = playerReady && playerHand && FLUSH_RUSH_PAYTABLE[playerHand.count] ? playerHand.count : null;
-    const superFlushHit = done && result && result.superFlushMultiplier > 0 ? result.superFlushCount : null;
+    // both side bets light their row as soon as the player's cards are up, bet or not, like the hands themselves
+    const superFlushCount = playerReady && playerCards.length === HAND_SIZE ? longestStraightFlush(playerCards) : 0;
+    const superFlushHit = SUPER_FLUSH_PAYTABLE[superFlushCount] ? superFlushCount : null;
     // Strategy suggestion, once the player's cards are all showing
     const suggestion = stage === "dealt" && playerSorted && playerHand ? suggestAction(playerHand) : null;
 

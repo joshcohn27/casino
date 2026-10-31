@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.19.1",
+        date: "2026-10-31",
+        title: "I Luv Suits straight flush row",
+        changes: [
+            ["fixed", "I Luv Suits: the Super Flush Rush pay table now lights your straight flush as soon as your cards are up, the same as Flush Rush. It used to stay dark until the hand ended, which made a winning bet look like it had missed."],
+        ],
+    },
+    {
         version: "4.19.0",
         date: "2026-10-31",
         title: "Mississippi Stud progressive",
