@@ -1038,7 +1038,6 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const [dealNumber, setDealNumber] = useState<number | null>(null);
     const [envyHits, setEnvyHits] = useState<EnvyHit[]>([]);
     const [envyShown, setEnvyShown] = useState(false);
-    useEffect(() => { if (!envyShown) return; const id = window.setTimeout(() => setEnvyShown(false), 7000); return () => window.clearTimeout(id); }, [envyShown]);
     const seatAtDeal = useRef<Seat>(3);
     const numberAtDeal = useRef<number>(1);
     const recordBet = useBetRecorder();
@@ -1059,6 +1058,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     }, [foldedDeck, deckNo]);
     // ── Game state (preserved) ────────────────────────────────────────────────
     const [stage, setStage] = useState<Stage>("betting");
+    // the Envy notice stays up until its x is clicked or the player moves on from this hand
+    useEffect(() => { if (stage === "betting") setEnvyShown(false); }, [stage]);
     const [message, setMessage] = useState("Set your wagers and press Deal.");
 
     const [mainBet, setMainBet] = useState(() => defaultBet("paigow", "main"));
@@ -1646,7 +1647,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
             />
         )}
             {/* Envy: who hit, what they made, their seven cards, and what it paid you. It floats, so
-                nothing on the table moves, and it goes after a few seconds or at the next deal. */}
+                nothing on the table moves. It stays until its x is clicked or the player moves on. */}
             <AnimatePresence>
                 {envyShown && envyHits.length > 0 && (
                     <motion.div
@@ -1654,16 +1655,22 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="fixed inset-x-0 top-[72px] z-40 flex justify-center px-4"
+                        className="pointer-events-none fixed inset-x-0 top-[72px] z-40 flex justify-center px-4"
                         data-testid="envy-notice"
                     >
-                        <button
-                            onClick={() => setEnvyShown(false)}
-                            className="flex max-w-[560px] flex-col gap-2 rounded-[4px] border-2 border-emerald-400/70 bg-room-panel px-4 py-3 text-left shadow-2xl"
-                            aria-label="Dismiss the Envy notice"
-                        >
-                            <span className="text-[15px] font-extrabold text-emerald-300">
-                                Envy Bonus! You win {formatMoney(envyHits.reduce((t, h) => t + h.amount, 0))}
+                        <div className="pointer-events-auto flex max-h-[calc(100dvh-88px)] max-w-[560px] flex-col gap-2 overflow-y-auto rounded-[4px] border-2 border-emerald-400/70 bg-room-panel px-4 py-3 text-left shadow-2xl">
+                            <span className="flex items-start justify-between gap-3">
+                                <span className="py-2 text-[15px] font-extrabold text-emerald-300">
+                                    Envy Bonus! You win {formatMoney(envyHits.reduce((t, h) => t + h.amount, 0))}
+                                </span>
+                                {/* the label must not start with "Close": that would hold the table's keys */}
+                                <button
+                                    onClick={() => setEnvyShown(false)}
+                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[4px] border border-room-line text-xl font-bold text-room-text transition-colors hover:bg-white/10"
+                                    aria-label="Dismiss the Envy notice"
+                                >
+                                    ×
+                                </button>
                             </span>
                             {envyHits.map((hit) => (
                                 <span key={hit.seat} className="flex flex-col gap-1">
@@ -1677,7 +1684,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     </span>
                                 </span>
                             ))}
-                        </button>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

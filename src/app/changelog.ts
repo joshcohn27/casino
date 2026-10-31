@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.16.2",
+        date: "2026-10-30",
+        title: "Envy Bonus stays up",
+        changes: [
+            ["improved", "Pai Gow Envy Bonus: the notice now stays on screen until you click its X or move on to the next hand, so you can get a good look at the cards."],
+        ],
+    },
+    {
         version: "4.16.1",
         date: "2026-10-26",
         title: "Pai Gow jackpot runs on the real clock",
