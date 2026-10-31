@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.16.4",
+        date: "2026-10-30",
+        title: "Clear means empty in Pai Gow",
+        changes: [
+            ["fixed", "Pai Gow: clearing or taking chips off the main bet no longer puts $5 back. The spot stays empty, and Deal stays off until the main bet is at least $5."],
+        ],
+    },
+    {
         version: "4.16.3",
         date: "2026-10-30",
         title: "Straight flushes sort properly",

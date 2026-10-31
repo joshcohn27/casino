@@ -980,7 +980,7 @@ function PaiGowBar({
                     )}
                     {stage === "betting" && (
                         <SlideBtn key="deal">
-                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal}>Deal</button>
+                            <button data-hotkey="Space" data-hotkey-alt="Enter" className={BTN_GOLD} onClick={onDeal} disabled={!canRebet}>Deal</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !playerReady && (
@@ -1265,6 +1265,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     }
 
     function dealHand() {
+        if (mainBet < MAIN_MIN) return;
         const normalizedMain = clampBet(mainBet, MAIN_MIN);
         const normalizedFortune = Math.max(SIDE_MIN, clampBet(fortuneBet, SIDE_MIN));
         const normalizedAceHigh = Math.max(SIDE_MIN, clampBet(aceHighBet, SIDE_MIN));
@@ -1468,7 +1469,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     }
 
     function handleClearAndReset() {
-        setMainBet(MAIN_MIN);
+        setMainBet(0);
         setFortuneBet(0);
         setAceHighBet(0);
         setPlayerCards([]);
@@ -1495,7 +1496,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     const clearSpot = (spot: BetSpotId) => {
         if (!canBet) return;
         if (spot === "main") {
-            setMainBet((b) => { const next = popLastChip(b, MAIN_MIN); setMainChips(buildChipStackFromAmount(next)); return next; });
+            setMainBet((b) => { const next = popLastChip(b, 0); setMainChips(buildChipStackFromAmount(next)); return next; });
         } else if (spot === "fortune") {
             setFortuneBet((b) => { const next = popLastChip(b, 0); setFortuneChips(buildChipStackFromAmount(next)); return next; });
         } else {
@@ -1517,7 +1518,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
 
     const handleClear = () => {
         handleClearAndReset();
-        setMainChips(buildChipStackFromAmount(MAIN_MIN));
+        setMainChips([]);
         setFortuneChips([]);
         setAceHighChips([]);
         setSelectedSpot("main");
