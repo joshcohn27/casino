@@ -3,6 +3,8 @@
 //   A K Q 5 5        ->  5 5 A K Q        (the pair leads, kickers by rank)
 //   five to a flush  ->  the flush in rank order, then the other cards by rank
 //   a straight       ->  the run from the top down, then the other cards
+//   a straight flush ->  the run, then the other cards, even ones of the same suit:
+//                        J 10 8 7 6 5 4 all clubs  ->  8 7 6 5 4 J 10
 //   wild cards       ->  sit where they are playing: a deuce standing in for the 10 of a
 //                        10-high straight goes first, one filling a gap goes in the gap
 //
@@ -20,7 +22,7 @@ export type SortCard = {
     wild?: "full" | "semi";
 };
 
-export type SortMode = "auto" | "groups" | "flush" | "straight";
+export type SortMode = "auto" | "groups" | "flush" | "straight" | "straightFlush";
 
 const byValueDesc = (a: SortCard, b: SortCard) => b.value - a.value;
 
@@ -90,6 +92,18 @@ function straightCards(cards: SortCard[]): SortCard[] | null {
     return null;
 }
 
+// The highest straight within one suit (wild cards count toward it), top card first, or null.
+function straightFlushCards(cards: SortCard[]): SortCard[] | null {
+    const wilds = cards.filter((c) => c.wild);
+    for (const suit of new Set(cards.filter((c) => !c.wild).map((c) => c.suit))) {
+        const suited = cards.filter((c) => !c.wild && c.suit === suit);
+        if (suited.length + wilds.length < 5) continue;
+        const run = straightCards([...suited, ...wilds]);
+        if (run) return run;
+    }
+    return null;
+}
+
 /** Card ids in display order, strongest part of the hand first. */
 export function sortByPower(cards: SortCard[], mode: SortMode = "auto"): string[] {
     const ids = (list: SortCard[]) => list.map((c) => c.id);
@@ -97,6 +111,7 @@ export function sortByPower(cards: SortCard[], mode: SortMode = "auto"): string[
     const withRest = (lead: SortCard[]) => ids([...lead, ...groupOrder(cards.filter((c) => !lead.includes(c)))]);
 
     if (mode === "groups") return ids(groupOrder(cards));
+    if (mode === "straightFlush") { const r = straightFlushCards(cards); return r ? withRest(r) : ids(groupOrder(cards)); }
     if (mode === "flush") { const f = flushCards(cards); return f ? withRest(f) : ids(groupOrder(cards)); }
     if (mode === "straight") { const s = straightCards(cards); return s ? withRest(s) : ids(groupOrder(cards)); }
 
@@ -108,6 +123,8 @@ export function sortByPower(cards: SortCard[], mode: SortMode = "auto"): string[
     const top = (sizes[0] ?? 0) + fullWilds, second = sizes[1] ?? 0;
     if (top >= 4 || (top >= 3 && second >= 2)) return ids(groupOrder(cards));
     if (cards.length >= 5) {
+        const r = straightFlushCards(cards);
+        if (r) return withRest(r);
         const f = flushCards(cards);
         if (f) return withRest(f);
         const s = straightCards(cards);

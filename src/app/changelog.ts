@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.16.3",
+        date: "2026-10-30",
+        title: "Straight flushes sort properly",
+        changes: [
+            ["fixed", "Straight flushes now sort properly when other cards share the suit. All clubs J 10 8 7 6 5 4 shows as 8 7 6 5 4, then J 10. This fixes the Envy Bonus notice and sorted hands."],
+        ],
+    },
+    {
         version: "4.16.2",
         date: "2026-10-30",
         title: "Envy Bonus stays up",

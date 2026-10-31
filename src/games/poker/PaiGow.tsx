@@ -648,6 +648,14 @@ const ENVY_PAYS: Record<string, number> = {
     "4 of a Kind": 5,
 };
 const ENVY_MIN_FORTUNE = 5;
+// how the notice lays out another seat's seven cards: the hand it names first, then the rest
+const ENVY_SORT: Record<string, SortMode> = {
+    "Natural 7 Card Straight Flush": "straightFlush",
+    "Royal Flush + Royal Match": "straightFlush",
+    "Wild 7 Card Straight Flush": "straightFlush",
+    "Royal Flush": "straightFlush",
+    "Straight Flush": "straightFlush",
+};
 type EnvyHit = { seat: Seat; category: string; amount: number; cards: Card[] };
 
 function sidebetRows() {
@@ -1678,7 +1686,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                         Seat {hit.seat} made <span className="font-bold">{hit.category}</span>: +{formatMoney(hit.amount)}
                                     </span>
                                     <span className="flex gap-1">
-                                        {powerOrder(hit.cards).map((id) => hit.cards.find((c) => c.id === id)!).map((card) => (
+                                        {powerOrder(hit.cards, ENVY_SORT[hit.category] ?? "groups").map((id) => hit.cards.find((c) => c.id === id)!).map((card) => (
                                             <PlayingCard key={card.id} card={toShared(card, true)} className="h-[56px] w-[40px] rounded-[6px]" />
                                         ))}
                                     </span>
