@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.17.1",
+        date: "2026-10-30",
+        title: "Pai Gow hint knows 10-8 is 10-8",
+        changes: [
+            ["fixed", "Pai Gow hand hint: it no longer suggests the low hand you are already playing. Using a different card of the same rank, like the other 8, now counts as the house way unless the swap changes your high hand."],
+        ],
+    },
+    {
         version: "4.17.0",
         date: "2026-10-30",
         title: "Walk up to an empty table",

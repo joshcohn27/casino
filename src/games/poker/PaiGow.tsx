@@ -514,7 +514,6 @@ function resultAgainstDealer(split: Pick<SplitEval, "backEval" | "frontEval">, d
     return back && front ? 2 : back || front ? 1 : 0;
 }
 
-const frontKey = (cards: Card[]) => cards.map((c) => c.id).sort().join("|");
 
 function evaluateBestSplitAgainstDealer(
     playerCards: Card[],
@@ -1212,14 +1211,20 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         const house = evaluateDealerHouseWay(playerCards);
         const bestResult = resultAgainstDealer(best, dealerBestSplit);
         const houseIsBest = resultAgainstDealer(house, dealerBestSplit) >= bestResult;
-        return { bestResult, house, houseKey: frontKey(house.front), houseIsBest, recommended: houseIsBest ? house : best };
+        return { bestResult, house, houseIsBest, recommended: houseIsBest ? house : best };
     }, [bestPlayerSplitAgainstDealer, dealerBestSplit, playerCards]);
 
     // how the hand as you have set it does, against the best it could do
     const selectedResult = advice && dealerBestSplit && currentBackEval && currentFrontEval && selectedIsLegal
         ? resultAgainstDealer({ backEval: currentBackEval, frontEval: currentFrontEval }, dealerBestSplit)
         : null;
-    const selectedIsHouseWay = !!advice && selectedFrontIds.length === 2 && [...selectedFrontIds].sort().join("|") === advice.houseKey;
+    // the same hand as the house way, whichever suit of a rank went where: 10-8 is 10-8 with either
+    // 8, unless the swap changes the high hand (one of them makes a flush)
+    const ranksOf = (cards: Card[]) => cards.map((c) => c.rank).sort().join("|");
+    const selectedIsHouseWay = !!advice && !!currentBackEval && selectedFrontIds.length === 2
+        && ranksOf(playerCards.filter((c) => selectedFrontIds.includes(c.id))) === ranksOf(advice.house.front)
+        && ranksOf(playerCards.filter((c) => !selectedFrontIds.includes(c.id))) === ranksOf(advice.house.back)
+        && currentBackEval.category === advice.house.backEval.category;
 
     const fortunePreview = useMemo(() => {
         if (playerCards.length !== 7) return null;
@@ -2002,7 +2007,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                 {/* Advice on the hand as set: the house way unless a different split wins more here */}
                                 {stage === "setting" && selectedFrontIds.length === 2 && selectedIsLegal && advice && selectedResult !== null && (() => {
                                     const isBest = selectedResult === advice.bestResult;
-                                    const lowOf = (split: SplitEval) => `Low ${split.frontEval.label}`;
+                                    // when the suit is what matters, the ranks alone would read like the hand already set
+                                    const lowOf = (split: SplitEval) => `Low ${split.frontEval.label === currentFrontEval?.label ? split.front.map((c) => isJoker(c) ? "Joker" : `${c.rank}${c.suit}`).join(" ") : split.frontEval.label}`;
                                     const [label, tone, hint] =
                                         advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh ? ["No way to win", "font-bold text-red-300", "Suggest: Fold"]
                                         : isBest && selectedIsHouseWay ? ["Best play · House way", "font-bold text-emerald-300", ""]
