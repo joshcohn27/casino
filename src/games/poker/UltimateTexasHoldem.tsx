@@ -580,7 +580,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                                 {stage === "preflop" && (
                                     <SlideBtn key="bet4x">
-                                        <button data-hotkey="4" onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
+                                        <button data-hotkey="4" data-hotkey-alt="C" onClick={() => void placePlayBet(4)} disabled={!canAct} className={BTN_GOLD}>Bet 4x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "preflop" && (
@@ -595,7 +595,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                                 {stage === "flop" && (
                                     <SlideBtn key="bet2x">
-                                        <button data-hotkey="2" onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
+                                        <button data-hotkey="2" data-hotkey-alt="C" onClick={() => void placePlayBet(2)} disabled={!canAct} className={BTN_GOLD}>Bet 2x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "flop" && (
@@ -605,7 +605,7 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
                                 )}
                                 {stage === "river" && (
                                     <SlideBtn key="bet1x">
-                                        <button data-hotkey="1" onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
+                                        <button data-hotkey="1" data-hotkey-alt="C" onClick={() => void placePlayBet(1)} disabled={!canAct} className={BTN_GOLD}>Bet 1x</button>
                                     </SlideBtn>
                                 )}
                                 {stage === "river" && (

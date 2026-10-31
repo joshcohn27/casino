@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.19.2",
+        date: "2026-10-31",
+        title: "UTH: C bets",
+        changes: [
+            ["improved", "Ultimate Texas Hold'em: the C key now bets on every street: 4x before the flop, 2x on the flop and 1x on the river."],
+        ],
+    },
+    {
         version: "4.19.1",
         date: "2026-10-31",
         title: "I Luv Suits straight flush row",
