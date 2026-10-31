@@ -811,7 +811,7 @@ const RULES_SECTIONS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
         "• Lose both hands: main bet lost.",
         "• Dealer wins all ties on both hands.",
         "• If the dealer has an Ace-high pai gow (no pair or better), the main bet pushes automatically.",
-        "• You can fold instead of setting your hand. You lose the main bet; Fortune, Ace High and the table jackpot still pay.",
+        "• You can fold instead of setting your hand. You lose the main bet; Ace High and any Envy Bonus still pay. If your hand pays on Fortune or the table jackpot, Fold is off and you set the hand to collect.",
     ]],
     ["The Deal and Your Seat", [
         "• Pick your seat: 1, 2, 3, 5, 6 or 7 (there is no seat 4). You can change it any time; it applies from the next hand.",
@@ -938,7 +938,7 @@ function TableLabel({ onRules }: { onRules: () => void }) {
 }
 
 function PaiGowBar({
-    stage, selectedChip, selectedIsLegal, selectedFrontIds, canRebet, dealerSetting, playerReady, autoFinishing,
+    stage, selectedChip, selectedIsLegal, selectedFrontIds, canRebet, dealerSetting, playerReady, autoFinishing, paysOnSideBet,
     onRevealAll, onChipSelect, onDeal, onAutoSetBest, onSetHand, onFold, onClear, onReset, onChangeBet,
 }: {
     stage: Stage;
@@ -946,6 +946,8 @@ function PaiGowBar({
     selectedIsLegal: boolean;
     selectedFrontIds: string[];
     canRebet: boolean;
+    /** The hand pays on a side bet, so Fold is off */
+    paysOnSideBet: boolean;
     dealerSetting: boolean;
     playerReady: boolean;
     /** Dealer has Ace-high: once the player's cards are up the table sets them and ends the hand. */
@@ -989,7 +991,7 @@ function PaiGowBar({
                     )}
                     {stage === "setting" && !autoFinishing && playerReady && (
                         <SlideBtn key="fold">
-                            <button data-hotkey="F" className={BTN_NEUTRAL} onClick={onFold}>Fold</button>
+                            <button data-hotkey="F" className={BTN_NEUTRAL} onClick={onFold} disabled={paysOnSideBet}>Fold</button>
                         </SlideBtn>
                     )}
                     {stage === "setting" && !autoFinishing && playerReady && (
@@ -1231,6 +1233,12 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
         return evaluateFortune(playerCards);
     }, [playerCards]);
 
+    // A hand that pays on Fortune or the jackpot has to be set, never folded, even if it loses to the dealer
+    const paysOnSideBet = !!fortunePreview && (
+        (fortuneBet > 0 && fortunePreview.multiplier > 0)
+        || (jackpotBet > 0 && (JACKPOT_TOP_HANDS.has(fortunePreview.category) || !!JACKPOT_FIXED[fortunePreview.category]))
+    );
+
     const playerAceHighInfo = useMemo(() => {
         if (playerCards.length !== 7) return null;
         return getHighPaiGowInfo(playerCards);
@@ -1272,8 +1280,9 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
     function dealHand() {
         if (mainBet < MAIN_MIN) return;
         const normalizedMain = clampBet(mainBet, MAIN_MIN);
-        const normalizedFortune = Math.max(SIDE_MIN, clampBet(fortuneBet, SIDE_MIN));
-        const normalizedAceHigh = Math.max(SIDE_MIN, clampBet(aceHighBet, SIDE_MIN));
+        // side bets play exactly as placed
+        const normalizedFortune = Math.max(SIDE_MIN, fortuneBet);
+        const normalizedAceHigh = Math.max(SIDE_MIN, aceHighBet);
         const jackpot = jackpotOn ? JACKPOT_BET : 0;
         const total = normalizedMain + normalizedFortune + normalizedAceHigh + jackpot;
         if (bankroll < total) { setMessage("Not enough bankroll for those wagers."); return; }
@@ -1327,6 +1336,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
 
     /** Fold, but first ask when the hand could still push or win. */
     function askToFold() {
+        if (paysOnSideBet) return;
         if (dealerAceHighInfo?.aceHigh) { setFoldCheck("acehigh"); return; }
         if (advice && advice.bestResult >= 2) { setFoldCheck("win"); return; }
         if (advice && advice.bestResult === 1) { setFoldCheck("push"); return; }
@@ -1595,6 +1605,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                 ? (playerReady ? "Dealer has Ace-high pai gow. Main bet pushes." : "Dealer has Ace-high pai gow. Main bet pushes. Turn over your cards.")
                 : "Tap your cards to turn them over, or press Reveal Cards.")
         // no split can beat the dealer: say so, and suggest the fold (setting it costs the same)
+        : paysOnSideBet && !dealerAceHighInfo?.aceHigh && playerReady
+            ? `Your ${fortunePreview?.category} pays on a side bet, so you can't fold it. Set your hand to collect.`
         : advice && advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh
             ? "No way to set this hand to beat the dealer. Fold, or set it anyway."
         : message;
@@ -1723,6 +1735,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                         onAutoSetBest={autoSetBest}
                         onSetHand={askToSet}
                         onFold={askToFold}
+                        paysOnSideBet={paysOnSideBet}
                         onClear={handleClear}
                         onReset={handleReset}
                         onChangeBet={handleChangeBet}
@@ -2010,7 +2023,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     // when the suit is what matters, the ranks alone would read like the hand already set
                                     const lowOf = (split: SplitEval) => `Low ${split.frontEval.label === currentFrontEval?.label ? split.front.map((c) => isJoker(c) ? "Joker" : `${c.rank}${c.suit}`).join(" ") : split.frontEval.label}`;
                                     const [label, tone, hint] =
-                                        advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh ? ["No way to win", "font-bold text-red-300", "Suggest: Fold"]
+                                        advice.bestResult === 0 && !dealerAceHighInfo?.aceHigh ? ["No way to win", "font-bold text-red-300", paysOnSideBet ? "Your side bet still pays" : "Suggest: Fold"]
                                         : isBest && selectedIsHouseWay ? ["Best play · House way", "font-bold text-emerald-300", ""]
                                         : isBest && advice.houseIsBest ? ["Best play", "font-bold text-emerald-300", `House way: ${lowOf(advice.house)}`]
                                         : isBest ? ["Best play · Beats the house way here", "font-bold text-emerald-300", ""]

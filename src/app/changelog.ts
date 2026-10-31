@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.17.2",
+        date: "2026-10-30",
+        title: "Fortune hands can't be folded away",
+        changes: [
+            ["fixed", "Pai Gow: a Fortune or Ace High bet under $2.50, or an amount like $6, now plays exactly as placed. A $1 bet used to vanish at the deal, so it was never charged and never paid."],
+            ["improved", "Pai Gow: if your hand pays on Fortune or the table jackpot, Fold is off and you set the hand to collect, even when it loses to the dealer. The hint no longer suggests folding those hands."],
+        ],
+    },
+    {
         version: "4.17.1",
         date: "2026-10-30",
         title: "Pai Gow hint knows 10-8 is 10-8",
