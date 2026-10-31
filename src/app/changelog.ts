@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.20.1",
+        date: "2026-10-31",
+        title: "Pai Gow luckiest number",
+        changes: [
+            ["improved", "Your Stats: Pai Gow now shows your luckiest number, the deal number from 1 to 7 you win most often on, with its win % and how many hands that covers."],
+        ],
+    },
+    {
         version: "4.20.0",
         date: "2026-10-31",
         title: "UTH stats by starting hand",

@@ -153,6 +153,18 @@ function StartingHands({ bets }: { bets: Record<string, BetYear> }) {
     );
 }
 
+/** The deal number 1 to 7 with the highest win %. A tie goes to the one with more hands behind it. */
+function luckiestNumber(bets: Record<string, BetYear>): { n: number; b: BetYear } | null {
+    let best: { n: number; b: BetYear } | null = null;
+    for (let n = 1; n <= 7; n++) {
+        const b = bets[`Deal number ${n}`];
+        if (!b || b.won === 0) continue;
+        const rate = b.won / b.placed, bestRate = best ? best.b.won / best.b.placed : -1;
+        if (rate > bestRate || (rate === bestRate && best && b.placed > best.b.placed)) best = { n, b };
+    }
+    return best;
+}
+
 function Section({ title, children, testId }: { title: string; children: React.ReactNode; testId?: string }) {
     return (
         <section className="rounded-[4px] border border-room-line bg-room-panel p-4" data-testid={testId}>
@@ -385,6 +397,18 @@ export default function Stats({ onBack }: Props) {
 
                         {year.bets?.paigow && Object.keys(year.bets.paigow).some((k) => k.startsWith("Deal number")) && (
                             <Section title="Pai Gow by deal number" testId="deal-numbers">
+                                {(() => {
+                                    const lucky = luckiestNumber(year.bets!.paigow);
+                                    return lucky && (
+                                        <div className="mb-3 text-room-text" data-testid="luckiest-number">
+                                            <span className="text-room-muted">Luckiest number: </span>
+                                            <span className="text-lg font-extrabold">{lucky.n}</span>
+                                            <span className="text-room-muted"> - </span>
+                                            <span className="font-bold text-emerald-300">{pct(lucky.b.won, lucky.b.placed)}</span>
+                                            <span className="text-room-muted"> won, over {lucky.b.placed.toLocaleString("en-US")} hand{lucky.b.placed === 1 ? "" : "s"}</span>
+                                        </div>
+                                    );
+                                })()}
                                 <p className="mb-2 text-[12px] text-room-muted">Your main bet, by the deal number each hand came from. Won means you won both hands; a split is a push.</p>
                                 <table className="w-full table-fixed text-[13px] tabular-nums sm:text-sm">
                                     <thead>
