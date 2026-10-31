@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.20.2",
+        date: "2026-10-31",
+        title: "Pai Gow stats colors",
+        changes: [
+            ["fixed", "Your Stats: in the Pai Gow deal number table, green now means real wins and red means real losses. Empty rows and 0% stay plain."],
+        ],
+    },
+    {
         version: "4.20.1",
         date: "2026-10-31",
         title: "Pai Gow luckiest number",

@@ -429,9 +429,9 @@ export default function Stats({ onBack }: Props) {
                                                 <tr key={n} className="border-t border-room-line" data-deal-number-row={n}>
                                                     <td className="py-1.5 font-bold">{n}</td>
                                                     <td className="py-1.5 text-right">{b ? b.placed : 0}</td>
-                                                    <td className="py-1.5 text-right font-semibold text-emerald-300">{b ? pct(b.won, b.placed) : "-"}</td>
+                                                    <td className={`py-1.5 text-right font-semibold ${b && b.won > 0 ? "text-emerald-300" : ""}`}>{b ? pct(b.won, b.placed) : "-"}</td>
                                                     <td className="py-1.5 text-right">{b ? pct(b.pushed, b.placed) : "-"}</td>
-                                                    <td className="py-1.5 text-right text-red-300">{b ? pct(b.placed - b.won - b.pushed, b.placed) : "-"}</td>
+                                                    <td className={`py-1.5 text-right ${b && b.placed - b.won - b.pushed > 0 ? "text-red-300" : ""}`}>{b ? pct(b.placed - b.won - b.pushed, b.placed) : "-"}</td>
                                                     <td className={`hidden py-1.5 text-right font-semibold sm:table-cell ${netClass(net)}`}>{b ? signed(net) : "-"}</td>
                                                 </tr>
                                             );
