@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.17.0",
+        date: "2026-10-30",
+        title: "Walk up to an empty table",
+        changes: [
+            ["new", "Settings: a main bet or ante can now be set to $0. The table opens with nothing on it, and Deal stays off until you put chips down."],
+        ],
+    },
+    {
         version: "4.16.4",
         date: "2026-10-30",
         title: "Clear means empty in Pai Gow",

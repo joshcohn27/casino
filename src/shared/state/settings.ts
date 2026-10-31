@@ -1,5 +1,6 @@
 // Player settings: the bets each game starts with, kept in localStorage.
-// Out of the box that is a $25 main bet and no side bets.
+// Out of the box that is a $25 main bet and no side bets. A main bet may be set to 0: the table
+// then opens empty, and Deal stays off until chips go on.
 //
 // A game reads its starting bets from here when it opens. The Settings page edits them.
 
@@ -27,7 +28,7 @@ export type ToggleField = { key: string; label: string; hint: string; fallback: 
 export type GameSettings = { id: string; name: string; bets: BetField[]; toggles?: ToggleField[] };
 
 const MAIN_MAX = 5000;
-const main = (key: string, label: string, min = 5, fallback = 25): BetField => ({ key, label, min, max: MAIN_MAX, optional: false, fallback });
+const main = (key: string, label: string, min = 5, fallback = 25): BetField => ({ key, label, min, max: MAIN_MAX, optional: true, fallback });
 const side = (key: string, label: string, max: number, fallback = 0, min = 1): BetField => ({ key, label, min, max, optional: true, fallback });
 // tables that round every bet down to a $2.50 step when the hand is dealt
 const stepped = (f: BetField): BetField => ({ ...f, step: 2.5, min: Math.max(f.min, 2.5) });
