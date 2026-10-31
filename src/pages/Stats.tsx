@@ -136,7 +136,7 @@ function StartingHands({ bets }: { bets: Record<string, BetYear> }) {
                             <td className="py-1.5 font-bold">{startingHandLabel(hand)}</td>
                             <td className="py-1.5 text-right">{b.placed.toLocaleString("en-US")}</td>
                             <td className="py-1.5 text-right">{b.won.toLocaleString("en-US")}</td>
-                            <td className={`py-1.5 text-right font-semibold ${b.won > 0 ? "text-emerald-300" : ""}`}>{pct(b.won, b.placed)}</td>
+                            <td className="py-1.5 text-right">{pct(b.won, b.placed)}</td>
                             <td className="hidden py-1.5 text-right sm:table-cell">{folded.toLocaleString("en-US")}</td>
                             <td className="hidden py-1.5 text-right sm:table-cell">{pct(b.won, played)}</td>
                             <td className={`hidden py-1.5 text-right font-semibold sm:table-cell ${netClass(net)}`}>{signed(net)}</td>
@@ -404,7 +404,7 @@ export default function Stats({ onBack }: Props) {
                                             <span className="text-room-muted">Luckiest number: </span>
                                             <span className="text-lg font-extrabold">{lucky.n}</span>
                                             <span className="text-room-muted"> - </span>
-                                            <span className="font-bold text-emerald-300">{pct(lucky.b.won, lucky.b.placed)}</span>
+                                            <span className="font-bold">{pct(lucky.b.won, lucky.b.placed)}</span>
                                             <span className="text-room-muted"> won, over {lucky.b.placed.toLocaleString("en-US")} hand{lucky.b.placed === 1 ? "" : "s"}</span>
                                         </div>
                                     );
@@ -429,9 +429,9 @@ export default function Stats({ onBack }: Props) {
                                                 <tr key={n} className="border-t border-room-line" data-deal-number-row={n}>
                                                     <td className="py-1.5 font-bold">{n}</td>
                                                     <td className="py-1.5 text-right">{b ? b.placed : 0}</td>
-                                                    <td className={`py-1.5 text-right font-semibold ${b && b.won > 0 ? "text-emerald-300" : ""}`}>{b ? pct(b.won, b.placed) : "-"}</td>
+                                                    <td className="py-1.5 text-right">{b ? pct(b.won, b.placed) : "-"}</td>
                                                     <td className="py-1.5 text-right">{b ? pct(b.pushed, b.placed) : "-"}</td>
-                                                    <td className={`py-1.5 text-right ${b && b.placed - b.won - b.pushed > 0 ? "text-red-300" : ""}`}>{b ? pct(b.placed - b.won - b.pushed, b.placed) : "-"}</td>
+                                                    <td className="py-1.5 text-right">{b ? pct(b.placed - b.won - b.pushed, b.placed) : "-"}</td>
                                                     <td className={`hidden py-1.5 text-right font-semibold sm:table-cell ${netClass(net)}`}>{b ? signed(net) : "-"}</td>
                                                 </tr>
                                             );

@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.20.3",
+        date: "2026-10-31",
+        title: "Cleaner stats colors",
+        changes: [
+            ["fixed", "Your Stats: the Pai Gow deal number and UTH starting hand tables now show percentages in plain white. Only Net is colored, green for up and red for down."],
+        ],
+    },
+    {
         version: "4.20.2",
         date: "2026-10-31",
         title: "Pai Gow stats colors",
