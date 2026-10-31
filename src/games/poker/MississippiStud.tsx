@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import TableShell from "../../shared/components/TableShell";
 import ChipTray from "../../shared/components/ChipTray";
@@ -14,10 +14,15 @@ import {
     BTN_NEUTRAL,
 } from "../../shared/lib/money";
 import { SlideBtn } from "../../shared/components/SlideBtn";
-import { defaultBet } from "../../shared/state/settings";
+import { defaultBet, defaultToggle } from "../../shared/state/settings";
 import BetSpot, { BetBar } from "../../shared/components/BetSpot";
 import { resultLineClass } from "../../shared/lib/resultTone";
-import { useBetRecorder } from "../../shared/state/sessionContext";
+import { TableContext, useBetRecorder } from "../../shared/state/sessionContext";
+import { makeRng } from "../../shared/state/progressiveMeter";
+import {
+    STUD_PROGRESSIVE_BET, STUD_PROGRESSIVE_ROWS, STUD_TIER_NAMES, advanceStudTables, awardStudTier, feedStudMeters,
+    readStudMeters, writeStudMeters, type StudMeters, type StudOtherHit,
+} from "./studProgressiveLogic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +57,9 @@ const MAIN_PAYTABLE: Record<MainPayKey, number | "push"> = {
 const THREE_CARD_PAYTABLE: Record<ThreeCardKey, number> = {
     miniRoyal: 50, straightFlush: 40, threeKind: 30, straight: 6, flush: 4, pair: 1,
 };
+
+const METER_TICK_MS = 2500;
+const NOTICE_MS = 6000;
 
 const ANTE_KEY = "casino-ms-ante";
 const BONUS_KEY = "casino-ms-bonus";
@@ -189,14 +197,16 @@ function settlePayout(params: {
     anteBet: number; thirdBet: number; fourthBet: number; fifthBet: number; threeCBBet: number;
     fiveCardKey: MainPayKey | null; fiveCardLabel: string;
     threeCardKey: ThreeCardKey | null; threeCardLabel: string; threeCardMult: number;
+    progressiveBet: number; progressiveReturn: number; progressiveLabel: string;
     folded: boolean;
 }): { mainReturn: number; bonusReturn: number; net: number; lines: string[] } {
     const {
         anteBet, thirdBet, fourthBet, fifthBet, threeCBBet,
-        fiveCardKey, fiveCardLabel, threeCardKey, threeCardLabel, threeCardMult, folded,
+        fiveCardKey, fiveCardLabel, threeCardKey, threeCardLabel, threeCardMult,
+        progressiveBet, progressiveReturn, progressiveLabel, folded,
     } = params;
     const totalMainBets = anteBet + thirdBet + fourthBet + fifthBet;
-    const totalWagered  = totalMainBets + threeCBBet;
+    const totalWagered  = totalMainBets + threeCBBet + progressiveBet;
     const lines: string[] = [];
 
     let mainReturn = 0;
@@ -227,7 +237,11 @@ function settlePayout(params: {
         }
     }
 
-    const net = mainReturn + bonusReturn - totalWagered;
+    if (progressiveBet > 0) {
+        lines.push(progressiveReturn > 0 ? `Progressive: ${progressiveLabel} pays ${formatMoney(progressiveReturn)}` : "Progressive: No win");
+    }
+
+    const net = mainReturn + bonusReturn + progressiveReturn - totalWagered;
     return { mainReturn, bonusReturn, net, lines };
 }
 
@@ -467,6 +481,13 @@ function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                         "Pair of 6s through 10s pushes — all bets returned with no profit.",
                         "All other hands lose.",
                     ]} />
+                    <Section title="Progressive" items={[
+                        "A $5 bet, switched on with the red light before the deal. Settings decides whether it starts on.",
+                        "It pays on your two cards and the three community cards, three of a kind or better. The $5 is not returned.",
+                        "Royal Flush wins the Mega meter, Straight Flush the Major, Four of a Kind the Minor. Full House pays $250, Flush $200, Straight $150, Three of a Kind $45.",
+                        "It stays in action if you fold, so all five cards still count.",
+                        "Players at other tables feed the meters and can win them, even while you are away.",
+                    ]} />
                     <Section title="3 Card Bonus" items={[
                         "Evaluates the three community cards as a 3-card poker hand.",
                         "Settled when all 3 community cards are revealed, regardless of fold.",
@@ -492,10 +513,38 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     const reportBets = (b: Parameters<typeof settlePayout>[0], r: ReturnType<typeof settlePayout>) => {
         recordBet("Ante and streets", b.anteBet + b.thirdBet + b.fourthBet + b.fifthBet, r.mainReturn, b.fiveCardLabel);
         recordBet("3 Card Bonus", b.threeCBBet, r.bonusReturn, b.threeCardLabel);
+        recordBet("Progressive", b.progressiveBet, b.progressiveReturn, b.progressiveLabel);
     };
     // two decks take turns, gold backs then purple: every hand is dealt from the other deck
     const [deckNo, setDeckNo] = useState(0);
     const [stage, setStage]                   = useState<Stage>("betting");
+
+    // The progressive: a $5 light, and meters shared with the other linked tables, which play on
+    // the real clock. They catch up when this table is on screen; a hidden table does nothing.
+    const [progressiveOn, setProgressiveOn] = useState(() => defaultToggle("mississippistud", "progressive"));
+    const [progressiveBet, setProgressiveBet] = useState(0);
+    const [progressiveReturn, setProgressiveReturn] = useState(0);
+    const [progressiveHitKey, setProgressiveHitKey] = useState<string | null>(null);
+    const [meters, setMeters] = useState<StudMeters>(readStudMeters);
+    const metersRef = useRef(meters);
+    useEffect(() => { metersRef.current = meters; writeStudMeters(meters); }, [meters]);
+    const [otherHit, setOtherHit] = useState<StudOtherHit | null>(null);
+    useEffect(() => { if (!otherHit) return; const id = window.setTimeout(() => setOtherHit(null), NOTICE_MS); return () => window.clearTimeout(id); }, [otherHit]);
+    const [jackpotWin, setJackpotWin] = useState<{ title: string; amount: number } | null>(null);
+    useEffect(() => { if (!jackpotWin) return; const id = window.setTimeout(() => setJackpotWin(null), NOTICE_MS); return () => window.clearTimeout(id); }, [jackpotWin]);
+    const tableActive = useContext(TableContext)?.active ?? true;
+    useEffect(() => {
+        if (!tableActive) return;
+        const rng = makeRng(Date.now());
+        const tick = () => {
+            const next: { meters: StudMeters; hit: StudOtherHit | null } = advanceStudTables(metersRef.current, rng);
+            if (next.meters !== metersRef.current) { metersRef.current = next.meters; setMeters(next.meters); }
+            if (next.hit) setOtherHit(next.hit);
+        };
+        tick();
+        const id = window.setInterval(tick, METER_TICK_MS);
+        return () => window.clearInterval(id);
+    }, [tableActive]);
     const [deck, setDeck]                     = useState<Card[]>(() => createDeck());
     const [playerCards, setPlayerCards]       = useState<Card[]>([]);
     const [communityCards, setCommunityCards] = useState<Card[]>([]);
@@ -522,6 +571,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
     const pendingAnte  = anteChips.reduce((s, d) => s + Number(d), 0);
     const pendingBonus = bonusChips.reduce((s, d) => s + Number(d), 0);
+    const pendingProgressive = progressiveOn ? STUD_PROGRESSIVE_BET : 0;
 
     useEffect(() => { window.localStorage.setItem(ANTE_KEY, String(pendingAnte)); }, [pendingAnte]);
     useEffect(() => { window.localStorage.setItem(BONUS_KEY, String(pendingBonus)); }, [pendingBonus]);
@@ -555,6 +605,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     function handleClear() {
         setAnteChips([]);
         setBonusChips([]);
+        setProgressiveOn(false);
         setSelectedZone("ante");
     }
 
@@ -562,14 +613,32 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     function handleReset() {
         setAnteChips(buildChipStackFromAmount(defaultBet("mississippistud", "ante")));
         setBonusChips(buildChipStackFromAmount(defaultBet("mississippistud", "bonus")));
+        setProgressiveOn(defaultToggle("mississippistud", "progressive"));
         setSelectedZone("ante");
     }
 
     // ─── Game actions ─────────────────────────────────────────────────────────
 
+    // What the progressive pays on all five cards, played or folded. A meter that is won starts again.
+    function settleProgressive() {
+        const none = { progressiveBet, progressiveReturn: 0, progressiveLabel: "" };
+        if (progressiveBet <= 0) return none;
+        const row = STUD_PROGRESSIVE_ROWS.find((r) => r.key === evaluateFiveCard([...playerCards, ...communityCards]).key);
+        if (!row) return none;
+        setProgressiveHitKey(row.key);
+        if (!row.tier) return { progressiveBet, progressiveReturn: row.pays ?? 0, progressiveLabel: row.label };
+        const won = awardStudTier(metersRef.current, row.tier);
+        metersRef.current = won.meters;
+        setMeters(won.meters);
+        setJackpotWin({ title: `${STUD_TIER_NAMES[row.tier]} Jackpot`, amount: won.amount });
+        return { progressiveBet, progressiveReturn: won.amount, progressiveLabel: row.label };
+    }
+
     function handleDeal() {
-        if (pendingAnte < MIN_BET || bankroll < pendingAnte + pendingBonus) return;
-        setBankroll(p => p - (pendingAnte + pendingBonus));
+        if (pendingAnte < MIN_BET || bankroll < pendingAnte + pendingBonus + pendingProgressive) return;
+        setBankroll(p => p - (pendingAnte + pendingBonus + pendingProgressive));
+        setProgressiveBet(pendingProgressive);
+        if (progressiveOn) setMeters((m) => feedStudMeters(m));
 
         setDeckNo((n) => n + 1);
         // every hand comes from the other deck, freshly shuffled
@@ -584,6 +653,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         setFifthBet(0);
         setMainReturn(0);
         setBonusReturn(0);
+        setProgressiveReturn(0);
+        setProgressiveHitKey(null);
         setResultLines([]);
         setNetResult(null);
         setFiveCardResult(null);
@@ -617,13 +688,15 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 anteBet, thirdBet, fourthBet, fifthBet: betAmount,
                 threeCBBet, fiveCardKey: fc.key, fiveCardLabel: fc.label,
                 threeCardKey: tc.key, threeCardLabel: tc.label, threeCardMult: tc.multiplier,
+                ...settleProgressive(),
                 folded: false,
             };
         const settled = settlePayout(betsAtSettle);
         reportBets(betsAtSettle, settled);
-            setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
+            setBankroll(p => p + settled.mainReturn + settled.bonusReturn + betsAtSettle.progressiveReturn);
             setMainReturn(settled.mainReturn);
             setBonusReturn(settled.bonusReturn);
+        setProgressiveReturn(betsAtSettle.progressiveReturn);
             setResultLines(settled.lines);
             setNetResult(settled.net);
             setFiveCardResult(fc);
@@ -641,13 +714,15 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
             anteBet, thirdBet, fourthBet, fifthBet: 0,
             threeCBBet, fiveCardKey: null, fiveCardLabel: "Folded",
             threeCardKey: tc.key, threeCardLabel: tc.label, threeCardMult: tc.multiplier,
+            ...settleProgressive(),
             folded: true,
         };
         const settled = settlePayout(betsAtSettle);
         reportBets(betsAtSettle, settled);
-        setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
+        setBankroll(p => p + settled.mainReturn + settled.bonusReturn + betsAtSettle.progressiveReturn);
         setMainReturn(settled.mainReturn);
         setBonusReturn(settled.bonusReturn);
+        setProgressiveReturn(betsAtSettle.progressiveReturn);
         setResultLines(settled.lines);
         setNetResult(settled.net);
         setFiveCardResult(null);
@@ -667,6 +742,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         setThreeCBBet(0);
         setMainReturn(0);
         setBonusReturn(0);
+        setProgressiveReturn(0);
+        setProgressiveHitKey(null);
         setResultLines([]);
         setNetResult(null);
         setFiveCardResult(null);
@@ -678,6 +755,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     function handleClearAndReset() {
         setAnteChips([]);
         setBonusChips([]);
+        setProgressiveOn(false);
         setPlayerCards([]);
         setCommunityCards([]);
         setAnteBet(0);
@@ -687,6 +765,8 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
         setThreeCBBet(0);
         setMainReturn(0);
         setBonusReturn(0);
+        setProgressiveReturn(0);
+        setProgressiveHitKey(null);
         setResultLines([]);
         setNetResult(null);
         setFiveCardResult(null);
@@ -726,14 +806,16 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
             threeCardKey: tc.key,
             threeCardLabel: tc.label,
             threeCardMult: tc.multiplier,
-            folded: false,
+            ...settleProgressive(),
+                folded: false,
         };
         const settled = settlePayout(betsAtSettle);
         reportBets(betsAtSettle, settled);
 
-        setBankroll(p => p + settled.mainReturn + settled.bonusReturn);
+        setBankroll(p => p + settled.mainReturn + settled.bonusReturn + betsAtSettle.progressiveReturn);
         setMainReturn(settled.mainReturn);
         setBonusReturn(settled.bonusReturn);
+        setProgressiveReturn(betsAtSettle.progressiveReturn);
         setResultLines(settled.lines);
         setNetResult(settled.net);
         setFiveCardResult(fc);
@@ -746,10 +828,11 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
 
     const totalMainBets = anteBet + thirdBet + fourthBet + fifthBet;
     const totalWagered  = stage === "betting"
-        ? pendingAnte + pendingBonus
-        : anteBet + threeCBBet + thirdBet + fourthBet + fifthBet;
-    const totalReturned = mainReturn + bonusReturn;
-    const canDeal       = pendingAnte >= MIN_BET && bankroll >= pendingAnte + pendingBonus;
+        ? pendingAnte + pendingBonus + pendingProgressive
+        : anteBet + threeCBBet + progressiveBet + thirdBet + fourthBet + fifthBet;
+    const totalReturned = mainReturn + bonusReturn + progressiveReturn;
+    const canDeal       = pendingAnte >= MIN_BET && bankroll >= pendingAnte + pendingBonus + pendingProgressive;
+    const progressiveLit = stage === "betting" ? progressiveOn : progressiveBet > 0;
 
     const visibleCardsForSuggestion = useMemo(() => {
         if (stage === "third")  return playerCards;
@@ -778,7 +861,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 <AnimatePresence mode="popLayout" initial={false}>
                     {stage === "betting" && (
                         <SlideBtn key="clear">
-                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0}>Clear</button>
+                            <button data-hotkey="Q" className={BTN_NEUTRAL} onClick={handleClear} disabled={pendingAnte === 0 && pendingBonus === 0 && !progressiveOn}>Clear</button>
                         </SlideBtn>
                     )}
                     {stage === "betting" && (
@@ -885,6 +968,12 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
     return (
         <>
             <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+            {jackpotWin && (
+                <div className="pointer-events-none fixed left-1/2 top-[30%] z-40 -translate-x-1/2 rounded-[4px] border-2 border-amber-300 bg-black/85 px-8 py-5 text-center" role="status" data-testid="jackpot-win">
+                    <div className="text-sm font-extrabold uppercase tracking-wide text-amber-200">{jackpotWin.title}</div>
+                    <div className="mt-1 text-3xl font-extrabold tabular-nums text-amber-100">{formatMoney(jackpotWin.amount)}</div>
+                </div>
+            )}
             <TableShell deckNo={deckNo}
                 feltColor={FELT_COLOR}
                 gameName="Mississippi Stud"
@@ -921,7 +1010,7 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                 <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:overflow-hidden lg:px-6">
 
                     {/* Left column — main paytable (desktop only) */}
-                    <div className="hidden lg:flex lg:w-52 lg:shrink-0 lg:flex-col lg:justify-center">
+                    <div className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:justify-center">
                         <MsPayoutColumn
                             title="Mississippi Stud"
                             entries={MAIN_PAY_ENTRIES}
@@ -1018,8 +1107,23 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                             </div>
                         </div>
 
-                        {/* Bet circles — Ante and 3CB side by side */}
-                        <div className="flex items-end justify-center gap-6 mt-14">
+                        {/* Bet circles, with the $5 progressive light set above and between them, as on
+                            a real felt. The light floats, so it adds no height. */}
+                        <div className="relative flex items-end justify-center gap-12 mt-14">
+                            <button
+                                onClick={() => stage === "betting" && setProgressiveOn((on) => !on)}
+                                disabled={stage !== "betting"}
+                                aria-pressed={progressiveLit}
+                                aria-label={`Progressive, ${formatMoney(STUD_PROGRESSIVE_BET)}`}
+                                title="Progressive"
+                                data-hotkey="J"
+                                data-jackpot-light
+                                data-lit={progressiveLit ? "true" : "false"}
+                                className={`absolute left-1/2 -top-8 z-10 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border-2 transition-colors ${progressiveLit ? "border-white" : "border-white/45 hover:border-white"}`}
+                                style={{ background: progressiveLit ? "#ef2a2a" : "#3a0f0f", outline: progressiveReturn > 0 ? "3px solid #fbbf24" : undefined, outlineOffset: 2 }}
+                            >
+                                <span className={`text-[10px] font-extrabold ${progressiveLit ? "text-white" : "text-white/75"}`}>${STUD_PROGRESSIVE_BET}</span>
+                            </button>
                             <BetSpot
                                 testId="bonus"
                                 dim={64}
@@ -1066,7 +1170,34 @@ export default function MississippiStud({ bankroll, setBankroll }: Props) {
                     </div>
 
                     {/* Right column — 3CB paytable (desktop only) */}
-                    <div className="hidden lg:flex lg:w-52 lg:shrink-0 lg:flex-col lg:justify-center">
+                    <div className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:justify-center">
+                        <div className="mb-2 rounded-[4px] border border-red-500/70 px-2 pb-1" data-testid="stud-progressive">
+                            <div className="flex flex-col gap-1 pt-1.5">
+                                {/* the heading; when another table wins, it says so here for a moment, in the same space */}
+                                <div className={`h-[18px] truncate text-center font-extrabold leading-[18px] ${otherHit ? "text-[11px] text-red-200" : "text-[13px] text-amber-200"}`} data-testid="other-win">
+                                    {otherHit ? `Another table won the ${STUD_TIER_NAMES[otherHit.tier]}: ${formatMoney(otherHit.amount)}` : "Progressive ($5)"}
+                                </div>
+                                <div className="grid grid-cols-3 gap-1 text-center">
+                                    {(["mega", "major", "minor"] as const).map((tier) => (
+                                        <div key={tier} className="flex flex-col leading-tight">
+                                            <span className="text-[10px] font-bold text-white/80">{STUD_TIER_NAMES[tier]}</span>
+                                            <span className="text-[12px] font-bold tabular-nums text-red-400" data-meter={tier}>{formatMoney(meters[tier])}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-1 border-t border-red-500/30 pt-1">
+                                    {STUD_PROGRESSIVE_ROWS.map((r) => {
+                                        const isHit = r.key === progressiveHitKey;
+                                        return (
+                                            <div key={r.key} className={`flex items-center justify-between gap-1.5 rounded px-1 text-[11px] ${isHit ? "bg-amber-300/12" : ""}`} data-progressive-row={r.key}>
+                                                <span className={isHit ? "text-amber-100 [text-shadow:0_0_0.6px_currentColor,0_0_0.6px_currentColor]" : "text-white/75"}>{r.label}</span>
+                                                <span className="shrink-0 font-bold text-gold">{r.tier ? STUD_TIER_NAMES[r.tier] : formatMoney(r.pays ?? 0).replace(".00", "")}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
                         <MsPayoutColumn
                             title="3 Card Bonus"
                             entries={THREE_CARD_PAY_ENTRIES}

@@ -89,7 +89,7 @@ const MAX_CATCH_UP_MS = 30 * 24 * 60 * 60 * 1000;
 const TIME_KEY = "table-jackpot-at";
 
 /** The jackpot bets the other tables place over `ms` of real time. */
-function linkedBets(ms: number, rng: () => number): number {
+export function linkedBets(ms: number, rng: () => number): number {
     let bets = 0;
     for (let t = 0; t < ms; t += LINKED_TICK_MS) {
         for (const open of LINKED_OPEN_CHANCE) {

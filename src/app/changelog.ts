@@ -21,6 +21,15 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.19.0",
+        date: "2026-10-31",
+        title: "Mississippi Stud progressive",
+        changes: [
+            ["new", "Mississippi Stud: a $5 progressive with a red light on the felt and Mega, Major and Minor meters. It pays on three of a kind or better, and it still pays if you fold."],
+            ["new", "Settings: the Mississippi Stud progressive starts switched on, and you can turn it off there or at the table."],
+        ],
+    },
+    {
         version: "4.18.1",
         date: "2026-10-30",
         title: "Three Card Poker fold message",
