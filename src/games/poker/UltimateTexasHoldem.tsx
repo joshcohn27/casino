@@ -162,6 +162,14 @@ function evaluateSixCardBonus(cards: Card[]): { category: SixCardBonusCategory; 
 
 function getTripsPayout(category: FiveCardCategory, stake: number) { return stake * (TRIPS_PAYTABLE[category] || 0); }
 function getBlindPayout(category: FiveCardCategory, stake: number) { return stake * (BLIND_PAYTABLE[category] || 0); }
+// One of the 169 starting hands: AA, AKs (suited), 54o (offsuit). Ten is written T.
+function startingHandName(cards: Card[]): string {
+    const [hi, lo] = [...cards].sort((a, b) => RANK_VALUES[b.rank] - RANK_VALUES[a.rank]);
+    const letter = (c: Card) => (c.rank === "10" ? "T" : c.rank);
+    if (hi.rank === lo.rank) return letter(hi) + letter(lo);
+    return letter(hi) + letter(lo) + (hi.suit === lo.suit ? "s" : "o");
+}
+
 function initialRound(): RoundState { return { deck: [], player: [], dealer: [], board: [], hiddenSixBonusCards: [] }; }
 function roundResolvedLike(stage: Stage) { return stage === "showdown" || stage === "awaitingBonusReveal" || stage === "roundOver"; }
 function valueToLabel(value: number) { if (value === 14) return "Ace"; if (value === 13) return "King"; if (value === 12) return "Queen"; if (value === 11) return "Jack"; return String(value); }
@@ -365,6 +373,11 @@ export default function UltimateTexasHoldem({ bankroll, setBankroll }: Props) {
         recordBet("Play", playStake, playReturn);
         recordBet("Trips", trips, tripsReturn, playerEval.category);
         recordBet("6 Card Bonus", sixCardBonus, sixReturn, sixBonus.category ?? undefined);
+        // and the main bets again, under the starting hand: won means they came back ahead, as the
+        // Ante pushing and the Play winning does; a fold is kept as well, to show how often it was played
+        const startingHand = startingHandName(finalRound.player);
+        recordBet(`Hole ${startingHand}`, ante + blind + playStake, anteReturn + blindReturn + playReturn);
+        if (folded) recordBet(`Fold ${startingHand}`, ante + blind, 0);
         const totalReturn = anteReturn + blindReturn + playReturn + tripsReturn;
         const net = totalReturn - (wagerAtDeal + playStake);
         setBankroll(b => b + totalReturn);

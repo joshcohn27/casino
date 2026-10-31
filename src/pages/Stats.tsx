@@ -76,6 +76,83 @@ function GameBets({ name, bets }: { name: string; bets: Record<string, BetYear> 
     );
 }
 
+// 54o reads "5 4 off", 73s "7 3 suited", AA "A A"
+function startingHandLabel(hand: string): string {
+    const rank = (c: string) => (c === "T" ? "10" : c);
+    const pair = `${rank(hand[0])} ${rank(hand[1])}`;
+    return hand[2] === "s" ? `${pair} suited` : hand[2] === "o" ? `${pair} off` : pair;
+}
+
+const TOP_HANDS_SHOWN = 20;
+type HandSort = "dealt" | "win";
+
+/** Ultimate Texas Hold'em, by starting hand: the 169 kinds of two cards, as many as have come up. */
+function StartingHands({ bets }: { bets: Record<string, BetYear> }) {
+    const [sort, setSort] = useState<HandSort>("dealt");
+    const [showAll, setShowAll] = useState(false);
+    const rows = Object.entries(bets)
+        .filter(([name]) => name.startsWith("Hole "))
+        .map(([name, b]) => {
+            const hand = name.slice(5);
+            const folded = bets[`Fold ${hand}`]?.placed ?? 0;
+            return { hand, b, folded, played: b.placed - folded, net: b.returned - b.wagered };
+        })
+        .sort((x, y) => (sort === "dealt"
+            ? y.b.placed - x.b.placed
+            : y.b.won / y.b.placed - x.b.won / x.b.placed || y.b.placed - x.b.placed));
+    const shown = showAll ? rows : rows.slice(0, TOP_HANDS_SHOWN);
+    return (
+        <>
+            <p className="mb-2 text-[12px] text-room-muted">
+                {rows.length} of the 169 starting hands so far. Won means your Ante, Blind and Play came back ahead, and win % counts every time you were dealt the hand, folds included.
+            </p>
+            <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Sort starting hands">
+                {([["dealt", "Most dealt"], ["win", "Best win %"]] as const).map(([key, label]) => (
+                    <button
+                        key={key}
+                        onClick={() => setSort(key)}
+                        aria-pressed={sort === key}
+                        className={`min-h-[44px] rounded-[4px] border-2 border-room-line px-3 text-sm font-bold transition-colors ${sort === key ? "bg-room-red text-room-text" : "bg-room-deep text-room-muted hover:text-room-text"}`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+            <table className="w-full table-fixed text-[13px] tabular-nums sm:text-sm">
+                <thead>
+                    <tr className="text-left text-room-muted">
+                        <th className="w-[34%] py-1 font-semibold sm:w-[22%]">Hand</th>
+                        <th className="py-1 text-right font-semibold">Dealt</th>
+                        <th className="py-1 text-right font-semibold">Won</th>
+                        <th className="py-1 text-right font-semibold">Win %</th>
+                        <th className="hidden py-1 text-right font-semibold sm:table-cell">Folded</th>
+                        <th className="hidden py-1 text-right font-semibold sm:table-cell">Win % when played</th>
+                        <th className="hidden py-1 text-right font-semibold sm:table-cell">Net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {shown.map(({ hand, b, folded, played, net }) => (
+                        <tr key={hand} className="border-t border-room-line" data-starting-hand={hand}>
+                            <td className="py-1.5 font-bold">{startingHandLabel(hand)}</td>
+                            <td className="py-1.5 text-right">{b.placed.toLocaleString("en-US")}</td>
+                            <td className="py-1.5 text-right">{b.won.toLocaleString("en-US")}</td>
+                            <td className={`py-1.5 text-right font-semibold ${b.won > 0 ? "text-emerald-300" : ""}`}>{pct(b.won, b.placed)}</td>
+                            <td className="hidden py-1.5 text-right sm:table-cell">{folded.toLocaleString("en-US")}</td>
+                            <td className="hidden py-1.5 text-right sm:table-cell">{pct(b.won, played)}</td>
+                            <td className={`hidden py-1.5 text-right font-semibold sm:table-cell ${netClass(net)}`}>{signed(net)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {rows.length > TOP_HANDS_SHOWN && (
+                <button className="mt-1 min-h-[44px] px-2 text-sm text-room-muted underline hover:text-room-text" onClick={() => setShowAll((on) => !on)}>
+                    {showAll ? `Show the top ${TOP_HANDS_SHOWN}` : `Show all ${rows.length}`}
+                </button>
+            )}
+        </>
+    );
+}
+
 function Section({ title, children, testId }: { title: string; children: React.ReactNode; testId?: string }) {
     return (
         <section className="rounded-[4px] border border-room-line bg-room-panel p-4" data-testid={testId}>
@@ -295,10 +372,16 @@ export default function Stats({ onBack }: Props) {
                                 <div className="space-y-2">
                                     {Object.entries(year.bets)
                                         .sort((a, b) => (year.games[b[0]]?.hands ?? 0) - (year.games[a[0]]?.hands ?? 0))
-                                        .map(([gameId, bets]) => <GameBets key={gameId} name={gameName(gameId)} bets={Object.fromEntries(Object.entries(bets).filter(([name]) => !name.startsWith("Deal number")))} />)}
+                                        .map(([gameId, bets]) => <GameBets key={gameId} name={gameName(gameId)} bets={Object.fromEntries(Object.entries(bets).filter(([name]) => !/^(Deal number|Hole |Fold )/.test(name)))} />)}
                                 </div>
                             )}
                         </Section>
+
+                        {year.bets?.uth && Object.keys(year.bets.uth).some((k) => k.startsWith("Hole ")) && (
+                            <Section title="Ultimate Texas Hold'em by starting hand" testId="starting-hands">
+                                <StartingHands bets={year.bets.uth} />
+                            </Section>
+                        )}
 
                         {year.bets?.paigow && Object.keys(year.bets.paigow).some((k) => k.startsWith("Deal number")) && (
                             <Section title="Pai Gow by deal number" testId="deal-numbers">

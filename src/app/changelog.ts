@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.20.0",
+        date: "2026-10-31",
+        title: "UTH stats by starting hand",
+        changes: [
+            ["new", "Your Stats: Ultimate Texas Hold'em now shows your results for each of the 169 starting hands, like 5 4 off or 7 3 suited: times dealt, hands won, win % and folds. Counting starts from this update."],
+        ],
+    },
+    {
         version: "4.19.2",
         date: "2026-10-31",
         title: "UTH: C bets",
