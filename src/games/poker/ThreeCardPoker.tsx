@@ -705,7 +705,9 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
         ? noAnte ? resultInfo.dealerRank
         : resultInfo.qualified
             ? `Qualifies - ${resultInfo.dealerRank}`
-            : "Does not qualify - Ante wins, Play returned"
+            : resultInfo.folded
+                ? `Does not qualify - ${resultInfo.dealerRank}`
+                : "Does not qualify - Ante wins, Play returned"
         : null;
 
     const playerResultLabel = resultInfo

@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.18.1",
+        date: "2026-10-30",
+        title: "Three Card Poker fold message",
+        changes: [
+            ["fixed", "Three Card Poker: when you fold and the dealer does not qualify, the table no longer says your Ante wins. It just shows what the dealer had."],
+        ],
+    },
+    {
         version: "4.18.0",
         date: "2026-10-30",
         title: "Three Card Poker: turn your own cards, or play blind",
