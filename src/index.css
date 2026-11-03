@@ -154,6 +154,20 @@ html {
 @media (hover: hover) and (pointer: fine) and (min-width: 1360px) {
   html:not([data-hotkeys="off"]) [data-key-hint] { display: block; }
   html:not([data-hotkeys="off"]) [data-key-hints-room] { margin-bottom: 14px; }
+  /* the other tables: the key handler numbers each face-down card (data-key-num) */
+  html:not([data-hotkeys="off"]) [data-key-num] { position: relative; }
+  html:not([data-hotkeys="off"]) [data-key-num]::after {
+    content: attr(data-key-num);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 3px);
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: rgb(255 255 255 / 0.3);
+    pointer-events: none;
+  }
 }
 
 /* The jackpot light is a small round button: its key works but no hint is drawn on it */

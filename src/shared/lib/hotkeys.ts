@@ -140,10 +140,30 @@ export function useHotkeys(): void {
             if (swallowKeyUp === e.key) { e.preventDefault(); swallowKeyUp = null; }
         };
 
+        // The faint number by each face-down card: the key that turns it over, worked out the same
+        // way the number keys pick a card (reading order across the table in view), so the two
+        // always agree. Pai Gow draws its own, since its numbers go on after the hand is sorted.
+        let frame = 0;
+        const markRevealNumbers = () => {
+            frame = 0;
+            const table = document.querySelector<HTMLElement>("[data-table]:not([hidden])");
+            const cards = table ? [...table.querySelectorAll<HTMLElement>("[data-key-reveal]")].filter((c) => c.getClientRects().length > 0).sort(readingOrder) : [];
+            for (const old of document.querySelectorAll<HTMLElement>("[data-key-num]")) if (!cards.includes(old)) old.removeAttribute("data-key-num");
+            cards.forEach((card, i) => {
+                const show = i < 9 && card.dataset.keyReveal === "down" && !card.matches("[data-key-card]") && pressable(card);
+                if (show) { if (card.dataset.keyNum !== String(i + 1)) card.dataset.keyNum = String(i + 1); }
+                else if (card.dataset.keyNum) card.removeAttribute("data-key-num");
+            });
+        };
+        const observer = new MutationObserver(() => { if (!frame) frame = window.requestAnimationFrame(markRevealNumbers); });
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-key-reveal", "disabled", "hidden"] });
+
         window.addEventListener("keydown", onKeyDown);
         window.addEventListener("keyup", onKeyUp);
         window.addEventListener("pointerdown", onPointer);
         return () => {
+            observer.disconnect();
+            if (frame) window.cancelAnimationFrame(frame);
             window.removeEventListener("keydown", onKeyDown);
             window.removeEventListener("keyup", onKeyUp);
             window.removeEventListener("pointerdown", onPointer);
