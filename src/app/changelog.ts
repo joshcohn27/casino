@@ -21,6 +21,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.20.4",
+        date: "2026-11-03",
+        title: "Pai Gow key numbers on the cards",
+        changes: [
+            ["improved", "Pai Gow: with keyboard shortcuts on, a small faint number under each of your cards shows the key that turns it over, or once sorted, moves it to Low and back. Low cards show theirs above."],
+        ],
+    },
+    {
         version: "4.20.3",
         date: "2026-10-31",
         title: "Cleaner stats colors",

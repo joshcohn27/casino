@@ -147,6 +147,15 @@ html {
   }
 }
 
+/* The faint number under a card that a number key presses: shown with the other key hints,
+   and its row keeps a little room beneath it, there and only there, so it never sits on the
+   text below */
+[data-key-hint] { display: none; }
+@media (hover: hover) and (pointer: fine) and (min-width: 1360px) {
+  html:not([data-hotkeys="off"]) [data-key-hint] { display: block; }
+  html:not([data-hotkeys="off"]) [data-key-hints-room] { margin-bottom: 14px; }
+}
+
 /* The jackpot light is a small round button: its key works but no hint is drawn on it */
 [data-jackpot-light]::after { content: none !important; }
 

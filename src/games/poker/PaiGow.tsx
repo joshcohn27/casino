@@ -1943,6 +1943,7 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                     className={`relative w-full max-w-[440px] ${STACK_VARS}`}
                                     style={{ height: `calc(var(--ch) * ${1 + PLAYER_ROW_STEP})` }}
                                     data-testid="player-cards"
+                                    data-key-hints-room
                                 >
                                     {/* Empty Low spots */}
                                     {[0, 1].map((col) => (
@@ -1967,6 +1968,8 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                             ? slotStyle(0, lowCol, 2, PLAYER_ROW_STEP, 10 + lowCol)
                                             : slotStyle(1, rowCol, playerRowCards.length, PLAYER_ROW_STEP, 20 + rowCol);
                                         const canClick = stage === "setting" && !dealerSetting && (!isPeeled || (playerReady && !autoFinishing));
+                                        // face down, a number turns over the card in that place; sorted, it moves the card to Low and back
+                                        const keyHint = !canClick || folding ? null : playerReady ? keyNumbers.indexOf(card.id) + 1 || null : !isPeeled ? rowCol + 1 : null;
                                         return (
                                             <div key={`${deckNo}-${card.id}`} style={style} data-hand={lowCol >= 0 ? "low" : "high"}>
                                                 <motion.button
@@ -1987,6 +1990,16 @@ export default function PaiGowPoker({ bankroll, setBankroll }: Props) {
                                                 >
                                                     <PlayingCard card={toShared(card, isPeeled)} className={CARD_SM} />
                                                 </motion.button>
+                                                {/* the number key for this card: under it, or above a Low card, where the row below would cover it */}
+                                                {keyHint !== null && (
+                                                    <span
+                                                        data-key-hint
+                                                        aria-hidden
+                                                        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 text-[10px] font-bold leading-none text-white/30 ${lowCol >= 0 ? "-top-3.5" : "top-[calc(100%+3px)]"}`}
+                                                    >
+                                                        {keyHint}
+                                                    </span>
+                                                )}
                                             </div>
                                         );
                                     })}
