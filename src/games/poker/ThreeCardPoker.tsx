@@ -1014,7 +1014,7 @@ export default function ThreeCardPoker({ bankroll, setBankroll }: Props) {
 
                     {/* Player area */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className={`relative ${ROW_WIDTH}`}>
+                        <div className={`relative ${ROW_WIDTH}`} data-key-hints-room>
                             {playerCards.length === 0 ? <EmptyCardRow /> : (
                                 <HandRow
                                     testId="player-cards"
