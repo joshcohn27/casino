@@ -73,6 +73,15 @@ export const GAMES: ReadonlyArray<GameEntry> = [
         component: lazy(() => import("../games/blackjack/SideBetBlackjack")),
     },
     {
+        id: "downunder",
+        path: "/blackjack/down-under",
+        title: "Down Under Blackjack",
+        group: "blackjack",
+        subtitle: "See the dealer's hole card range before you act · Two gold cards play face up · Dealer 22 pushes, except 20 and 21 · Blackjack pays 3 to 2 · Match the Dealer side bet",
+        homeOrder: 3.75,
+        component: lazy(() => import("../games/blackjack/DownUnderBlackjack")),
+    },
+    {
         id: "uth",
         path: "/poker/ultimate-texas-holdem",
         title: "Ultimate Texas Hold'em",

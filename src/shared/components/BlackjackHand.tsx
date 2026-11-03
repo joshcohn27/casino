@@ -47,7 +47,8 @@ export default function BlackjackHand({ cards, testId }: { cards: StackCard[]; t
 
     return (
         <div
-            className={`relative ${VARS}`}
+            // isolate: the cards' own stacking stays inside the hand, so a card never rises over the action bar
+            className={`relative isolate ${VARS}`}
             style={{ width: "calc(var(--ch) + 3 * var(--dx))", height: "calc(var(--ch) + 3 * var(--dy))" }}
             data-testid={testId ?? "player-hand"}
         >

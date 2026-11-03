@@ -21,6 +21,16 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
     {
+        version: "4.21.0",
+        date: "2026-11-03",
+        title: "Down Under Blackjack",
+        changes: [
+            ["new", "Down Under Blackjack: before you act, a lit box shows the range of the dealer's hole card: Small 2 to 5, Medium 6 to 9 or Large 10 to Ace. Two gold cards are turned face up."],
+            ["new", "Down Under Blackjack: a dealer 22 pushes every hand except a 20 or 21, which still wins. Aces split once, and there's a Match the Dealer side bet."],
+            ["fixed", "Blackjack tables on phones: a hand's cards no longer draw over the chip tray when the table scrolls."],
+        ],
+    },
+    {
         version: "4.20.4",
         date: "2026-11-03",
         title: "Key numbers on the cards",

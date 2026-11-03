@@ -43,6 +43,7 @@ export const GAME_SETTINGS: GameSettings[] = [
         side("kingsBounty", "King's Bounty", 100), side("luckyLadies", "Lucky Ladies", 100), side("trilux", "TriLux", 100),
         side("matchDealer", "Match the Dealer", 100), side("fortune", "Fortune", 100),
     ], toggles: [{ key: "blazing", label: "Blazing 7s", hint: "Put the $5 Blazing 7s progressive bet on every hand automatically", fallback: false }] },
+    { id: "downunder", name: "Down Under Blackjack", bets: [stepped(main("main", "Bet")), side("matchDealer", "Match the Dealer", 100)] },
     { ...allStepped({ id: "baccarat", name: "Baccarat", bets: [
         side("player", "Player", MAIN_MAX), side("banker", "Banker", MAIN_MAX), side("tie", "Tie", MAIN_MAX),
         side("panda", "Panda 8", MAIN_MAX), side("dragon", "Dragon 7", MAIN_MAX),

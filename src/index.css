@@ -270,10 +270,10 @@ html[data-font="large"] [data-bet-spot] button span { letter-spacing: 0.04em; li
 @media (max-width: 639px) {
   [data-table] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) button { padding-left: 12px; padding-right: 12px; }
 }
-/* Classic Blackjack offers four buttons after a hand. On a phone only three fit one row, so the
-   extra one (Double & Deal, the only one with no key) is left off there. */
+/* Classic and Down Under Blackjack offer four buttons after a hand. On a phone only three fit one
+   row, so the extra one (Double & Deal, the only one with no key) is left off there. */
 @media (max-width: 639px) {
-  [data-table="blackjack"] .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) div:has(> button:not([data-hotkey])) { display: none; }
+  :is([data-table="blackjack"], [data-table="downunder"]) .sm\:grid.sm\:grid-cols-\[auto_1fr_auto\] > div:nth-child(2) div:has(> button:not([data-hotkey])) { display: none; }
 }
 
 /* On narrow screens the bets sit under the cards and the message. The message keeps room for

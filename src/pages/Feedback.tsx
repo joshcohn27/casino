@@ -190,6 +190,7 @@ export default function Feedback({ onBack }: FeedbackProps) {
                                         <option className="bg-room-deep">Free Bet Blackjack</option>
                                         <option className="bg-room-deep">Double Down Madness</option>
                                         <option className="bg-room-deep">Side Bet Blackjack</option>
+                                        <option className="bg-room-deep">Down Under Blackjack</option>
                                         <option className="bg-room-deep">Pai Gow Poker</option>
                                         <option className="bg-room-deep">Three Card Poker</option>
                                         <option className="bg-room-deep">Mississippi Stud</option>
